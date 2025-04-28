@@ -12,3 +12,12 @@ canvas {
     height: 100%;
     background-color: black;
 }
+
+.side-menu {
+    background-color: whitesmoke;
+    position: fixed;
+    left: 0;
+    right: 0;
+    height: 100vh;
+    width: 200px;
+}

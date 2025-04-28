@@ -31,6 +31,10 @@ module.exports = {
     },
 
     resolve: {
+        modules: [
+            path.resolve(__dirname, 'client'),
+            'node_modules',
+        ],
         extensions: ['.tsx', '.ts', '.js', '.css', '.scss'], // <-- added '.tsx' for React or strict TSX support
     },
 

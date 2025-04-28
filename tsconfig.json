@@ -5,7 +5,7 @@
         "target": "esnext",
         "module": "commonjs",
         "outDir": "./public/dist",
-        "baseUrl": "./",
+        "baseUrl": "client",
         "sourceMap": true,
         "strict": true,
         "lib": ["dom", "es6"],

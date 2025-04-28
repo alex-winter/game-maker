@@ -1,11 +1,25 @@
-import { Component } from "../../services/Component";
+import { Dom } from "Service/Dom";
+import { Component } from "Service/Component";
 
 export class SideMenu extends Component
 {
-    protected build(): HTMLElement {
-        const container = document.createElement('div')
+    protected css(): string {
+        return /*css*/`
+            :host {
+                background-color: whitesmoke;
+                position: fixed;
+                left: 0;
+                right: 0;
+                height: 100vh;
+                width: 200px;
+            }
+        `
+    }
 
+    protected build(): HTMLElement {
+        const container = Dom.div()
 
         return container
     }
+
 }
