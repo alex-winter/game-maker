@@ -499,6 +499,82 @@ exports.SideMenu = SideMenu;
 
 /***/ }),
 
+/***/ "./src/Client/Component/WindowBox/WindowBox.ts":
+/*!*****************************************************!*\
+  !*** ./src/Client/Component/WindowBox/WindowBox.ts ***!
+  \*****************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.WindowBox = void 0;
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+class WindowBox extends Component_1.Component {
+    isDragging = false;
+    offsetX = 0;
+    offsetY = 0;
+    css() {
+        return /*css*/ `
+            :host {
+                position: fixed;
+                top: 0;
+                left: 0;
+                cursor: default;
+            }
+
+            .header {
+                background: #ccc;
+                padding: 10px;
+                cursor: move;
+                user-select: none;
+            }
+
+            .content {
+                padding: 10px;
+                background: white;
+                border: 1px solid #ccc;
+            }
+        `;
+    }
+    build() {
+        const container = Dom_1.Dom.div();
+        const content = Dom_1.Dom.div('content');
+        const slot = document.createElement('slot');
+        content.append(slot);
+        container.append(this.buildHeader(), content);
+        return container;
+    }
+    buildHeader() {
+        const element = Dom_1.Dom.div('header');
+        element.innerText = 'Header';
+        element.addEventListener('mousedown', (e) => {
+            this.isDragging = true;
+            const rect = this.getBoundingClientRect();
+            this.offsetX = e.clientX - rect.left;
+            this.offsetY = e.clientY - rect.top;
+            const onMouseMove = (e) => {
+                if (this.isDragging) {
+                    this.style.left = `${e.clientX - this.offsetX}px`;
+                    this.style.top = `${e.clientY - this.offsetY}px`;
+                }
+            };
+            const onMouseUp = () => {
+                this.isDragging = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            };
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+        return element;
+    }
+}
+exports.WindowBox = WindowBox;
+
+
+/***/ }),
+
 /***/ "./src/Client/Service/Component.ts":
 /*!*****************************************!*\
   !*** ./src/Client/Service/Component.ts ***!
@@ -695,11 +771,13 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */ "./src/Client/Component/SideMenu/SideMenu.ts");
 __webpack_require__(/*! Client/styles.css */ "./src/Client/styles.css");
 const LayerListing_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerListing */ "./src/Client/Component/LayerListing/LayerListing.ts");
+const WindowBox_1 = __webpack_require__(/*! ./Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.querySelector('canvas');
     const ctx = canvas?.getContext('2d');
     customElements.define('side-menu', SideMenu_1.SideMenu);
     customElements.define('layer-listing', LayerListing_1.LayerListing);
+    customElements.define('window-box', WindowBox_1.WindowBox);
 });
 
 })();
