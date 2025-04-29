@@ -35,7 +35,7 @@ export class WindowBox extends Component {
         const content = Dom.div('content')
         const slot = document.createElement('slot')
 
-        content.append(slot);
+        content.append(slot)
 
         container.append(
             this.buildHeader(),
@@ -47,7 +47,7 @@ export class WindowBox extends Component {
 
     private buildHeader(): HTMLElement {
         const element = Dom.div('header')
-        element.innerText = 'Header'
+        element.innerText = this.dataset.title || ''
 
         element.addEventListener('mousedown', (e: MouseEvent) => {
             this.isDragging = true
