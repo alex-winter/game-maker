@@ -1,5 +1,6 @@
 import { Component } from "Client/Service/Component";
 import { Dom } from "Client/Service/Dom";
+import { Events } from "Client/Service/Events";
 
 export class FileUploader extends Component {
     protected css(): string {
@@ -42,18 +43,15 @@ export class FileUploader extends Component {
         const container = Dom.div('uploader');
         container.textContent = "Drag & drop files here";
 
-        // Handle drag over
         container.addEventListener('dragover', (e) => {
             e.preventDefault();
             container.classList.add('dragover');
         });
 
-        // Handle drag leave
         container.addEventListener('dragleave', () => {
             container.classList.remove('dragover');
         });
 
-        // Handle drop
         container.addEventListener('drop', (e: DragEvent) => {
             e.preventDefault();
             container.classList.remove('dragover');
@@ -62,7 +60,6 @@ export class FileUploader extends Component {
             }
         });
 
-        // Create hidden input for manual file selection
         const input = document.createElement('input');
         input.type = 'file';
         input.multiple = true;
@@ -73,20 +70,17 @@ export class FileUploader extends Component {
             }
         });
 
-        // Create button to trigger file input
-        const button = Dom.div('upload-button');
-        button.textContent = 'Select Files';
-        button.addEventListener('click', () => input.click());
+        const button = Dom.div('upload-button')
+        button.textContent = 'Select Files'
+        button.addEventListener('click', () => input.click())
 
-        const wrapper = Dom.div();
+        const wrapper = Dom.div()
         wrapper.append(container, button, input);
 
         return wrapper;
     }
 
     private handleFiles(files: FileList) {
-        // Handle files here
-        console.log([...files]);
-        // You could emit an event, upload, preview, etc.
+        Events.emitFilesUploadSubmitted(files)
     }
 }

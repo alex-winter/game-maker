@@ -439,6 +439,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.FileUploader = void 0;
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class FileUploader extends Component_1.Component {
     css() {
         return /*css*/ `
@@ -478,16 +479,13 @@ class FileUploader extends Component_1.Component {
     build() {
         const container = Dom_1.Dom.div('uploader');
         container.textContent = "Drag & drop files here";
-        // Handle drag over
         container.addEventListener('dragover', (e) => {
             e.preventDefault();
             container.classList.add('dragover');
         });
-        // Handle drag leave
         container.addEventListener('dragleave', () => {
             container.classList.remove('dragover');
         });
-        // Handle drop
         container.addEventListener('drop', (e) => {
             e.preventDefault();
             container.classList.remove('dragover');
@@ -495,7 +493,6 @@ class FileUploader extends Component_1.Component {
                 this.handleFiles(e.dataTransfer.files);
             }
         });
-        // Create hidden input for manual file selection
         const input = document.createElement('input');
         input.type = 'file';
         input.multiple = true;
@@ -504,7 +501,6 @@ class FileUploader extends Component_1.Component {
                 this.handleFiles(input.files);
             }
         });
-        // Create button to trigger file input
         const button = Dom_1.Dom.div('upload-button');
         button.textContent = 'Select Files';
         button.addEventListener('click', () => input.click());
@@ -513,9 +509,7 @@ class FileUploader extends Component_1.Component {
         return wrapper;
     }
     handleFiles(files) {
-        // Handle files here
-        console.log([...files]);
-        // You could emit an event, upload, preview, etc.
+        Events_1.Events.emitFilesUploadSubmitted(files);
     }
 }
 exports.FileUploader = FileUploader;
@@ -670,6 +664,22 @@ exports.WindowBox = WindowBox;
 
 /***/ }),
 
+/***/ "./src/Client/Constants/events.ts":
+/*!****************************************!*\
+  !*** ./src/Client/Constants/events.ts ***!
+  \****************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.EVENTS = void 0;
+exports.EVENTS = {
+    uploadFilesSubmission: 'upload-files-submission',
+};
+
+
+/***/ }),
+
 /***/ "./src/Client/Service/Component.ts":
 /*!*****************************************!*\
   !*** ./src/Client/Service/Component.ts ***!
@@ -725,6 +735,42 @@ class Dom {
     }
 }
 exports.Dom = Dom;
+
+
+/***/ }),
+
+/***/ "./src/Client/Service/Events.ts":
+/*!**************************************!*\
+  !*** ./src/Client/Service/Events.ts ***!
+  \**************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Events = void 0;
+const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
+class Events {
+    constructor() {
+        throw new Error('Can not construct');
+    }
+    static emit(key, detail) {
+        document.dispatchEvent(new CustomEvent(key, {
+            detail,
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    static listen(key, callback) {
+        document.addEventListener(key, callback);
+    }
+    static emitFilesUploadSubmitted(files) {
+        Events.emit(events_1.EVENTS.uploadFilesSubmission, files);
+    }
+    static listenToFilesUploadSubmitted(callback) {
+        Events.listen(events_1.EVENTS.uploadFilesSubmission, callback);
+    }
+}
+exports.Events = Events;
 
 
 /***/ }),
