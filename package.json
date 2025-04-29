@@ -1,16 +1,14 @@
 {
   "name": "alex-winters-app",
-
   "scripts": {
-    "build": "webpack",
-    "start": "webpack --watch"
+    "start:client": "webpack --watch",
+    "start:server": "webpack --config webpack.server.config.js --watch"
   },
-
   "dependencies": {
     "express": "^4.21.2"
   },
-
   "devDependencies": {
+    "@types/express": "^5.0.1",
     "@typescript-eslint/eslint-plugin": "^7.15.0",
     "@typescript-eslint/parser": "^7.15.0",
     "css-loader": "^7.1.2",
@@ -23,6 +21,7 @@
     "tslint": "^6.1.3",
     "typescript": "^4.9.5",
     "webpack": "^5.38.1",
-    "webpack-cli": "^4.7.2"
+    "webpack-cli": "^4.7.2",
+    "webpack-node-externals": "^3.0.0"
   }
 }

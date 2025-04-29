@@ -3,7 +3,7 @@ const path = require('path');
 module.exports = {
     mode: 'development',
 
-    entry: './client/index.ts',
+    entry: './src/Client/index.ts',
 
     module: {
         rules: [
@@ -13,7 +13,7 @@ module.exports = {
                     {
                         loader: 'ts-loader',
                         options: {
-                            configFile: path.resolve(__dirname, 'tsconfig.json'), // <-- explicitly set it
+                            configFile: path.resolve(__dirname, 'tsconfig.json'),
                         },
                     },
                 ],
@@ -32,10 +32,10 @@ module.exports = {
 
     resolve: {
         modules: [
-            path.resolve(__dirname, 'client'),
+            path.resolve(__dirname, 'src'),
             'node_modules',
         ],
-        extensions: ['.tsx', '.ts', '.js', '.css', '.scss'], // <-- added '.tsx' for React or strict TSX support
+        extensions: ['.tsx', '.ts', '.js', '.css', '.scss'],
     },
 
     output: {

@@ -5,7 +5,7 @@
         "target": "esnext",
         "module": "commonjs",
         "outDir": "./public/dist",
-        "baseUrl": "client",
+        "baseUrl": "src",
         "sourceMap": true,
         "strict": true,
         "lib": ["dom", "es6"],
@@ -13,9 +13,11 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true
     },
+    
     "include": [
-        "client/**/*"
+        "src/**/*"
     ],
+
     "exclude": [
         "node_modules"
     ]
