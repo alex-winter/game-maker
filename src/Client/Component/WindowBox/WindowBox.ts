@@ -46,14 +46,16 @@ export class WindowBox extends Component {
     }
 
     private buildHeader(): HTMLElement {
-        const element = Dom.div('header');
-        element.innerText = 'Header';
+        const element = Dom.div('header')
+        element.innerText = 'Header'
 
         element.addEventListener('mousedown', (e: MouseEvent) => {
-            this.isDragging = true;
-            const rect = this.getBoundingClientRect();
-            this.offsetX = e.clientX - rect.left;
-            this.offsetY = e.clientY - rect.top;
+            this.isDragging = true
+
+            const rect = this.getBoundingClientRect()
+
+            this.offsetX = e.clientX - rect.left
+            this.offsetY = e.clientY - rect.top
 
             const onMouseMove = (e: MouseEvent) => {
                 if (this.isDragging) {
@@ -63,7 +65,7 @@ export class WindowBox extends Component {
             }
 
             const onMouseUp = () => {
-                this.isDragging = false;
+                this.isDragging = false
                 document.removeEventListener('mousemove', onMouseMove)
                 document.removeEventListener('mouseup', onMouseUp)
             }
