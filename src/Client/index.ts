@@ -2,6 +2,7 @@ import { SideMenu } from 'Client/Component/SideMenu/SideMenu'
 import 'Client/styles.css'
 import { LayerListing } from 'Client/Component/LayerListing/LayerListing'
 import { WindowBox } from './Component/WindowBox/WindowBox'
+import { FileUploader } from './Component/File/FileUploader/FileUploader'
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -11,4 +12,5 @@ document.addEventListener('DOMContentLoaded', () => {
     customElements.define('side-menu', SideMenu)
     customElements.define('layer-listing', LayerListing)
     customElements.define('window-box', WindowBox)
+    customElements.define('file-uploader', FileUploader)
 })

@@ -428,6 +428,29 @@ module.exports = styleTagTransform;
 
 /***/ }),
 
+/***/ "./src/Client/Component/File/FileUploader/FileUploader.ts":
+/*!****************************************************************!*\
+  !*** ./src/Client/Component/File/FileUploader/FileUploader.ts ***!
+  \****************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.FileUploader = void 0;
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+class FileUploader extends Component_1.Component {
+    build() {
+        const container = Dom_1.Dom.div();
+        container.innerText = 'File Upload';
+        return container;
+    }
+}
+exports.FileUploader = FileUploader;
+
+
+/***/ }),
+
 /***/ "./src/Client/Component/LayerListing/LayerListing.ts":
 /*!***********************************************************!*\
   !*** ./src/Client/Component/LayerListing/LayerListing.ts ***!
@@ -772,12 +795,14 @@ const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */
 __webpack_require__(/*! Client/styles.css */ "./src/Client/styles.css");
 const LayerListing_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerListing */ "./src/Client/Component/LayerListing/LayerListing.ts");
 const WindowBox_1 = __webpack_require__(/*! ./Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
+const FileUploader_1 = __webpack_require__(/*! ./Component/File/FileUploader/FileUploader */ "./src/Client/Component/File/FileUploader/FileUploader.ts");
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.querySelector('canvas');
     const ctx = canvas?.getContext('2d');
     customElements.define('side-menu', SideMenu_1.SideMenu);
     customElements.define('layer-listing', LayerListing_1.LayerListing);
     customElements.define('window-box', WindowBox_1.WindowBox);
+    customElements.define('file-uploader', FileUploader_1.FileUploader);
 });
 
 })();
