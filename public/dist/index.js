@@ -547,7 +547,9 @@ class Dom {
     }
     static div(...classList) {
         const element = document.createElement('div');
-        element.classList.add(...classList);
+        if (classList.length) {
+            element.classList.add(...classList);
+        }
         return element;
     }
 }

@@ -8,7 +8,9 @@ export class Dom
     {
         const element = document.createElement('div')
 
-        element.classList.add(...classList)
+        if (classList.length) {
+            element.classList.add(...classList)
+        }
 
         return element
     }
