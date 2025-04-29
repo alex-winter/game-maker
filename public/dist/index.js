@@ -526,6 +526,7 @@ class FileUploader extends Component_1.Component {
         });
         const input = document.createElement('input');
         input.type = 'file';
+        input.webkitdirectory = true;
         input.multiple = true;
         input.addEventListener('change', () => {
             if (input.files) {

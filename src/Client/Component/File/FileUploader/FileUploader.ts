@@ -1,3 +1,4 @@
+import { FILES } from "Client/Constants/files";
 import { Component } from "Client/Service/Component";
 import { Dom } from "Client/Service/Dom";
 import { Events } from "Client/Service/Events";
@@ -61,8 +62,9 @@ export class FileUploader extends Component {
         });
 
         const input = document.createElement('input');
-        input.type = 'file';
-        input.multiple = true;
+        input.type = 'file'
+        input.webkitdirectory = true
+        input.multiple = true
 
         input.addEventListener('change', () => {
             if (input.files) {
