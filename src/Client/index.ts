@@ -4,6 +4,7 @@ import { LayerListing } from 'Client/Component/LayerListing/LayerListing'
 import { WindowBox } from './Component/WindowBox/WindowBox'
 import { FileUploader } from './Component/File/FileUploader/FileUploader'
 import { FileListing } from './Component/File/FileListing/FileListing'
+import { SpriteSheetsWindowBox } from './Component/WindowBox/SpriteSheetsWindowBox'
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -15,4 +16,5 @@ document.addEventListener('DOMContentLoaded', () => {
     customElements.define('window-box', WindowBox)
     customElements.define('file-uploader', FileUploader)
     customElements.define('file-listing', FileListing)
+    customElements.define('sprite-sheets-window-box', SpriteSheetsWindowBox)
 })

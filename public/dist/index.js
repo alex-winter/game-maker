@@ -620,6 +620,33 @@ exports.SideMenu = SideMenu;
 
 /***/ }),
 
+/***/ "./src/Client/Component/WindowBox/SpriteSheetsWindowBox.ts":
+/*!*****************************************************************!*\
+  !*** ./src/Client/Component/WindowBox/SpriteSheetsWindowBox.ts ***!
+  \*****************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SpriteSheetsWindowBox = void 0;
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+class SpriteSheetsWindowBox extends Component_1.Component {
+    build() {
+        const windowBox = document.createElement('window-box');
+        const fileListing = document.createElement('file-listing');
+        const fileUploader = document.createElement('file-uploader');
+        const createNewButton = document.createElement('button');
+        createNewButton.innerText = 'Create New';
+        windowBox.dataset.title = 'Sprite Sheets';
+        windowBox.append(fileListing, fileUploader, createNewButton);
+        return windowBox;
+    }
+}
+exports.SpriteSheetsWindowBox = SpriteSheetsWindowBox;
+
+
+/***/ }),
+
 /***/ "./src/Client/Component/WindowBox/WindowBox.ts":
 /*!*****************************************************!*\
   !*** ./src/Client/Component/WindowBox/WindowBox.ts ***!
@@ -949,6 +976,7 @@ const LayerListing_1 = __webpack_require__(/*! Client/Component/LayerListing/Lay
 const WindowBox_1 = __webpack_require__(/*! ./Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
 const FileUploader_1 = __webpack_require__(/*! ./Component/File/FileUploader/FileUploader */ "./src/Client/Component/File/FileUploader/FileUploader.ts");
 const FileListing_1 = __webpack_require__(/*! ./Component/File/FileListing/FileListing */ "./src/Client/Component/File/FileListing/FileListing.ts");
+const SpriteSheetsWindowBox_1 = __webpack_require__(/*! ./Component/WindowBox/SpriteSheetsWindowBox */ "./src/Client/Component/WindowBox/SpriteSheetsWindowBox.ts");
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.querySelector('canvas');
     const ctx = canvas?.getContext('2d');
@@ -957,6 +985,7 @@ document.addEventListener('DOMContentLoaded', () => {
     customElements.define('window-box', WindowBox_1.WindowBox);
     customElements.define('file-uploader', FileUploader_1.FileUploader);
     customElements.define('file-listing', FileListing_1.FileListing);
+    customElements.define('sprite-sheets-window-box', SpriteSheetsWindowBox_1.SpriteSheetsWindowBox);
 });
 
 })();
