@@ -428,6 +428,41 @@ module.exports = styleTagTransform;
 
 /***/ }),
 
+/***/ "./src/Client/Component/LayerListing/LayerListing.ts":
+/*!***********************************************************!*\
+  !*** ./src/Client/Component/LayerListing/LayerListing.ts ***!
+  \***********************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.LayerListing = void 0;
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+class LayerListing extends Component_1.Component {
+    build() {
+        const container = Dom_1.Dom.div();
+        this.data().then(layers => {
+            container.append(...layers.map(this.buildLayer));
+        });
+        return container;
+    }
+    async data() {
+        const resposne = await fetch('/layers');
+        const data = await resposne.json();
+        return data;
+    }
+    buildLayer(layer) {
+        const container = Dom_1.Dom.div('layer-item');
+        container.innerText = layer.name;
+        return container;
+    }
+}
+exports.LayerListing = LayerListing;
+
+
+/***/ }),
+
 /***/ "./src/Client/Component/SideMenu/SideMenu.ts":
 /*!***************************************************!*\
   !*** ./src/Client/Component/SideMenu/SideMenu.ts ***!
@@ -454,6 +489,8 @@ class SideMenu extends Component_1.Component {
     }
     build() {
         const container = Dom_1.Dom.div();
+        const slot = document.createElement('slot');
+        container.append(slot);
         return container;
     }
 }
@@ -655,10 +692,12 @@ var exports = __webpack_exports__;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */ "./src/Client/Component/SideMenu/SideMenu.ts");
 __webpack_require__(/*! Client/styles.css */ "./src/Client/styles.css");
+const LayerListing_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerListing */ "./src/Client/Component/LayerListing/LayerListing.ts");
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.querySelector('canvas');
     const ctx = canvas?.getContext('2d');
     customElements.define('side-menu', SideMenu_1.SideMenu);
+    customElements.define('layer-listing', LayerListing_1.LayerListing);
 });
 
 })();

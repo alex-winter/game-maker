@@ -18,6 +18,9 @@ export class SideMenu extends Component
 
     protected build(): HTMLElement {
         const container = Dom.div()
+        const slot = document.createElement('slot')
+
+        container.append(slot)
 
         return container
     }
