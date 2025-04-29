@@ -1,45 +1,42 @@
 import { EVENTS } from "Client/Constants/events"
 
-type EventFn = (event: Event) => void
+type EventFn<T = any> = (event: CustomEvent<T>) => void
 
 export class Events {
     constructor () {
         throw new Error('Can not construct')
     }
 
-    public static emit(key: string, detail: any): void {
+    public static emit<T>(key: string, detail: T): void {
         document.dispatchEvent(
-            new CustomEvent(
+            new CustomEvent<T>(
                 key,
                 {
                     detail,
                     bubbles: true,
-                    composed: true,
+                    composed: true
                 }
             )
         )
     }
 
-    public static listen(
-        key: string, 
-        callback: EventFn,
-    ): void {
-        document.addEventListener(key, callback)
+    public static listen<T>(key: string, callback: EventFn<T>): void {
+        document.addEventListener(key, callback as EventListener)
     }
 
-    public static emitFilesUploadSubmitted(files: FileList): void 
-    {
-        Events.emit(
+    public static emitFilesUploadSubmitted(files: File[]): void {
+        Events.emit<File[]>(
             EVENTS.uploadFilesSubmission,
-            files,
+            files
         )
     }
 
-    public static listenToFilesUploadSubmitted(callback: EventFn): void 
-    {
-        Events.listen(
+    public static listenToFilesUploadSubmitted(callback: (files: File[]) => void): void {
+        Events.listen<File[]>(
             EVENTS.uploadFilesSubmission,
-            callback,
+            event => {
+                callback(event.detail)
+            }
         )
     }
 }

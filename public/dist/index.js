@@ -428,6 +428,37 @@ module.exports = styleTagTransform;
 
 /***/ }),
 
+/***/ "./src/Client/Component/File/FileListing/FileListing.ts":
+/*!**************************************************************!*\
+  !*** ./src/Client/Component/File/FileListing/FileListing.ts ***!
+  \**************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.FileListing = void 0;
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
+class FileListing extends Component_1.Component {
+    build() {
+        const container = Dom_1.Dom.div();
+        Events_1.Events.listenToFilesUploadSubmitted(fileList => {
+            container.append(...fileList.map(this.buildFile));
+        });
+        return container;
+    }
+    buildFile(file) {
+        const container = Dom_1.Dom.div('file');
+        container.innerText = file.name;
+        return container;
+    }
+}
+exports.FileListing = FileListing;
+
+
+/***/ }),
+
 /***/ "./src/Client/Component/File/FileUploader/FileUploader.ts":
 /*!****************************************************************!*\
   !*** ./src/Client/Component/File/FileUploader/FileUploader.ts ***!
@@ -509,7 +540,7 @@ class FileUploader extends Component_1.Component {
         return wrapper;
     }
     handleFiles(files) {
-        Events_1.Events.emitFilesUploadSubmitted(files);
+        Events_1.Events.emitFilesUploadSubmitted(Array.from(files));
     }
 }
 exports.FileUploader = FileUploader;
@@ -757,7 +788,7 @@ class Events {
         document.dispatchEvent(new CustomEvent(key, {
             detail,
             bubbles: true,
-            composed: true,
+            composed: true
         }));
     }
     static listen(key, callback) {
@@ -767,7 +798,9 @@ class Events {
         Events.emit(events_1.EVENTS.uploadFilesSubmission, files);
     }
     static listenToFilesUploadSubmitted(callback) {
-        Events.listen(events_1.EVENTS.uploadFilesSubmission, callback);
+        Events.listen(events_1.EVENTS.uploadFilesSubmission, event => {
+            callback(event.detail);
+        });
     }
 }
 exports.Events = Events;
@@ -914,6 +947,7 @@ __webpack_require__(/*! Client/styles.css */ "./src/Client/styles.css");
 const LayerListing_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerListing */ "./src/Client/Component/LayerListing/LayerListing.ts");
 const WindowBox_1 = __webpack_require__(/*! ./Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
 const FileUploader_1 = __webpack_require__(/*! ./Component/File/FileUploader/FileUploader */ "./src/Client/Component/File/FileUploader/FileUploader.ts");
+const FileListing_1 = __webpack_require__(/*! ./Component/File/FileListing/FileListing */ "./src/Client/Component/File/FileListing/FileListing.ts");
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.querySelector('canvas');
     const ctx = canvas?.getContext('2d');
@@ -921,6 +955,7 @@ document.addEventListener('DOMContentLoaded', () => {
     customElements.define('layer-listing', LayerListing_1.LayerListing);
     customElements.define('window-box', WindowBox_1.WindowBox);
     customElements.define('file-uploader', FileUploader_1.FileUploader);
+    customElements.define('file-listing', FileListing_1.FileListing);
 });
 
 })();

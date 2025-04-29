@@ -81,6 +81,8 @@ export class FileUploader extends Component {
     }
 
     private handleFiles(files: FileList) {
-        Events.emitFilesUploadSubmitted(files)
+        Events.emitFilesUploadSubmitted(
+            Array.from(files)
+        )
     }
 }
