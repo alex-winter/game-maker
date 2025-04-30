@@ -1,9 +1,11 @@
 import { Component } from "Client/Service/Component";
+import { WindowBox } from "Client/Component/WindowBox/WindowBox";
+import { Dom } from "Client/Service/Dom";
 
 export class SpriteSheetsWindowBox extends Component
 {
     protected build(): HTMLElement {
-        const windowBox = document.createElement('window-box')
+        const windowBox = Dom.component(WindowBox)
         const fileListing = document.createElement('file-listing')
         const fileUploader = document.createElement('file-uploader')
         const createNewButton = document.createElement('button')

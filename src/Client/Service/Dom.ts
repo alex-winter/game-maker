@@ -1,3 +1,5 @@
+import { COMPONENTS } from "Client/Constants/components"
+
 export class Dom 
 {
     constructor () {
@@ -13,5 +15,20 @@ export class Dom
         }
 
         return element
+    }
+
+    public static canvas(): HTMLCanvasElement
+    {
+        return document.createElement('canvas')
+    }
+
+    public static component(component: CustomElementConstructor): HTMLElement {
+        const tag = COMPONENTS.get(component)
+        
+        if (!tag) {
+            throw new Error(`Component not found in COMPONENTS map: ${component.name}`)
+        }
+
+        return document.createElement(tag)
     }
 }

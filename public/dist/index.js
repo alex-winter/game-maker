@@ -428,6 +428,30 @@ module.exports = styleTagTransform;
 
 /***/ }),
 
+/***/ "./src/Client/Component/Canvas/SpriteMaker/SpriteMaker.ts":
+/*!****************************************************************!*\
+  !*** ./src/Client/Component/Canvas/SpriteMaker/SpriteMaker.ts ***!
+  \****************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SpriteMaker = void 0;
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+class SpriteMaker extends Component_1.Component {
+    build() {
+        const element = Dom_1.Dom.div();
+        const canvas = Dom_1.Dom.canvas();
+        element.append(canvas);
+        return element;
+    }
+}
+exports.SpriteMaker = SpriteMaker;
+
+
+/***/ }),
+
 /***/ "./src/Client/Component/File/FileListing/FileListing.ts":
 /*!**************************************************************!*\
   !*** ./src/Client/Component/File/FileListing/FileListing.ts ***!
@@ -630,9 +654,11 @@ exports.SideMenu = SideMenu;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SpriteSheetsWindowBox = void 0;
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 class SpriteSheetsWindowBox extends Component_1.Component {
     build() {
-        const windowBox = document.createElement('window-box');
+        const windowBox = Dom_1.Dom.component(WindowBox_1.WindowBox);
         const fileListing = document.createElement('file-listing');
         const fileUploader = document.createElement('file-uploader');
         const createNewButton = document.createElement('button');
@@ -723,6 +749,35 @@ exports.WindowBox = WindowBox;
 
 /***/ }),
 
+/***/ "./src/Client/Constants/components.ts":
+/*!********************************************!*\
+  !*** ./src/Client/Constants/components.ts ***!
+  \********************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.COMPONENTS = void 0;
+const LayerListing_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerListing */ "./src/Client/Component/LayerListing/LayerListing.ts");
+const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
+const FileUploader_1 = __webpack_require__(/*! Client/Component/File/FileUploader/FileUploader */ "./src/Client/Component/File/FileUploader/FileUploader.ts");
+const FileListing_1 = __webpack_require__(/*! Client/Component/File/FileListing/FileListing */ "./src/Client/Component/File/FileListing/FileListing.ts");
+const SpriteSheetsWindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/SpriteSheetsWindowBox */ "./src/Client/Component/WindowBox/SpriteSheetsWindowBox.ts");
+const SpriteMaker_1 = __webpack_require__(/*! Client/Component/Canvas/SpriteMaker/SpriteMaker */ "./src/Client/Component/Canvas/SpriteMaker/SpriteMaker.ts");
+const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */ "./src/Client/Component/SideMenu/SideMenu.ts");
+exports.COMPONENTS = new Map([
+    [SideMenu_1.SideMenu, 'side-menu'],
+    [LayerListing_1.LayerListing, 'layer-listing'],
+    [WindowBox_1.WindowBox, 'window-box'],
+    [FileUploader_1.FileUploader, 'file-uploader'],
+    [FileListing_1.FileListing, 'file-listing'],
+    [SpriteSheetsWindowBox_1.SpriteSheetsWindowBox, 'sprite-sheets-window-box'],
+    [SpriteMaker_1.SpriteMaker, 'sprite-maker'],
+]);
+
+
+/***/ }),
+
 /***/ "./src/Client/Constants/events.ts":
 /*!****************************************!*\
   !*** ./src/Client/Constants/events.ts ***!
@@ -776,11 +831,12 @@ exports.Component = Component;
 /*!***********************************!*\
   !*** ./src/Client/Service/Dom.ts ***!
   \***********************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Dom = void 0;
+const components_1 = __webpack_require__(/*! Client/Constants/components */ "./src/Client/Constants/components.ts");
 class Dom {
     constructor() {
         throw new Error('Can not construct');
@@ -791,6 +847,16 @@ class Dom {
             element.classList.add(...classList);
         }
         return element;
+    }
+    static canvas() {
+        return document.createElement('canvas');
+    }
+    static component(component) {
+        const tag = components_1.COMPONENTS.get(component);
+        if (!tag) {
+            throw new Error(`Component not found in COMPONENTS map: ${component.name}`);
+        }
+        return document.createElement(tag);
     }
 }
 exports.Dom = Dom;
@@ -970,22 +1036,14 @@ var exports = __webpack_exports__;
   \*****************************/
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */ "./src/Client/Component/SideMenu/SideMenu.ts");
 __webpack_require__(/*! Client/styles.css */ "./src/Client/styles.css");
-const LayerListing_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerListing */ "./src/Client/Component/LayerListing/LayerListing.ts");
-const WindowBox_1 = __webpack_require__(/*! ./Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
-const FileUploader_1 = __webpack_require__(/*! ./Component/File/FileUploader/FileUploader */ "./src/Client/Component/File/FileUploader/FileUploader.ts");
-const FileListing_1 = __webpack_require__(/*! ./Component/File/FileListing/FileListing */ "./src/Client/Component/File/FileListing/FileListing.ts");
-const SpriteSheetsWindowBox_1 = __webpack_require__(/*! ./Component/WindowBox/SpriteSheetsWindowBox */ "./src/Client/Component/WindowBox/SpriteSheetsWindowBox.ts");
+const components_1 = __webpack_require__(/*! Client/Constants/components */ "./src/Client/Constants/components.ts");
+components_1.COMPONENTS.forEach((tagName, constructor) => {
+    customElements.define(tagName, constructor);
+});
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.querySelector('canvas');
     const ctx = canvas?.getContext('2d');
-    customElements.define('side-menu', SideMenu_1.SideMenu);
-    customElements.define('layer-listing', LayerListing_1.LayerListing);
-    customElements.define('window-box', WindowBox_1.WindowBox);
-    customElements.define('file-uploader', FileUploader_1.FileUploader);
-    customElements.define('file-listing', FileListing_1.FileListing);
-    customElements.define('sprite-sheets-window-box', SpriteSheetsWindowBox_1.SpriteSheetsWindowBox);
 });
 
 })();
