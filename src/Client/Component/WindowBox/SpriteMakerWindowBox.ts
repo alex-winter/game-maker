@@ -8,7 +8,7 @@ export class SpriteMakerWindowBox extends Component {
         const windowBox = Dom.component(WindowBox)
         const spriteMaker = Dom.component(SpriteMaker)
 
-        windowBox.dataset.title = 'Sprite Sheets'
+        windowBox.dataset.title = 'Sprite Maker'
 
         windowBox.append(
             spriteMaker,

@@ -643,6 +643,33 @@ exports.SideMenu = SideMenu;
 
 /***/ }),
 
+/***/ "./src/Client/Component/WindowBox/SpriteMakerWindowBox.ts":
+/*!****************************************************************!*\
+  !*** ./src/Client/Component/WindowBox/SpriteMakerWindowBox.ts ***!
+  \****************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SpriteMakerWindowBox = void 0;
+const SpriteMaker_1 = __webpack_require__(/*! Client/Component/Canvas/SpriteMaker/SpriteMaker */ "./src/Client/Component/Canvas/SpriteMaker/SpriteMaker.ts");
+const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+class SpriteMakerWindowBox extends Component_1.Component {
+    build() {
+        const windowBox = Dom_1.Dom.component(WindowBox_1.WindowBox);
+        const spriteMaker = Dom_1.Dom.component(SpriteMaker_1.SpriteMaker);
+        windowBox.dataset.title = 'Sprite Maker';
+        windowBox.append(spriteMaker);
+        return windowBox;
+    }
+}
+exports.SpriteMakerWindowBox = SpriteMakerWindowBox;
+
+
+/***/ }),
+
 /***/ "./src/Client/Component/WindowBox/SpriteSheetsWindowBox.ts":
 /*!*****************************************************************!*\
   !*** ./src/Client/Component/WindowBox/SpriteSheetsWindowBox.ts ***!
@@ -654,6 +681,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SpriteSheetsWindowBox = void 0;
 const FileListing_1 = __webpack_require__(/*! Client/Component/File/FileListing/FileListing */ "./src/Client/Component/File/FileListing/FileListing.ts");
 const FileUploader_1 = __webpack_require__(/*! Client/Component/File/FileUploader/FileUploader */ "./src/Client/Component/File/FileUploader/FileUploader.ts");
+const SpriteMakerWindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/SpriteMakerWindowBox */ "./src/Client/Component/WindowBox/SpriteMakerWindowBox.ts");
 const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
@@ -664,8 +692,12 @@ class SpriteSheetsWindowBox extends Component_1.Component {
         const fileUploader = Dom_1.Dom.component(FileUploader_1.FileUploader);
         const createNewButton = Dom_1.Dom.button('Create New');
         windowBox.dataset.title = 'Sprite Sheets';
+        createNewButton.addEventListener('click', this.handleCreateNewClick.bind(this));
         windowBox.append(fileListing, fileUploader, createNewButton);
         return windowBox;
+    }
+    handleCreateNewClick() {
+        document.body.append(Dom_1.Dom.component(SpriteMakerWindowBox_1.SpriteMakerWindowBox));
     }
 }
 exports.SpriteSheetsWindowBox = SpriteSheetsWindowBox;
@@ -766,6 +798,7 @@ const FileListing_1 = __webpack_require__(/*! Client/Component/File/FileListing/
 const SpriteSheetsWindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/SpriteSheetsWindowBox */ "./src/Client/Component/WindowBox/SpriteSheetsWindowBox.ts");
 const SpriteMaker_1 = __webpack_require__(/*! Client/Component/Canvas/SpriteMaker/SpriteMaker */ "./src/Client/Component/Canvas/SpriteMaker/SpriteMaker.ts");
 const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */ "./src/Client/Component/SideMenu/SideMenu.ts");
+const SpriteMakerWindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/SpriteMakerWindowBox */ "./src/Client/Component/WindowBox/SpriteMakerWindowBox.ts");
 exports.COMPONENTS = new Map([
     [SideMenu_1.SideMenu, 'side-menu'],
     [LayerListing_1.LayerListing, 'layer-listing'],
@@ -774,6 +807,7 @@ exports.COMPONENTS = new Map([
     [FileListing_1.FileListing, 'file-listing'],
     [SpriteSheetsWindowBox_1.SpriteSheetsWindowBox, 'sprite-sheets-window-box'],
     [SpriteMaker_1.SpriteMaker, 'sprite-maker'],
+    [SpriteMakerWindowBox_1.SpriteMakerWindowBox, 'sprite-maker-window-box'],
 ]);
 
 
