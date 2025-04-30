@@ -1,5 +1,6 @@
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
+import { DragAndDropTrait } from 'Client/Component/DragAndDropTrait'
 
 export class WindowBox extends Component {
     private isDragging = false
@@ -50,33 +51,8 @@ export class WindowBox extends Component {
 
         element.innerText = this.dataset.title || ''
 
-        element.addEventListener('mousedown', this.handleMouseDown.bind(this))
+        element.addEventListener('mousedown', DragAndDropTrait.bind(this))
 
         return element
-    }
-
-    private handleMouseDown(e: MouseEvent): void {
-        this.isDragging = true
-
-        const rect = this.getBoundingClientRect()
-
-        this.offsetX = e.clientX - rect.left
-        this.offsetY = e.clientY - rect.top
-
-        const onMouseMove = (e: MouseEvent) => {
-            if (this.isDragging) {
-                this.style.left = `${e.clientX - this.offsetX}px`
-                this.style.top = `${e.clientY - this.offsetY}px`
-            }
-        }
-
-        const onMouseUp = () => {
-            this.isDragging = false
-            document.removeEventListener('mousemove', onMouseMove)
-            document.removeEventListener('mouseup', onMouseUp)
-        }
-
-        document.addEventListener('mousemove', onMouseMove)
-        document.addEventListener('mouseup', onMouseUp)
     }
 }

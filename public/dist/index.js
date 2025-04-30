@@ -452,6 +452,48 @@ exports.SpriteMaker = SpriteMaker;
 
 /***/ }),
 
+/***/ "./src/Client/Component/DragAndDropTrait.ts":
+/*!**************************************************!*\
+  !*** ./src/Client/Component/DragAndDropTrait.ts ***!
+  \**************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.DragAndDropTrait = void 0;
+const HtmlElementTrait_1 = __webpack_require__(/*! Client/Service/HtmlElementTrait */ "./src/Client/Service/HtmlElementTrait.ts");
+class DragAndDropTrait extends HtmlElementTrait_1.HtmlElementTrait {
+    isDragging = false;
+    offsetX = 0;
+    offsetY = 0;
+    method(event) {
+        this.isDragging = true;
+        const rect = this.getBoundingClientRect();
+        this.offsetX = event.clientX - rect.left;
+        this.offsetY = event.clientY - rect.top;
+        const onMouseMove = (e) => {
+            if (this.isDragging) {
+                this.style.left = `${e.clientX - this.offsetX}px`;
+                this.style.top = `${e.clientY - this.offsetY}px`;
+            }
+        };
+        const onMouseUp = () => {
+            this.isDragging = false;
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    }
+    static bind(that) {
+        return new DragAndDropTrait().method.bind(that);
+    }
+}
+exports.DragAndDropTrait = DragAndDropTrait;
+
+
+/***/ }),
+
 /***/ "./src/Client/Component/File/FileListing/FileListing.ts":
 /*!**************************************************************!*\
   !*** ./src/Client/Component/File/FileListing/FileListing.ts ***!
@@ -716,6 +758,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WindowBox = void 0;
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const DragAndDropTrait_1 = __webpack_require__(/*! Client/Component/DragAndDropTrait */ "./src/Client/Component/DragAndDropTrait.ts");
 class WindowBox extends Component_1.Component {
     isDragging = false;
     offsetX = 0;
@@ -754,27 +797,8 @@ class WindowBox extends Component_1.Component {
     buildHeader() {
         const element = Dom_1.Dom.div('header');
         element.innerText = this.dataset.title || '';
-        element.addEventListener('mousedown', this.handleMouseDown.bind(this));
+        element.addEventListener('mousedown', DragAndDropTrait_1.DragAndDropTrait.bind(this));
         return element;
-    }
-    handleMouseDown(e) {
-        this.isDragging = true;
-        const rect = this.getBoundingClientRect();
-        this.offsetX = e.clientX - rect.left;
-        this.offsetY = e.clientY - rect.top;
-        const onMouseMove = (e) => {
-            if (this.isDragging) {
-                this.style.left = `${e.clientX - this.offsetX}px`;
-                this.style.top = `${e.clientY - this.offsetY}px`;
-            }
-        };
-        const onMouseUp = () => {
-            this.isDragging = false;
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-        };
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
     }
 }
 exports.WindowBox = WindowBox;
@@ -951,6 +975,26 @@ class Events {
     }
 }
 exports.Events = Events;
+
+
+/***/ }),
+
+/***/ "./src/Client/Service/HtmlElementTrait.ts":
+/*!************************************************!*\
+  !*** ./src/Client/Service/HtmlElementTrait.ts ***!
+  \************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.HtmlElementTrait = void 0;
+class HtmlElementTrait {
+    style;
+    getBoundingClientRect() {
+        return new DOMRect;
+    }
+}
+exports.HtmlElementTrait = HtmlElementTrait;
 
 
 /***/ }),
