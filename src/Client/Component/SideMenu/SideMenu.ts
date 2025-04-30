@@ -1,8 +1,7 @@
-import { Dom } from "Client/Service/Dom";
-import { Component } from "Client/Service/Component";
+import { Component } from 'Client/Service/Component'
+import { Dom } from 'Client/Service/Dom'
 
-export class SideMenu extends Component
-{
+export class SideMenu extends Component {
     protected css(): string {
         return /*css*/`
             :host {
@@ -18,7 +17,7 @@ export class SideMenu extends Component
 
     protected build(): HTMLElement {
         const container = Dom.div()
-        const slot = document.createElement('slot')
+        const slot = Dom.slot()
 
         container.append(slot)
 

@@ -1,5 +1,5 @@
 {
-  "name": "alex-winters-app",
+  "name": "alex-winter-game-maker",
   "scripts": {
     "start:client": "webpack --watch",
     "start:server": "webpack --config webpack.server.config.js --watch"
@@ -12,7 +12,6 @@
     "@typescript-eslint/eslint-plugin": "^7.15.0",
     "@typescript-eslint/parser": "^7.15.0",
     "css-loader": "^7.1.2",
-    "eslint": "^8.57.0",
     "file-loader": "^6.2.0",
     "sass": "^1.77.8",
     "sass-loader": "^14.2.1",

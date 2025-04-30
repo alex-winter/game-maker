@@ -1,6 +1,6 @@
-import { Component } from "Client/Service/Component";
-import { Dom } from "Client/Service/Dom";
-import { Events } from "Client/Service/Events";
+import { Component } from 'Client/Service/Component'
+import { Dom } from 'Client/Service/Dom'
+import { Events } from 'Client/Service/Events'
 
 export class FileListing extends Component {
     protected build(): HTMLElement {
@@ -15,8 +15,7 @@ export class FileListing extends Component {
         return container
     }
 
-    private buildFile(file: File): HTMLElement
-    {
+    private buildFile(file: File): HTMLElement {
         const container = Dom.div('file')
 
         container.innerText = file.name

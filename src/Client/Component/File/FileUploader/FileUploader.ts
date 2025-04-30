@@ -1,8 +1,10 @@
-import { Component } from "Client/Service/Component";
-import { Dom } from "Client/Service/Dom";
-import { Events } from "Client/Service/Events";
+import { Component } from 'Client/Service/Component'
+import { Dom } from 'Client/Service/Dom'
+import { Events } from 'Client/Service/Events'
 
 export class FileUploader extends Component {
+    private readonly container: HTMLDivElement = Dom.div('uploader')
+
     protected css(): string {
         return /*css*/`
             :host {
@@ -36,52 +38,59 @@ export class FileUploader extends Component {
             input[type="file"] {
                 display: none;
             }
-        `;
+        `
     }
 
     protected build(): HTMLElement {
-        const container = Dom.div('uploader');
-        container.textContent = "Drag & drop files here";
+        this.container.textContent = 'Drag & drop files here'
 
-        container.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            container.classList.add('dragover');
-        });
+        this.container.addEventListener('dragover', this.handleDragOver.bind(this))
+        this.container.addEventListener('dragleave', this.handleDragLeave.bind(this))
+        this.container.addEventListener('drop', this.handleDragDrop.bind(this))
 
-        container.addEventListener('dragleave', () => {
-            container.classList.remove('dragover');
-        });
-
-        container.addEventListener('drop', (e: DragEvent) => {
-            e.preventDefault();
-            container.classList.remove('dragover');
-            if (e.dataTransfer?.files) {
-                this.handleFiles(e.dataTransfer.files);
-            }
-        });
-
-        const input = document.createElement('input');
-        input.type = 'file'
-        input.webkitdirectory = true
-        input.multiple = true
+        const input = Dom.multiFileInputWithDir()
 
         input.addEventListener('change', () => {
             if (input.files) {
-                this.handleFiles(input.files);
+                this.handleFiles(input.files)
             }
-        });
+        })
 
-        const button = Dom.div('upload-button')
-        button.textContent = 'Select Files'
+        const button = Dom.button('Select Files', 'upload-button')
         button.addEventListener('click', () => input.click())
 
         const wrapper = Dom.div()
-        wrapper.append(container, button, input);
 
-        return wrapper;
+        wrapper.append(
+            this.container,
+            button,
+            input,
+        )
+
+        return wrapper
     }
 
-    private handleFiles(files: FileList) {
+    private handleDragOver(event: DragEvent): void {
+        event.preventDefault()
+
+        this.container.classList.add('dragover')
+    }
+
+    private handleDragLeave(event: DragEvent): void {
+        this.container.classList.remove('dragover')
+    }
+
+    private handleDragDrop(event: DragEvent): void {
+        event.preventDefault()
+
+        this.container.classList.remove('dragover')
+
+        if (event.dataTransfer?.files) {
+            this.handleFiles(event.dataTransfer.files)
+        }
+    }
+
+    private handleFiles(files: FileList): void {
         Events.emitFilesUploadSubmitted(
             Array.from(files)
         )

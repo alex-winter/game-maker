@@ -1,9 +1,9 @@
-import { EVENTS } from "Client/Constants/events"
+import { EVENTS } from 'Client/Constants/events'
 
 type EventFn<T = any> = (event: CustomEvent<T>) => void
 
 export class Events {
-    constructor () {
+    constructor() {
         throw new Error('Can not construct')
     }
 
@@ -20,7 +20,10 @@ export class Events {
         )
     }
 
-    public static listen<T>(key: string, callback: EventFn<T>): void {
+    public static listen<T>(
+        key: string,
+        callback: EventFn<T>,
+    ): void {
         document.addEventListener(key, callback as EventListener)
     }
 

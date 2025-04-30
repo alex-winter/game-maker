@@ -1,13 +1,11 @@
-import { COMPONENTS } from "Client/Constants/components"
+import { COMPONENTS } from 'Client/Constants/components'
 
-export class Dom 
-{
-    constructor () {
+export class Dom {
+    constructor() {
         throw new Error('Can not construct')
     }
 
-    public static div(...classList: string[]): HTMLDivElement
-    {
+    public static div(...classList: string[]): HTMLDivElement {
         const element = document.createElement('div')
 
         if (classList.length) {
@@ -17,14 +15,39 @@ export class Dom
         return element
     }
 
-    public static canvas(): HTMLCanvasElement
-    {
+    public static canvas(): HTMLCanvasElement {
         return document.createElement('canvas')
+    }
+
+    public static button(text: string, ...classList: string[]): HTMLButtonElement {
+        const element = document.createElement('button')
+
+        element.innerText = text
+
+        if (classList.length) {
+            element.classList.add(...classList)
+        }
+
+        return element
+    }
+
+    public static slot(): HTMLSlotElement {
+        return document.createElement('slot')
+    }
+
+    public static multiFileInputWithDir(): HTMLInputElement {
+        const element = document.createElement('input')
+
+        element.type = 'file'
+        element.webkitdirectory = true
+        element.multiple = true
+
+        return element
     }
 
     public static component(component: CustomElementConstructor): HTMLElement {
         const tag = COMPONENTS.get(component)
-        
+
         if (!tag) {
             throw new Error(`Component not found in COMPONENTS map: ${component.name}`)
         }

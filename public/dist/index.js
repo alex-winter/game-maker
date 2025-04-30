@@ -496,6 +496,7 @@ const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/C
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class FileUploader extends Component_1.Component {
+    container = Dom_1.Dom.div('uploader');
     css() {
         return /*css*/ `
             :host {
@@ -532,37 +533,35 @@ class FileUploader extends Component_1.Component {
         `;
     }
     build() {
-        const container = Dom_1.Dom.div('uploader');
-        container.textContent = "Drag & drop files here";
-        container.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            container.classList.add('dragover');
-        });
-        container.addEventListener('dragleave', () => {
-            container.classList.remove('dragover');
-        });
-        container.addEventListener('drop', (e) => {
-            e.preventDefault();
-            container.classList.remove('dragover');
-            if (e.dataTransfer?.files) {
-                this.handleFiles(e.dataTransfer.files);
-            }
-        });
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.webkitdirectory = true;
-        input.multiple = true;
+        this.container.textContent = 'Drag & drop files here';
+        this.container.addEventListener('dragover', this.handleDragOver.bind(this));
+        this.container.addEventListener('dragleave', this.handleDragLeave.bind(this));
+        this.container.addEventListener('drop', this.handleDragDrop.bind(this));
+        const input = Dom_1.Dom.multiFileInputWithDir();
         input.addEventListener('change', () => {
             if (input.files) {
                 this.handleFiles(input.files);
             }
         });
-        const button = Dom_1.Dom.div('upload-button');
-        button.textContent = 'Select Files';
+        const button = Dom_1.Dom.button('Select Files', 'upload-button');
         button.addEventListener('click', () => input.click());
         const wrapper = Dom_1.Dom.div();
-        wrapper.append(container, button, input);
+        wrapper.append(this.container, button, input);
         return wrapper;
+    }
+    handleDragOver(event) {
+        event.preventDefault();
+        this.container.classList.add('dragover');
+    }
+    handleDragLeave(event) {
+        this.container.classList.remove('dragover');
+    }
+    handleDragDrop(event) {
+        event.preventDefault();
+        this.container.classList.remove('dragover');
+        if (event.dataTransfer?.files) {
+            this.handleFiles(event.dataTransfer.files);
+        }
     }
     handleFiles(files) {
         Events_1.Events.emitFilesUploadSubmitted(Array.from(files));
@@ -617,8 +616,8 @@ exports.LayerListing = LayerListing;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SideMenu = void 0;
-const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 class SideMenu extends Component_1.Component {
     css() {
         return /*css*/ `
@@ -634,7 +633,7 @@ class SideMenu extends Component_1.Component {
     }
     build() {
         const container = Dom_1.Dom.div();
-        const slot = document.createElement('slot');
+        const slot = Dom_1.Dom.slot();
         container.append(slot);
         return container;
     }
@@ -653,16 +652,17 @@ exports.SideMenu = SideMenu;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SpriteSheetsWindowBox = void 0;
-const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const FileListing_1 = __webpack_require__(/*! Client/Component/File/FileListing/FileListing */ "./src/Client/Component/File/FileListing/FileListing.ts");
+const FileUploader_1 = __webpack_require__(/*! Client/Component/File/FileUploader/FileUploader */ "./src/Client/Component/File/FileUploader/FileUploader.ts");
 const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 class SpriteSheetsWindowBox extends Component_1.Component {
     build() {
         const windowBox = Dom_1.Dom.component(WindowBox_1.WindowBox);
-        const fileListing = document.createElement('file-listing');
-        const fileUploader = document.createElement('file-uploader');
-        const createNewButton = document.createElement('button');
-        createNewButton.innerText = 'Create New';
+        const fileListing = Dom_1.Dom.component(FileListing_1.FileListing);
+        const fileUploader = Dom_1.Dom.component(FileUploader_1.FileUploader);
+        const createNewButton = Dom_1.Dom.button('Create New');
         windowBox.dataset.title = 'Sprite Sheets';
         windowBox.append(fileListing, fileUploader, createNewButton);
         return windowBox;
@@ -714,7 +714,7 @@ class WindowBox extends Component_1.Component {
     build() {
         const container = Dom_1.Dom.div();
         const content = Dom_1.Dom.div('content');
-        const slot = document.createElement('slot');
+        const slot = Dom_1.Dom.slot();
         content.append(slot);
         container.append(this.buildHeader(), content);
         return container;
@@ -722,26 +722,27 @@ class WindowBox extends Component_1.Component {
     buildHeader() {
         const element = Dom_1.Dom.div('header');
         element.innerText = this.dataset.title || '';
-        element.addEventListener('mousedown', (e) => {
-            this.isDragging = true;
-            const rect = this.getBoundingClientRect();
-            this.offsetX = e.clientX - rect.left;
-            this.offsetY = e.clientY - rect.top;
-            const onMouseMove = (e) => {
-                if (this.isDragging) {
-                    this.style.left = `${e.clientX - this.offsetX}px`;
-                    this.style.top = `${e.clientY - this.offsetY}px`;
-                }
-            };
-            const onMouseUp = () => {
-                this.isDragging = false;
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
-            };
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
-        });
+        element.addEventListener('mousedown', this.handleMouseDown.bind(this));
         return element;
+    }
+    handleMouseDown(e) {
+        this.isDragging = true;
+        const rect = this.getBoundingClientRect();
+        this.offsetX = e.clientX - rect.left;
+        this.offsetY = e.clientY - rect.top;
+        const onMouseMove = (e) => {
+            if (this.isDragging) {
+                this.style.left = `${e.clientX - this.offsetX}px`;
+                this.style.top = `${e.clientY - this.offsetY}px`;
+            }
+        };
+        const onMouseUp = () => {
+            this.isDragging = false;
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
     }
 }
 exports.WindowBox = WindowBox;
@@ -850,6 +851,24 @@ class Dom {
     }
     static canvas() {
         return document.createElement('canvas');
+    }
+    static button(text, ...classList) {
+        const element = document.createElement('button');
+        element.innerText = text;
+        if (classList.length) {
+            element.classList.add(...classList);
+        }
+        return element;
+    }
+    static slot() {
+        return document.createElement('slot');
+    }
+    static multiFileInputWithDir() {
+        const element = document.createElement('input');
+        element.type = 'file';
+        element.webkitdirectory = true;
+        element.multiple = true;
+        return element;
     }
     static component(component) {
         const tag = components_1.COMPONENTS.get(component);

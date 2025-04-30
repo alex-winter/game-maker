@@ -1,9 +1,8 @@
-import { Component } from "Client/Service/Component";
-import { Dom } from "Client/Service/Dom";
-import { Layer } from "Model/Layer";
+import { Component } from 'Client/Service/Component'
+import { Dom } from 'Client/Service/Dom'
+import { Layer } from 'Model/Layer'
 
-export class LayerListing extends Component
-{
+export class LayerListing extends Component {
     protected build(): HTMLElement {
         const container = Dom.div()
 

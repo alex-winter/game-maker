@@ -1,16 +1,15 @@
-import { Component } from "Client/Service/Component";
-import { WindowBox } from "Client/Component/WindowBox/WindowBox";
-import { Dom } from "Client/Service/Dom";
+import { FileListing } from 'Client/Component/File/FileListing/FileListing'
+import { FileUploader } from 'Client/Component/File/FileUploader/FileUploader'
+import { WindowBox } from 'Client/Component/WindowBox/WindowBox'
+import { Component } from 'Client/Service/Component'
+import { Dom } from 'Client/Service/Dom'
 
-export class SpriteSheetsWindowBox extends Component
-{
+export class SpriteSheetsWindowBox extends Component {
     protected build(): HTMLElement {
         const windowBox = Dom.component(WindowBox)
-        const fileListing = document.createElement('file-listing')
-        const fileUploader = document.createElement('file-uploader')
-        const createNewButton = document.createElement('button')
-
-        createNewButton.innerText = 'Create New'
+        const fileListing = Dom.component(FileListing)
+        const fileUploader = Dom.component(FileUploader)
+        const createNewButton = Dom.button('Create New')
 
         windowBox.dataset.title = 'Sprite Sheets'
 
