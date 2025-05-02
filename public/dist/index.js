@@ -452,48 +452,6 @@ exports.SpriteMaker = SpriteMaker;
 
 /***/ }),
 
-/***/ "./src/Client/Component/DragAndDropTrait.ts":
-/*!**************************************************!*\
-  !*** ./src/Client/Component/DragAndDropTrait.ts ***!
-  \**************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.DragAndDropTrait = void 0;
-const HtmlElementTrait_1 = __webpack_require__(/*! Client/Service/HtmlElementTrait */ "./src/Client/Service/HtmlElementTrait.ts");
-class DragAndDropTrait extends HtmlElementTrait_1.HtmlElementTrait {
-    isDragging = false;
-    offsetX = 0;
-    offsetY = 0;
-    method(event) {
-        this.isDragging = true;
-        const rect = this.getBoundingClientRect();
-        this.offsetX = event.clientX - rect.left;
-        this.offsetY = event.clientY - rect.top;
-        const onMouseMove = (e) => {
-            if (this.isDragging) {
-                this.style.left = `${e.clientX - this.offsetX}px`;
-                this.style.top = `${e.clientY - this.offsetY}px`;
-            }
-        };
-        const onMouseUp = () => {
-            this.isDragging = false;
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-        };
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-    }
-    static bind(that) {
-        return new DragAndDropTrait().method.bind(that);
-    }
-}
-exports.DragAndDropTrait = DragAndDropTrait;
-
-
-/***/ }),
-
 /***/ "./src/Client/Component/File/FileListing/FileListing.ts":
 /*!**************************************************************!*\
   !*** ./src/Client/Component/File/FileListing/FileListing.ts ***!
@@ -610,6 +568,39 @@ class FileUploader extends Component_1.Component {
     }
 }
 exports.FileUploader = FileUploader;
+
+
+/***/ }),
+
+/***/ "./src/Client/Component/Generic/handleDragAndDrop.ts":
+/*!***********************************************************!*\
+  !*** ./src/Client/Component/Generic/handleDragAndDrop.ts ***!
+  \***********************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.handleDragAndDrop = void 0;
+function handleDragAndDrop(element, event) {
+    element.isDragging = true;
+    const rect = element.getBoundingClientRect();
+    element.offsetX = event.clientX - rect.left;
+    element.offsetY = event.clientY - rect.top;
+    const onMouseMove = (e) => {
+        if (element.isDragging) {
+            element.style.left = `${e.clientX - element.offsetX}px`;
+            element.style.top = `${e.clientY - element.offsetY}px`;
+        }
+    };
+    const onMouseUp = () => {
+        element.isDragging = false;
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+    };
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+}
+exports.handleDragAndDrop = handleDragAndDrop;
 
 
 /***/ }),
@@ -756,9 +747,9 @@ exports.SpriteSheetsWindowBox = SpriteSheetsWindowBox;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WindowBox = void 0;
+const handleDragAndDrop_1 = __webpack_require__(/*! Client/Component/Generic/handleDragAndDrop */ "./src/Client/Component/Generic/handleDragAndDrop.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
-const DragAndDropTrait_1 = __webpack_require__(/*! Client/Component/DragAndDropTrait */ "./src/Client/Component/DragAndDropTrait.ts");
 class WindowBox extends Component_1.Component {
     isDragging = false;
     offsetX = 0;
@@ -797,7 +788,7 @@ class WindowBox extends Component_1.Component {
     buildHeader() {
         const element = Dom_1.Dom.div('header');
         element.innerText = this.dataset.title || '';
-        element.addEventListener('mousedown', DragAndDropTrait_1.DragAndDropTrait.bind(this));
+        element.addEventListener('mousedown', (e) => (0, handleDragAndDrop_1.handleDragAndDrop)(this, e));
         return element;
     }
 }
@@ -975,26 +966,6 @@ class Events {
     }
 }
 exports.Events = Events;
-
-
-/***/ }),
-
-/***/ "./src/Client/Service/HtmlElementTrait.ts":
-/*!************************************************!*\
-  !*** ./src/Client/Service/HtmlElementTrait.ts ***!
-  \************************************************/
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.HtmlElementTrait = void 0;
-class HtmlElementTrait {
-    style;
-    getBoundingClientRect() {
-        return new DOMRect;
-    }
-}
-exports.HtmlElementTrait = HtmlElementTrait;
 
 
 /***/ }),

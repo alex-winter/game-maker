@@ -1,11 +1,11 @@
+import { DraggableHTMLElement, handleDragAndDrop } from 'Client/Component/Generic/handleDragAndDrop'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
-import { DragAndDropTrait } from 'Client/Component/DragAndDropTrait'
 
-export class WindowBox extends Component {
-    private isDragging = false
-    private offsetX = 0
-    private offsetY = 0
+export class WindowBox extends Component implements DraggableHTMLElement {
+    isDragging = false
+    offsetX = 0
+    offsetY = 0
 
     protected css(): string {
         return /*css*/`
@@ -51,7 +51,7 @@ export class WindowBox extends Component {
 
         element.innerText = this.dataset.title || ''
 
-        element.addEventListener('mousedown', DragAndDropTrait.bind(this))
+        element.addEventListener('mousedown', (e) => handleDragAndDrop(this, e))
 
         return element
     }
