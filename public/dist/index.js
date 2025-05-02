@@ -710,8 +710,10 @@ class SpriteMakerWindowBox extends Component_1.Component {
     build() {
         const windowBox = Dom_1.Dom.component(WindowBox_1.WindowBox);
         const spriteMaker = Dom_1.Dom.component(SpriteMaker_1.SpriteMaker);
+        const testImage = document.createElement('img');
+        testImage.src = this.dataset.imageSrc;
         windowBox.dataset.title = 'Sprite Maker';
-        windowBox.append(spriteMaker);
+        windowBox.append(spriteMaker, testImage);
         return windowBox;
     }
 }
@@ -937,12 +939,14 @@ class Dom {
         element.multiple = true;
         return element;
     }
-    static component(component) {
+    static component(component, dataset = {}) {
         const tag = components_1.COMPONENTS.get(component);
         if (!tag) {
             throw new Error(`Component not found in COMPONENTS map: ${component.name}`);
         }
-        return document.createElement(tag);
+        const element = document.createElement(tag);
+        Object.assign(element.dataset, dataset);
+        return element;
     }
 }
 exports.Dom = Dom;
@@ -1018,6 +1022,31 @@ class FileUpload {
     }
 }
 exports.FileUpload = FileUpload;
+
+
+/***/ }),
+
+/***/ "./src/Client/Service/fileToBase64.ts":
+/*!********************************************!*\
+  !*** ./src/Client/Service/fileToBase64.ts ***!
+  \********************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.fileToBase64 = void 0;
+async function fileToBase64(file) {
+    if (file === null) {
+        return '';
+    }
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+exports.fileToBase64 = fileToBase64;
 
 
 /***/ }),
@@ -1162,6 +1191,7 @@ const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/
 const FileUpload_1 = __webpack_require__(/*! Client/Service/FileUpload */ "./src/Client/Service/FileUpload.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const SpriteMakerWindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/SpriteMakerWindowBox */ "./src/Client/Component/WindowBox/SpriteMakerWindowBox.ts");
+const fileToBase64_1 = __webpack_require__(/*! Client/Service/fileToBase64 */ "./src/Client/Service/fileToBase64.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
@@ -1172,8 +1202,8 @@ document.addEventListener('DOMContentLoaded', () => {
 Events_1.Events.listenToFilesUploadSubmitted(files => {
     FileUpload_1.FileUpload.uploadMultiple(files);
 });
-Events_1.Events.listenToOpenSheet(file => {
-    document.body.append(Dom_1.Dom.component(SpriteMakerWindowBox_1.SpriteMakerWindowBox));
+Events_1.Events.listenToOpenSheet(async (file) => {
+    document.body.append(Dom_1.Dom.component(SpriteMakerWindowBox_1.SpriteMakerWindowBox, { imageSrc: await (0, fileToBase64_1.fileToBase64)(file) }));
 });
 
 })();

@@ -45,13 +45,23 @@ export class Dom {
         return element
     }
 
-    public static component(component: CustomElementConstructor): HTMLElement {
+    public static component(
+        component: CustomElementConstructor,
+        dataset: Object = {},
+    ): HTMLElement {
         const tag = COMPONENTS.get(component)
 
         if (!tag) {
             throw new Error(`Component not found in COMPONENTS map: ${component.name}`)
         }
 
-        return document.createElement(tag)
+        const element = document.createElement(tag)
+
+        Object.assign(
+            element.dataset,
+            dataset
+        )
+
+        return element
     }
 }

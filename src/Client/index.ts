@@ -4,6 +4,7 @@ import { Events } from 'Client/Service/Events'
 import { FileUpload } from 'Client/Service/FileUpload'
 import { Dom } from 'Client/Service/Dom'
 import { SpriteMakerWindowBox } from 'Client/Component/WindowBox/SpriteMakerWindowBox'
+import { fileToBase64 } from 'Client/Service/fileToBase64'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -18,8 +19,8 @@ Events.listenToFilesUploadSubmitted(files => {
     FileUpload.uploadMultiple(files)
 })
 
-Events.listenToOpenSheet(file => {
+Events.listenToOpenSheet(async file => {
     document.body.append(
-        Dom.component(SpriteMakerWindowBox)
+        Dom.component(SpriteMakerWindowBox, { imageSrc: await fileToBase64(file) })
     )
 })
