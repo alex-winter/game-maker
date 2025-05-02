@@ -642,6 +642,7 @@ function handleDragAndDrop(element, event) {
         if (element.isDragging) {
             element.style.left = `${e.clientX - element.offsetX}px`;
             element.style.top = `${e.clientY - element.offsetY}px`;
+            element.style.transform = 'none';
         }
     };
     const onMouseUp = () => {
@@ -817,8 +818,9 @@ class WindowBox extends Component_1.Component {
         return /*css*/ `
             :host {
                 position: fixed;
-                top: 0;
-                left: 0;
+                top: 50%;
+                left: 50%;
+                transform: translateX(-50%) translateY(-50%);
                 cursor: default;
                 z-index: 1001;
             }
@@ -828,6 +830,21 @@ class WindowBox extends Component_1.Component {
                 padding: 10px;
                 cursor: move;
                 user-select: none;
+                display: flex;
+            }
+
+            .header > div {
+                flex: 1;
+            }
+
+            .options {
+                display:flex;
+                justify-content: flex-end;
+            }
+
+            .close:hover {
+                color: red;
+                cursor: pointer;
             }
 
             .content {
@@ -848,8 +865,15 @@ class WindowBox extends Component_1.Component {
     }
     buildHeader() {
         const element = Dom_1.Dom.div('header');
-        element.innerText = this.dataset.title || '';
+        const title = Dom_1.Dom.div();
+        const options = Dom_1.Dom.div('options');
+        const close = Dom_1.Dom.div('close');
+        close.innerText = 'x';
+        title.innerText = this.dataset.title || '';
         element.addEventListener('mousedown', (e) => (0, handleDragAndDrop_1.handleDragAndDrop)(this, e));
+        close.addEventListener('click', (e) => this.remove());
+        options.append(close);
+        element.append(title, options);
         return element;
     }
 }

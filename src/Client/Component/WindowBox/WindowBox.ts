@@ -20,8 +20,9 @@ export class WindowBox extends Component implements DraggableHTMLElement {
         return /*css*/`
             :host {
                 position: fixed;
-                top: 0;
-                left: 0;
+                top: 50%;
+                left: 50%;
+                transform: translateX(-50%) translateY(-50%);
                 cursor: default;
                 z-index: 1001;
             }
@@ -31,6 +32,21 @@ export class WindowBox extends Component implements DraggableHTMLElement {
                 padding: 10px;
                 cursor: move;
                 user-select: none;
+                display: flex;
+            }
+
+            .header > div {
+                flex: 1;
+            }
+
+            .options {
+                display:flex;
+                justify-content: flex-end;
+            }
+
+            .close:hover {
+                color: red;
+                cursor: pointer;
             }
 
             .content {
@@ -60,10 +76,23 @@ export class WindowBox extends Component implements DraggableHTMLElement {
 
     private buildHeader(): HTMLElement {
         const element = Dom.div('header')
+        const title = Dom.div()
+        const options = Dom.div('options')
+        const close = Dom.div('close')
 
-        element.innerText = this.dataset.title || ''
+        close.innerText = 'x'
+
+        title.innerText = this.dataset.title || ''
 
         element.addEventListener('mousedown', (e) => handleDragAndDrop(this, e))
+        close.addEventListener('click', (e) => this.remove())
+
+        options.append(close)
+
+        element.append(
+            title,
+            options,
+        )
 
         return element
     }

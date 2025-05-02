@@ -16,6 +16,7 @@ export function handleDragAndDrop(element: DraggableHTMLElement, event: MouseEve
         if (element.isDragging) {
             element.style.left = `${e.clientX - element.offsetX}px`
             element.style.top = `${e.clientY - element.offsetY}px`
+            element.style.transform = 'none'
         }
     }
 
