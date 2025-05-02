@@ -856,6 +856,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.EVENTS = void 0;
 exports.EVENTS = {
     uploadFilesSubmission: 'upload-files-submission',
+    openSheet: 'open-sheet',
 };
 
 
@@ -983,6 +984,11 @@ class Events {
     }
     static emitOpenSheet(file = null) {
         this.emit('open-sheet', file);
+    }
+    static listenToOpenSheet(callback) {
+        Events.listen(events_1.EVENTS.openSheet, event => {
+            callback(event.detail);
+        });
     }
 }
 exports.Events = Events;
@@ -1154,6 +1160,8 @@ __webpack_require__(/*! Client/styles.css */ "./src/Client/styles.css");
 const components_1 = __webpack_require__(/*! Client/Constants/components */ "./src/Client/Constants/components.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 const FileUpload_1 = __webpack_require__(/*! Client/Service/FileUpload */ "./src/Client/Service/FileUpload.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const SpriteMakerWindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/SpriteMakerWindowBox */ "./src/Client/Component/WindowBox/SpriteMakerWindowBox.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
@@ -1163,6 +1171,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 Events_1.Events.listenToFilesUploadSubmitted(files => {
     FileUpload_1.FileUpload.uploadMultiple(files);
+});
+Events_1.Events.listenToOpenSheet(file => {
+    document.body.append(Dom_1.Dom.component(SpriteMakerWindowBox_1.SpriteMakerWindowBox));
 });
 
 })();
