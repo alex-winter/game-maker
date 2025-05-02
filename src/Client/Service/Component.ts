@@ -1,32 +1,33 @@
-export abstract class Component extends HTMLElement
-{
+export abstract class Component extends HTMLElement {
     private readonly shadow: ShadowRoot
 
-    constructor () {
+    constructor() {
         super()
 
-        this.shadow = this.attachShadow({mode: 'open'})
+        this.shadow = this.attachShadow({ mode: 'open' })
     }
 
     protected abstract build(): HTMLElement
-    
-    protected css(): string
-    {
+
+    protected css(): string {
         return ''
     }
 
-    protected connectedCallback(): void 
-    {
-        const css = this.css().trim()
+    protected async setup(): Promise<void> { }
 
-        if (css.length) {
-            const style = document.createElement('style')
-            style.innerText = css
-            this.shadow.appendChild(style)
-        }
+    protected connectedCallback(): void {
+        this.setup().then(() => {
+            const css = this.css().trim()
 
-        this.shadow.appendChild(
-            this.build()
-        )
+            if (css.length) {
+                const style = document.createElement('style')
+                style.innerText = css
+                this.shadow.appendChild(style)
+            }
+
+            this.shadow.appendChild(
+                this.build()
+            )
+        })
     }
 }

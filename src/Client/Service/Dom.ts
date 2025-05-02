@@ -45,6 +45,15 @@ export class Dom {
         return element
     }
 
+    public static async image(src: string): Promise<HTMLImageElement> {
+        return new Promise((resolve, reject) => {
+            const image: HTMLImageElement = document.createElement('img')
+            image.src = src
+            image.addEventListener('load', () => resolve(image))
+            image.addEventListener('abort', () => reject())
+        })
+    }
+
     public static component(
         component: CustomElementConstructor,
         dataset: Object = {},

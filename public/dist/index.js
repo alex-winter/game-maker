@@ -440,9 +440,26 @@ exports.SpriteMaker = void 0;
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 class SpriteMaker extends Component_1.Component {
+    image = null;
+    css() {
+        return /*css*/ `
+            canvas {
+                width: 400px;
+            }
+        `;
+    }
+    async setup() {
+        if (this.dataset.imageSrc) {
+            this.image = await Dom_1.Dom.image(this.dataset.imageSrc);
+        }
+    }
     build() {
         const element = Dom_1.Dom.div();
         const canvas = Dom_1.Dom.canvas();
+        const context = canvas.getContext('2d');
+        if (this.image) {
+            context.drawImage(this.image, 0, 0);
+        }
         element.append(canvas);
         return element;
     }
@@ -880,14 +897,17 @@ class Component extends HTMLElement {
     css() {
         return '';
     }
+    async setup() { }
     connectedCallback() {
-        const css = this.css().trim();
-        if (css.length) {
-            const style = document.createElement('style');
-            style.innerText = css;
-            this.shadow.appendChild(style);
-        }
-        this.shadow.appendChild(this.build());
+        this.setup().then(() => {
+            const css = this.css().trim();
+            if (css.length) {
+                const style = document.createElement('style');
+                style.innerText = css;
+                this.shadow.appendChild(style);
+            }
+            this.shadow.appendChild(this.build());
+        });
     }
 }
 exports.Component = Component;
@@ -936,6 +956,14 @@ class Dom {
         element.webkitdirectory = true;
         element.multiple = true;
         return element;
+    }
+    static async image(src) {
+        return new Promise((resolve, reject) => {
+            const image = document.createElement('img');
+            image.src = src;
+            image.addEventListener('load', () => resolve(image));
+            image.addEventListener('abort', () => reject());
+        });
     }
     static component(component, dataset = {}) {
         const tag = components_1.COMPONENTS.get(component);
