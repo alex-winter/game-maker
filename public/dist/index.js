@@ -709,11 +709,9 @@ const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Servic
 class SpriteMakerWindowBox extends Component_1.Component {
     build() {
         const windowBox = Dom_1.Dom.component(WindowBox_1.WindowBox);
-        const spriteMaker = Dom_1.Dom.component(SpriteMaker_1.SpriteMaker);
-        const testImage = document.createElement('img');
-        testImage.src = this.dataset.imageSrc;
+        const spriteMaker = Dom_1.Dom.component(SpriteMaker_1.SpriteMaker, this.dataset);
         windowBox.dataset.title = 'Sprite Maker';
-        windowBox.append(spriteMaker, testImage);
+        windowBox.append(spriteMaker);
         return windowBox;
     }
 }

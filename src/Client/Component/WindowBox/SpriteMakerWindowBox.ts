@@ -6,16 +6,12 @@ import { Dom } from 'Client/Service/Dom'
 export class SpriteMakerWindowBox extends Component {
     protected build(): HTMLElement {
         const windowBox = Dom.component(WindowBox)
-        const spriteMaker = Dom.component(SpriteMaker)
-        const testImage = document.createElement('img')
-
-        testImage.src = this.dataset.imageSrc as string
+        const spriteMaker = Dom.component(SpriteMaker, this.dataset)
 
         windowBox.dataset.title = 'Sprite Maker'
 
         windowBox.append(
             spriteMaker,
-            testImage,
         )
 
         return windowBox
