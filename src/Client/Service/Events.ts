@@ -8,7 +8,7 @@ export class Events {
         throw new Error('Can not construct')
     }
 
-    public static emit<T>(key: string, detail: T): void {
+    public static emit<T>(key: string, detail: T | undefined = undefined): void {
         document.dispatchEvent(
             new CustomEvent<T>(
                 key,
@@ -69,6 +69,21 @@ export class Events {
             EVENTS.mouseDownWindowBox,
             event => {
                 callback(event.detail as WindowBox)
+            }
+        )
+    }
+
+    public static emitSheetImportOpen(): void {
+        Events.emit(
+            EVENTS.openSheetImporter,
+        )
+    }
+
+    public static listenToSheetImportOpen(callback: () => void): void {
+        Events.listen(
+            EVENTS.openSheetImporter,
+            (event) => {
+                callback()
             }
         )
     }

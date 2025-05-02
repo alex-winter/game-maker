@@ -6,6 +6,7 @@ import { Dom } from 'Client/Service/Dom'
 import { SpriteMakerWindowBox } from 'Client/Component/WindowBox/SpriteMakerWindowBox'
 import { fileToBase64 } from 'Client/Service/fileToBase64'
 import { WindowBox } from 'Client/Component/WindowBox/WindowBox'
+import { SpriteSheetsWindowBox } from 'Client/Component/WindowBox/SpriteSheetsWindowBox'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -28,15 +29,16 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     Events.listenMouseDownOnWindowBox(windowBox => {
-
-        console.log(
-            Dom.getAllOfComponent<WindowBox>(WindowBox)
-        )
-
         Dom.getAllOfComponent<WindowBox>(WindowBox).forEach(box => {
             box.zIndexMoveDown()
         })
         windowBox.zIndexMoveUp()
+    })
+
+    Events.listenToSheetImportOpen(() => {
+        document.body.append(
+            Dom.component(SpriteSheetsWindowBox)
+        )
     })
 })
 

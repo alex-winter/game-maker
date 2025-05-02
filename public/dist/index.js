@@ -704,6 +704,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SideMenu = void 0;
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class SideMenu extends Component_1.Component {
     css() {
         return /*css*/ `
@@ -720,8 +721,14 @@ class SideMenu extends Component_1.Component {
     build() {
         const container = Dom_1.Dom.div();
         const slot = Dom_1.Dom.slot();
-        container.append(slot);
+        const sheetImportOption = this.buildMiniOption();
+        container.append(slot, sheetImportOption);
         return container;
+    }
+    buildMiniOption() {
+        const option = Dom_1.Dom.button('s', 'sheet-import');
+        option.addEventListener('click', () => Events_1.Events.emitSheetImportOpen());
+        return option;
     }
 }
 exports.SideMenu = SideMenu;
@@ -925,6 +932,7 @@ exports.EVENTS = void 0;
 exports.EVENTS = {
     uploadFilesSubmission: 'upload-files-submission',
     openSheet: 'open-sheet',
+    openSheetImporter: 'open-sheet-importer',
     mouseDownWindowBox: 'mouse-down-window-box',
 };
 
@@ -1072,7 +1080,7 @@ class Events {
     constructor() {
         throw new Error('Can not construct');
     }
-    static emit(key, detail) {
+    static emit(key, detail = undefined) {
         document.dispatchEvent(new CustomEvent(key, {
             detail,
             bubbles: true,
@@ -1104,6 +1112,14 @@ class Events {
     static listenMouseDownOnWindowBox(callback) {
         Events.listen(events_1.EVENTS.mouseDownWindowBox, event => {
             callback(event.detail);
+        });
+    }
+    static emitSheetImportOpen() {
+        Events.emit(events_1.EVENTS.openSheetImporter);
+    }
+    static listenToSheetImportOpen(callback) {
+        Events.listen(events_1.EVENTS.openSheetImporter, (event) => {
+            callback();
         });
     }
 }
@@ -1305,6 +1321,7 @@ const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Servic
 const SpriteMakerWindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/SpriteMakerWindowBox */ "./src/Client/Component/WindowBox/SpriteMakerWindowBox.ts");
 const fileToBase64_1 = __webpack_require__(/*! Client/Service/fileToBase64 */ "./src/Client/Service/fileToBase64.ts");
 const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
+const SpriteSheetsWindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/SpriteSheetsWindowBox */ "./src/Client/Component/WindowBox/SpriteSheetsWindowBox.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
@@ -1318,11 +1335,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.append(Dom_1.Dom.component(SpriteMakerWindowBox_1.SpriteMakerWindowBox, { imageSrc: await (0, fileToBase64_1.fileToBase64)(file) }));
     });
     Events_1.Events.listenMouseDownOnWindowBox(windowBox => {
-        console.log(Dom_1.Dom.getAllOfComponent(WindowBox_1.WindowBox));
         Dom_1.Dom.getAllOfComponent(WindowBox_1.WindowBox).forEach(box => {
             box.zIndexMoveDown();
         });
         windowBox.zIndexMoveUp();
+    });
+    Events_1.Events.listenToSheetImportOpen(() => {
+        document.body.append(Dom_1.Dom.component(SpriteSheetsWindowBox_1.SpriteSheetsWindowBox));
     });
 });
 
