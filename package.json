@@ -5,10 +5,12 @@
     "start:server": "webpack --config webpack.server.config.js --watch"
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.2"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",
+    "@types/multer": "^1.4.12",
     "@typescript-eslint/eslint-plugin": "^7.15.0",
     "@typescript-eslint/parser": "^7.15.0",
     "css-loader": "^7.1.2",

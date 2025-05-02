@@ -16,9 +16,19 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const crypto_1 = __webpack_require__(/*! crypto */ "crypto");
 const express_1 = __importDefault(__webpack_require__(/*! express */ "express"));
 const path_1 = __importDefault(__webpack_require__(/*! path */ "path"));
+const multer_1 = __importDefault(__webpack_require__(/*! multer */ "multer"));
 const app = (0, express_1.default)();
 const PORT = 3000;
 const publicDir = path_1.default.join(__dirname, '/../public');
+const storage = multer_1.default.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, __dirname + '/../uploads/');
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname);
+    }
+});
+const upload = (0, multer_1.default)({ storage });
 app.use(express_1.default.static(publicDir));
 app.get('/', (req, res) => {
     res.sendFile(path_1.default.join(publicDir, 'index.html'));
@@ -32,6 +42,16 @@ app.get('/layers', (_, response) => {
         }
     ];
     response.json(layers);
+});
+app.post('/upload-files', upload.array('files[]'), (req, res) => {
+    res.json({
+        message: 'Files uploaded successfully!',
+        files: req.files.map(file => ({
+            originalName: file.originalname,
+            savedAs: file.filename,
+            path: file.path
+        }))
+    });
 });
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
@@ -57,6 +77,16 @@ module.exports = require("crypto");
 /***/ ((module) => {
 
 module.exports = require("express");
+
+/***/ }),
+
+/***/ "multer":
+/*!*************************!*\
+  !*** external "multer" ***!
+  \*************************/
+/***/ ((module) => {
+
+module.exports = require("multer");
 
 /***/ }),
 

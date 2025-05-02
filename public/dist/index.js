@@ -970,6 +970,32 @@ exports.Events = Events;
 
 /***/ }),
 
+/***/ "./src/Client/Service/FileUpload.ts":
+/*!******************************************!*\
+  !*** ./src/Client/Service/FileUpload.ts ***!
+  \******************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.FileUpload = void 0;
+class FileUpload {
+    static async uploadMultiple(files) {
+        const formData = new FormData();
+        files.forEach((file) => {
+            formData.append('files[]', file);
+        });
+        await fetch('/upload-files', {
+            method: 'POST',
+            body: formData,
+        });
+    }
+}
+exports.FileUpload = FileUpload;
+
+
+/***/ }),
+
 /***/ "./src/Client/styles.css":
 /*!*******************************!*\
   !*** ./src/Client/styles.css ***!
@@ -1106,12 +1132,17 @@ var exports = __webpack_exports__;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 __webpack_require__(/*! Client/styles.css */ "./src/Client/styles.css");
 const components_1 = __webpack_require__(/*! Client/Constants/components */ "./src/Client/Constants/components.ts");
+const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
+const FileUpload_1 = __webpack_require__(/*! Client/Service/FileUpload */ "./src/Client/Service/FileUpload.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.querySelector('canvas');
     const ctx = canvas?.getContext('2d');
+});
+Events_1.Events.listenToFilesUploadSubmitted(files => {
+    FileUpload_1.FileUpload.uploadMultiple(files);
 });
 
 })();
