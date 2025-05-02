@@ -58,12 +58,7 @@ export class Dom {
         component: CustomElementConstructor,
         dataset: Object = {},
     ): HTMLElement {
-        const tag = COMPONENTS.get(component)
-
-        if (!tag) {
-            throw new Error(`Component not found in COMPONENTS map: ${component.name}`)
-        }
-
+        const tag = this.findComponentTag(component)
         const element = document.createElement(tag)
 
         Object.assign(
@@ -72,5 +67,48 @@ export class Dom {
         )
 
         return element
+    }
+
+    public static getAllOfComponent<T = CustomElementConstructor>(component: CustomElementConstructor): T[] {
+        const tag = this.findComponentTag(component)
+
+        return Array.from(
+            Dom.queryAllDeep(tag)
+        ) as T[]
+    }
+
+    private static queryAllDeep(selector: string, root: ParentNode = document): Element[] {
+        const result: Element[] = []
+
+        const traverse = (node: Element): void => {
+            if (node.matches(selector)) {
+                result.push(node)
+            }
+
+            const shadow = (node as HTMLElement).shadowRoot
+            if (shadow) {
+                traverseAll(shadow)
+            }
+
+            Array.from(node.children).forEach(child => traverse(child as Element))
+        }
+
+        const traverseAll = (container: ParentNode): void => {
+            Array.from(container.children).forEach(child => traverse(child as Element))
+        }
+
+        traverseAll(root)
+
+        return result
+    }
+
+    private static findComponentTag(component: CustomElementConstructor): string {
+        const tag = COMPONENTS.get(component)
+
+        if (!tag) {
+            throw new Error(`Component not found in COMPONENTS map: ${component.name}`)
+        }
+
+        return tag
     }
 }

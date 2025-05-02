@@ -1,3 +1,4 @@
+import { WindowBox } from 'Client/Component/WindowBox/WindowBox'
 import { EVENTS } from 'Client/Constants/events'
 
 type EventFn<T = any> = (event: CustomEvent<T>) => void
@@ -52,6 +53,22 @@ export class Events {
             EVENTS.openSheet,
             event => {
                 callback(event.detail)
+            }
+        )
+    }
+
+    public static emitMouseDownOnWindowBox(windowBox: WindowBox): void {
+        Events.emit(
+            EVENTS.mouseDownWindowBox,
+            windowBox,
+        )
+    }
+
+    public static listenMouseDownOnWindowBox(callback: (windowBox: WindowBox) => void): void {
+        Events.listen<HTMLElement>(
+            EVENTS.mouseDownWindowBox,
+            event => {
+                callback(event.detail as WindowBox)
             }
         )
     }

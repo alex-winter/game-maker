@@ -4,4 +4,6 @@ export const EVENTS = {
 
     openSheet: 'open-sheet',
 
+    mouseDownWindowBox: 'mouse-down-window-box',
+
 }

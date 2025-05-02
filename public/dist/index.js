@@ -802,10 +802,17 @@ exports.WindowBox = void 0;
 const handleDragAndDrop_1 = __webpack_require__(/*! Client/Component/Generic/handleDragAndDrop */ "./src/Client/Component/Generic/handleDragAndDrop.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class WindowBox extends Component_1.Component {
     isDragging = false;
     offsetX = 0;
     offsetY = 0;
+    zIndexMoveDown() {
+        this.style.zIndex = '1000';
+    }
+    zIndexMoveUp() {
+        this.style.zIndex = '1001';
+    }
     css() {
         return /*css*/ `
             :host {
@@ -813,6 +820,7 @@ class WindowBox extends Component_1.Component {
                 top: 0;
                 left: 0;
                 cursor: default;
+                z-index: 1001;
             }
 
             .header {
@@ -830,9 +838,10 @@ class WindowBox extends Component_1.Component {
         `;
     }
     build() {
-        const container = Dom_1.Dom.div();
+        const container = Dom_1.Dom.div('window-box');
         const content = Dom_1.Dom.div('content');
         const slot = Dom_1.Dom.slot();
+        container.addEventListener('mousedown', (e) => Events_1.Events.emitMouseDownOnWindowBox(this));
         content.append(slot);
         container.append(this.buildHeader(), content);
         return container;
@@ -892,6 +901,7 @@ exports.EVENTS = void 0;
 exports.EVENTS = {
     uploadFilesSubmission: 'upload-files-submission',
     openSheet: 'open-sheet',
+    mouseDownWindowBox: 'mouse-down-window-box',
 };
 
 
@@ -984,13 +994,39 @@ class Dom {
         });
     }
     static component(component, dataset = {}) {
+        const tag = this.findComponentTag(component);
+        const element = document.createElement(tag);
+        Object.assign(element.dataset, dataset);
+        return element;
+    }
+    static getAllOfComponent(component) {
+        const tag = this.findComponentTag(component);
+        return Array.from(Dom.queryAllDeep(tag));
+    }
+    static queryAllDeep(selector, root = document) {
+        const result = [];
+        const traverse = (node) => {
+            if (node.matches(selector)) {
+                result.push(node);
+            }
+            const shadow = node.shadowRoot;
+            if (shadow) {
+                traverseAll(shadow);
+            }
+            Array.from(node.children).forEach(child => traverse(child));
+        };
+        const traverseAll = (container) => {
+            Array.from(container.children).forEach(child => traverse(child));
+        };
+        traverseAll(root);
+        return result;
+    }
+    static findComponentTag(component) {
         const tag = components_1.COMPONENTS.get(component);
         if (!tag) {
             throw new Error(`Component not found in COMPONENTS map: ${component.name}`);
         }
-        const element = document.createElement(tag);
-        Object.assign(element.dataset, dataset);
-        return element;
+        return tag;
     }
 }
 exports.Dom = Dom;
@@ -1035,6 +1071,14 @@ class Events {
     }
     static listenToOpenSheet(callback) {
         Events.listen(events_1.EVENTS.openSheet, event => {
+            callback(event.detail);
+        });
+    }
+    static emitMouseDownOnWindowBox(windowBox) {
+        Events.emit(events_1.EVENTS.mouseDownWindowBox, windowBox);
+    }
+    static listenMouseDownOnWindowBox(callback) {
+        Events.listen(events_1.EVENTS.mouseDownWindowBox, event => {
             callback(event.detail);
         });
     }
@@ -1236,18 +1280,26 @@ const FileUpload_1 = __webpack_require__(/*! Client/Service/FileUpload */ "./src
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const SpriteMakerWindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/SpriteMakerWindowBox */ "./src/Client/Component/WindowBox/SpriteMakerWindowBox.ts");
 const fileToBase64_1 = __webpack_require__(/*! Client/Service/fileToBase64 */ "./src/Client/Service/fileToBase64.ts");
+const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.querySelector('canvas');
     const ctx = canvas?.getContext('2d');
-});
-Events_1.Events.listenToFilesUploadSubmitted(files => {
-    FileUpload_1.FileUpload.uploadMultiple(files);
-});
-Events_1.Events.listenToOpenSheet(async (file) => {
-    document.body.append(Dom_1.Dom.component(SpriteMakerWindowBox_1.SpriteMakerWindowBox, { imageSrc: await (0, fileToBase64_1.fileToBase64)(file) }));
+    Events_1.Events.listenToFilesUploadSubmitted(files => {
+        FileUpload_1.FileUpload.uploadMultiple(files);
+    });
+    Events_1.Events.listenToOpenSheet(async (file) => {
+        document.body.append(Dom_1.Dom.component(SpriteMakerWindowBox_1.SpriteMakerWindowBox, { imageSrc: await (0, fileToBase64_1.fileToBase64)(file) }));
+    });
+    Events_1.Events.listenMouseDownOnWindowBox(windowBox => {
+        console.log(Dom_1.Dom.getAllOfComponent(WindowBox_1.WindowBox));
+        Dom_1.Dom.getAllOfComponent(WindowBox_1.WindowBox).forEach(box => {
+            box.zIndexMoveDown();
+        });
+        windowBox.zIndexMoveUp();
+    });
 });
 
 })();

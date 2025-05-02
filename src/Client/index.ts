@@ -5,6 +5,7 @@ import { FileUpload } from 'Client/Service/FileUpload'
 import { Dom } from 'Client/Service/Dom'
 import { SpriteMakerWindowBox } from 'Client/Component/WindowBox/SpriteMakerWindowBox'
 import { fileToBase64 } from 'Client/Service/fileToBase64'
+import { WindowBox } from 'Client/Component/WindowBox/WindowBox'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -13,14 +14,29 @@ COMPONENTS.forEach((tagName, constructor) => {
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.querySelector('canvas')
     const ctx = canvas?.getContext('2d')
+
+
+
+    Events.listenToFilesUploadSubmitted(files => {
+        FileUpload.uploadMultiple(files)
+    })
+
+    Events.listenToOpenSheet(async file => {
+        document.body.append(
+            Dom.component(SpriteMakerWindowBox, { imageSrc: await fileToBase64(file) })
+        )
+    })
+
+    Events.listenMouseDownOnWindowBox(windowBox => {
+
+        console.log(
+            Dom.getAllOfComponent<WindowBox>(WindowBox)
+        )
+
+        Dom.getAllOfComponent<WindowBox>(WindowBox).forEach(box => {
+            box.zIndexMoveDown()
+        })
+        windowBox.zIndexMoveUp()
+    })
 })
 
-Events.listenToFilesUploadSubmitted(files => {
-    FileUpload.uploadMultiple(files)
-})
-
-Events.listenToOpenSheet(async file => {
-    document.body.append(
-        Dom.component(SpriteMakerWindowBox, { imageSrc: await fileToBase64(file) })
-    )
-})
