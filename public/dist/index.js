@@ -465,6 +465,17 @@ const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/C
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class FileListing extends Component_1.Component {
+    css() {
+        return /*css*/ `
+            .file {
+                display: flex;
+                padding: 10px;
+            }
+            .file div {
+                flex: 1;
+            }
+        `;
+    }
     build() {
         const container = Dom_1.Dom.div();
         Events_1.Events.listenToFilesUploadSubmitted(fileList => {
@@ -474,7 +485,12 @@ class FileListing extends Component_1.Component {
     }
     buildFile(file) {
         const container = Dom_1.Dom.div('file');
-        container.innerText = file.name;
+        const name = Dom_1.Dom.div();
+        const options = Dom_1.Dom.div();
+        const openButton = Dom_1.Dom.button('Open');
+        name.innerText = file.name;
+        options.append(openButton);
+        container.append(name, options);
         return container;
     }
 }
