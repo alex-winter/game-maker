@@ -489,6 +489,7 @@ class FileListing extends Component_1.Component {
         const options = Dom_1.Dom.div();
         const openButton = Dom_1.Dom.button('Open');
         name.innerText = file.name;
+        openButton.addEventListener('click', (e) => Events_1.Events.emitOpenSheet(file));
         options.append(openButton);
         container.append(name, options);
         return container;
@@ -979,6 +980,9 @@ class Events {
         Events.listen(events_1.EVENTS.uploadFilesSubmission, event => {
             callback(event.detail);
         });
+    }
+    static emitOpenSheet(file = null) {
+        this.emit('open-sheet', file);
     }
 }
 exports.Events = Events;

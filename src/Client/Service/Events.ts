@@ -42,4 +42,8 @@ export class Events {
             }
         )
     }
+
+    public static emitOpenSheet(file: File | null = null): void {
+        this.emit('open-sheet', file)
+    }
 }

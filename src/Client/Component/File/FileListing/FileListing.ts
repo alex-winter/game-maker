@@ -35,6 +35,8 @@ export class FileListing extends Component {
 
         name.innerText = file.name
 
+        openButton.addEventListener('click', (e) => Events.emitOpenSheet(file))
+
         options.append(openButton)
 
         container.append(name, options)
