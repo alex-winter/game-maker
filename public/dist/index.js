@@ -443,8 +443,17 @@ class SpriteMaker extends Component_1.Component {
     image = null;
     css() {
         return /*css*/ `
+            :host {
+                position: relative;
+            }
+
             canvas {
                 width: 400px;
+            }
+
+            .selector-box {
+                position: absolute;
+                color
             }
         `;
     }
@@ -457,11 +466,20 @@ class SpriteMaker extends Component_1.Component {
         const element = Dom_1.Dom.div();
         const canvas = Dom_1.Dom.canvas();
         const context = canvas.getContext('2d');
+        const selectorBox = this.buildSelectorBox();
         if (this.image) {
             context.drawImage(this.image, 0, 0);
         }
-        element.append(canvas);
+        element.append(canvas, selectorBox);
         return element;
+    }
+    buildSelectorBox() {
+        const box = Dom_1.Dom.div('selector-box');
+        this.addEventListener('mousedown', (event) => {
+            box.style.left = event.offsetX + 'px';
+            box.style.top = event.offsetY + 'px';
+        });
+        return box;
     }
 }
 exports.SpriteMaker = SpriteMaker;
