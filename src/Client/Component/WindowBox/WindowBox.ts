@@ -85,7 +85,10 @@ export class WindowBox extends Component implements DraggableHTMLElement {
         title.innerText = this.dataset.title || ''
 
         element.addEventListener('mousedown', (e) => handleDragAndDrop(this, e))
-        close.addEventListener('click', (e) => this.remove())
+        close.addEventListener('click', (event) => {
+            event.stopPropagation()
+            this.destory()
+        }, true)
 
         options.append(close)
 

@@ -1,13 +1,14 @@
 import { FileListing } from 'Client/Component/File/FileListing/FileListing'
 import { FileUploader } from 'Client/Component/File/FileUploader/FileUploader'
 import { SpriteMakerWindowBox } from 'Client/Component/WindowBox/SpriteMakerWindowBox'
-import { WindowBox } from 'Client/Component/WindowBox/WindowBox'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 
 export class SpriteSheetsWindowBox extends Component {
+    public static readonly isSingleton: boolean = true
+
     protected build(): HTMLElement {
-        const windowBox = Dom.component(WindowBox)
+        const windowBox = Dom.div()
         const fileListing = Dom.component(FileListing)
         const fileUploader = Dom.component(FileUploader)
         const createNewButton = Dom.button('Create New')

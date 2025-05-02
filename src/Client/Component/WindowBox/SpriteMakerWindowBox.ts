@@ -5,7 +5,7 @@ import { Dom } from 'Client/Service/Dom'
 
 export class SpriteMakerWindowBox extends Component {
     protected build(): HTMLElement {
-        const windowBox = Dom.component(WindowBox)
+        const windowBox = Dom.div()
         const spriteMaker = Dom.component(SpriteMaker, this.dataset)
 
         windowBox.dataset.title = 'Sprite Maker'

@@ -746,12 +746,11 @@ exports.SideMenu = SideMenu;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SpriteMakerWindowBox = void 0;
 const SpriteMaker_1 = __webpack_require__(/*! Client/Component/Canvas/SpriteMaker/SpriteMaker */ "./src/Client/Component/Canvas/SpriteMaker/SpriteMaker.ts");
-const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 class SpriteMakerWindowBox extends Component_1.Component {
     build() {
-        const windowBox = Dom_1.Dom.component(WindowBox_1.WindowBox);
+        const windowBox = Dom_1.Dom.div();
         const spriteMaker = Dom_1.Dom.component(SpriteMaker_1.SpriteMaker, this.dataset);
         windowBox.dataset.title = 'Sprite Maker';
         windowBox.append(spriteMaker);
@@ -775,12 +774,12 @@ exports.SpriteSheetsWindowBox = void 0;
 const FileListing_1 = __webpack_require__(/*! Client/Component/File/FileListing/FileListing */ "./src/Client/Component/File/FileListing/FileListing.ts");
 const FileUploader_1 = __webpack_require__(/*! Client/Component/File/FileUploader/FileUploader */ "./src/Client/Component/File/FileUploader/FileUploader.ts");
 const SpriteMakerWindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/SpriteMakerWindowBox */ "./src/Client/Component/WindowBox/SpriteMakerWindowBox.ts");
-const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 class SpriteSheetsWindowBox extends Component_1.Component {
+    static isSingleton = true;
     build() {
-        const windowBox = Dom_1.Dom.component(WindowBox_1.WindowBox);
+        const windowBox = Dom_1.Dom.div();
         const fileListing = Dom_1.Dom.component(FileListing_1.FileListing);
         const fileUploader = Dom_1.Dom.component(FileUploader_1.FileUploader);
         const createNewButton = Dom_1.Dom.button('Create New');
@@ -878,7 +877,10 @@ class WindowBox extends Component_1.Component {
         close.innerText = 'x';
         title.innerText = this.dataset.title || '';
         element.addEventListener('mousedown', (e) => (0, handleDragAndDrop_1.handleDragAndDrop)(this, e));
-        close.addEventListener('click', (e) => this.remove());
+        close.addEventListener('click', (event) => {
+            event.stopPropagation();
+            this.destory();
+        }, true);
         options.append(close);
         element.append(title, options);
         return element;
@@ -950,6 +952,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Component = void 0;
 class Component extends HTMLElement {
     shadow;
+    static isSingleton = false;
     constructor() {
         super();
         this.shadow = this.attachShadow({ mode: 'open' });
@@ -959,6 +962,7 @@ class Component extends HTMLElement {
     }
     async setup() { }
     connectedCallback() {
+        console.log('added to dom');
         this.setup().then(() => {
             const css = this.css().trim();
             if (css.length) {
@@ -968,6 +972,12 @@ class Component extends HTMLElement {
             }
             this.shadow.appendChild(this.build());
         });
+    }
+    disconnectedCallback() {
+        console.log('Removed from DOM');
+    }
+    destory() {
+        this.shadow.host.remove();
     }
 }
 exports.Component = Component;
@@ -1027,6 +1037,12 @@ class Dom {
     }
     static component(component, dataset = {}) {
         const tag = this.findComponentTag(component);
+        if (component.isSingleton) {
+            const existing = Dom.queryAllDeep(tag);
+            if (existing.length) {
+                return existing[0];
+            }
+        }
         const element = document.createElement(tag);
         Object.assign(element.dataset, dataset);
         return element;
@@ -1083,7 +1099,7 @@ class Events {
     static emit(key, detail = undefined) {
         document.dispatchEvent(new CustomEvent(key, {
             detail,
-            bubbles: true,
+            bubbles: false,
             composed: true
         }));
     }
@@ -1341,7 +1357,11 @@ document.addEventListener('DOMContentLoaded', () => {
         windowBox.zIndexMoveUp();
     });
     Events_1.Events.listenToSheetImportOpen(() => {
-        document.body.append(Dom_1.Dom.component(SpriteSheetsWindowBox_1.SpriteSheetsWindowBox));
+        const component = Dom_1.Dom.component(SpriteSheetsWindowBox_1.SpriteSheetsWindowBox);
+        console.log(component, component.isConnected);
+        if (!component.isConnected) {
+            document.body.append(Dom_1.Dom.component(SpriteSheetsWindowBox_1.SpriteSheetsWindowBox));
+        }
     });
 });
 

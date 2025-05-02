@@ -36,9 +36,18 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     Events.listenToSheetImportOpen(() => {
-        document.body.append(
-            Dom.component(SpriteSheetsWindowBox)
+        const component = Dom.component(SpriteSheetsWindowBox)
+
+        console.log(
+            component,
+            component.isConnected
         )
+
+        if (!component.isConnected) {
+            document.body.append(
+                Dom.component(SpriteSheetsWindowBox)
+            )
+        }
     })
 })
 

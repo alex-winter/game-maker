@@ -1,4 +1,5 @@
 import { COMPONENTS } from 'Client/Constants/components'
+import { Component } from 'Client/Service/Component'
 
 export class Dom {
     constructor() {
@@ -59,6 +60,14 @@ export class Dom {
         dataset: Object = {},
     ): HTMLElement {
         const tag = this.findComponentTag(component)
+
+        if ((component as unknown as typeof Component).isSingleton) {
+            const existing = Dom.queryAllDeep(tag)
+            if (existing.length) {
+                return existing[0] as HTMLElement
+            }
+        }
+
         const element = document.createElement(tag)
 
         Object.assign(

@@ -14,7 +14,7 @@ export class Events {
                 key,
                 {
                     detail,
-                    bubbles: true,
+                    bubbles: false,
                     composed: true
                 }
             )
