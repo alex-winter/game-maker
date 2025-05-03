@@ -830,7 +830,6 @@ class WindowBox extends Component_1.Component {
         `;
     }
     build() {
-        this.isSingleton = this.dataset.isSingleton !== undefined;
         const container = Dom_1.Dom.div('window-box');
         const content = Dom_1.Dom.div('content');
         const slot = Dom_1.Dom.slot();
@@ -1146,15 +1145,19 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WindowBoxFactory = void 0;
 const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const singletonInstances = [];
 class WindowBoxFactory {
-    static make(component, title, isSingleton = false) {
+    static make(component, title) {
+        if (component.isSingleton && singletonInstances.includes(component)) {
+            return;
+        }
         const windowBox = Dom_1.Dom.makeComponent(WindowBox_1.WindowBox);
         if (!windowBox.isConnected) {
-            if (isSingleton) {
-                windowBox.dataset.isSingleton = 'true';
-            }
             windowBox.dataset.title = title;
             windowBox.append(component);
+            if (component.isSingleton) {
+                singletonInstances.push(component);
+            }
             document.body.append(windowBox);
         }
     }
@@ -1343,6 +1346,7 @@ document.addEventListener('DOMContentLoaded', () => {
         FileUpload_1.FileUpload.uploadMultiple(files);
     });
     Events_1.Events.listenToOpenSheet(async (file) => {
+        console.log('here');
         const component = Dom_1.Dom.makeComponent(SheetMaker_1.SheetMaker, { imageSrc: await (0, fileToBase64_1.fileToBase64)(file) });
         WindowBoxFactory_1.WindowBoxFactory.make(component, 'Sheet Editor');
     });

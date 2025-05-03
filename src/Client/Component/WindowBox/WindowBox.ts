@@ -58,8 +58,6 @@ export class WindowBox extends Component implements DraggableHTMLElement {
     }
 
     protected build(): HTMLElement {
-        this.isSingleton = this.dataset.isSingleton !== undefined
-
         const container = Dom.div('window-box')
         const content = Dom.div('content')
         const slot = Dom.slot()

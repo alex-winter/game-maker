@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     Events.listenToOpenSheet(async file => {
+        console.log('here')
         const component = Dom.makeComponent(SheetMaker, { imageSrc: await fileToBase64(file) })
 
         WindowBoxFactory.make(component, 'Sheet Editor')
