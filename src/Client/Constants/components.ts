@@ -2,10 +2,9 @@ import { LayerListing } from 'Client/Component/LayerListing/LayerListing'
 import { WindowBox } from 'Client/Component/WindowBox/WindowBox'
 import { FileUploader } from 'Client/Component/File/FileUploader/FileUploader'
 import { FileListing } from 'Client/Component/File/FileListing/FileListing'
-import { SpriteSheetsWindowBox } from 'Client/Component/WindowBox/SpriteSheetsWindowBox'
-import { SheetMaker } from 'Client/Component/SpriteSheets/SpriteMaker/SpriteMaker'
+import { SheetMaker } from 'Client/Component/SpriteSheets/SheetMaker/SheetMaker'
 import { SideMenu } from 'Client/Component/SideMenu/SideMenu'
-import { SpriteMakerWindowBox } from 'Client/Component/WindowBox/SpriteMakerWindowBox'
+import { SheetImporter } from 'Client/Component/SpriteSheets/SheetImporter/SheetImporter'
 
 export const COMPONENTS = new Map<CustomElementConstructor, string>([
 
@@ -19,10 +18,8 @@ export const COMPONENTS = new Map<CustomElementConstructor, string>([
 
   [FileListing, 'file-listing'],
 
-  [SpriteSheetsWindowBox, 'sprite-sheets-window-box'],
+  [SheetMaker, 'sheet-maker'],
 
-  [SheetMaker, 'sprite-maker'],
-
-  [SpriteMakerWindowBox, 'sprite-maker-window-box'],
+  [SheetImporter, 'sheet-importer']
 
 ])

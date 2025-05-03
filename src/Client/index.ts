@@ -3,10 +3,11 @@ import { COMPONENTS } from 'Client/Constants/components'
 import { Events } from 'Client/Service/Events'
 import { FileUpload } from 'Client/Service/FileUpload'
 import { Dom } from 'Client/Service/Dom'
-import { SpriteMakerWindowBox } from 'Client/Component/WindowBox/SpriteMakerWindowBox'
 import { fileToBase64 } from 'Client/Service/fileToBase64'
 import { WindowBox } from 'Client/Component/WindowBox/WindowBox'
-import { SpriteSheetsWindowBox } from 'Client/Component/WindowBox/SpriteSheetsWindowBox'
+import { WindowBoxFactory } from 'Client/Service/WindowBoxFactory'
+import { SheetImporter } from 'Client/Component/SpriteSheets/SheetImporter/SheetImporter'
+import { SheetMaker } from 'Client/Component/SpriteSheets/SheetMaker/SheetMaker'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -23,9 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     Events.listenToOpenSheet(async file => {
-        document.body.append(
-            Dom.makeComponent(SpriteMakerWindowBox, { imageSrc: await fileToBase64(file) })
-        )
+        const component = Dom.makeComponent(SheetMaker, { imageSrc: await fileToBase64(file) })
+
+        WindowBoxFactory.make(component, 'Sheet Editor')
     })
 
     Events.listenMouseDownOnWindowBox(windowBox => {
@@ -36,13 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     Events.listenToSheetImportOpen(() => {
-        const component = Dom.makeComponent(SpriteSheetsWindowBox)
+        const component = Dom.makeComponent(SheetImporter)
 
-        if (!component.isConnected) {
-            document.body.append(
-                Dom.makeComponent(SpriteSheetsWindowBox)
-            )
-        }
+        WindowBoxFactory.make(component, 'Import Sheets', true)
     })
 })
 

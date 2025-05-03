@@ -58,7 +58,7 @@ export class Dom {
     public static makeComponent(
         component: CustomElementConstructor,
         dataset: Object = {},
-    ): HTMLElement {
+    ): Component {
         const tag = this.findComponentTag(component)
         const existing = Dom.queryAllDeep(tag)
 
@@ -76,7 +76,7 @@ export class Dom {
             dataset
         )
 
-        return element
+        return element as Component
     }
 
     public static getAllOfComponent<T = CustomElementConstructor>(component: CustomElementConstructor): T[] {

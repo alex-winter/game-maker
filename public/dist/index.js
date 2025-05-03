@@ -612,9 +612,6 @@ exports.LayerListing = void 0;
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 class LayerListing extends Component_1.Component {
-    isSingleton() {
-        return false;
-    }
     build() {
         const container = Dom_1.Dom.div();
         this.data().then(layers => {
@@ -678,6 +675,93 @@ class SideMenu extends Component_1.Component {
     }
 }
 exports.SideMenu = SideMenu;
+
+
+/***/ }),
+
+/***/ "./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts":
+/*!**************************************************************************!*\
+  !*** ./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts ***!
+  \**************************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SheetImporter = void 0;
+const FileListing_1 = __webpack_require__(/*! Client/Component/File/FileListing/FileListing */ "./src/Client/Component/File/FileListing/FileListing.ts");
+const FileUploader_1 = __webpack_require__(/*! Client/Component/File/FileUploader/FileUploader */ "./src/Client/Component/File/FileUploader/FileUploader.ts");
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+class SheetImporter extends Component_1.Component {
+    isSingleton = true;
+    build() {
+        const container = Dom_1.Dom.div();
+        const fileListing = Dom_1.Dom.makeComponent(FileListing_1.FileListing);
+        const uploader = Dom_1.Dom.makeComponent(FileUploader_1.FileUploader);
+        container.append(fileListing, uploader);
+        return container;
+    }
+}
+exports.SheetImporter = SheetImporter;
+
+
+/***/ }),
+
+/***/ "./src/Client/Component/SpriteSheets/SheetMaker/SheetMaker.ts":
+/*!********************************************************************!*\
+  !*** ./src/Client/Component/SpriteSheets/SheetMaker/SheetMaker.ts ***!
+  \********************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SheetMaker = void 0;
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+class SheetMaker extends Component_1.Component {
+    image = null;
+    css() {
+        return /*css*/ `
+            :host {
+                position: relative;
+            }
+
+            canvas {
+                width: 400px;
+            }
+
+            .selector-box {
+                position: absolute;
+                color
+            }
+        `;
+    }
+    async setup() {
+        if (this.dataset.imageSrc) {
+            this.image = await Dom_1.Dom.image(this.dataset.imageSrc);
+        }
+    }
+    build() {
+        const element = Dom_1.Dom.div();
+        const canvas = Dom_1.Dom.canvas();
+        const context = canvas.getContext('2d');
+        const selectorBox = this.buildSelectorBox();
+        if (this.image) {
+            context.drawImage(this.image, 0, 0);
+        }
+        element.append(canvas, selectorBox);
+        return element;
+    }
+    buildSelectorBox() {
+        const box = Dom_1.Dom.div('selector-box');
+        this.addEventListener('mousedown', (event) => {
+            box.style.left = event.offsetX + 'px';
+            box.style.top = event.offsetY + 'px';
+        });
+        return box;
+    }
+}
+exports.SheetMaker = SheetMaker;
 
 
 /***/ }),
@@ -790,19 +874,17 @@ const LayerListing_1 = __webpack_require__(/*! Client/Component/LayerListing/Lay
 const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
 const FileUploader_1 = __webpack_require__(/*! Client/Component/File/FileUploader/FileUploader */ "./src/Client/Component/File/FileUploader/FileUploader.ts");
 const FileListing_1 = __webpack_require__(/*! Client/Component/File/FileListing/FileListing */ "./src/Client/Component/File/FileListing/FileListing.ts");
-const SpriteSheetsWindowBox_1 = __webpack_require__(Object(function webpackMissingModule() { var e = new Error("Cannot find module 'Client/Component/WindowBox/SpriteSheetsWindowBox'"); e.code = 'MODULE_NOT_FOUND'; throw e; }()));
-const SpriteMaker_1 = __webpack_require__(Object(function webpackMissingModule() { var e = new Error("Cannot find module 'Client/Component/SpriteSheets/SpriteMaker/SpriteMaker'"); e.code = 'MODULE_NOT_FOUND'; throw e; }()));
+const SheetMaker_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetMaker/SheetMaker */ "./src/Client/Component/SpriteSheets/SheetMaker/SheetMaker.ts");
 const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */ "./src/Client/Component/SideMenu/SideMenu.ts");
-const SpriteMakerWindowBox_1 = __webpack_require__(Object(function webpackMissingModule() { var e = new Error("Cannot find module 'Client/Component/WindowBox/SpriteMakerWindowBox'"); e.code = 'MODULE_NOT_FOUND'; throw e; }()));
+const SheetImporter_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetImporter/SheetImporter */ "./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts");
 exports.COMPONENTS = new Map([
     [SideMenu_1.SideMenu, 'side-menu'],
     [LayerListing_1.LayerListing, 'layer-listing'],
     [WindowBox_1.WindowBox, 'window-box'],
     [FileUploader_1.FileUploader, 'file-uploader'],
     [FileListing_1.FileListing, 'file-listing'],
-    [SpriteSheetsWindowBox_1.SpriteSheetsWindowBox, 'sprite-sheets-window-box'],
-    [SpriteMaker_1.SheetMaker, 'sprite-maker'],
-    [SpriteMakerWindowBox_1.SpriteMakerWindowBox, 'sprite-maker-window-box'],
+    [SheetMaker_1.SheetMaker, 'sheet-maker'],
+    [SheetImporter_1.SheetImporter, 'sheet-importer']
 ]);
 
 
@@ -1053,6 +1135,35 @@ exports.FileUpload = FileUpload;
 
 /***/ }),
 
+/***/ "./src/Client/Service/WindowBoxFactory.ts":
+/*!************************************************!*\
+  !*** ./src/Client/Service/WindowBoxFactory.ts ***!
+  \************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.WindowBoxFactory = void 0;
+const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+class WindowBoxFactory {
+    static make(component, title, isSingleton = false) {
+        const windowBox = Dom_1.Dom.makeComponent(WindowBox_1.WindowBox);
+        if (!windowBox.isConnected) {
+            if (isSingleton) {
+                windowBox.dataset.isSingleton = 'true';
+            }
+            windowBox.dataset.title = title;
+            windowBox.append(component);
+            document.body.append(windowBox);
+        }
+    }
+}
+exports.WindowBoxFactory = WindowBoxFactory;
+
+
+/***/ }),
+
 /***/ "./src/Client/Service/fileToBase64.ts":
 /*!********************************************!*\
   !*** ./src/Client/Service/fileToBase64.ts ***!
@@ -1217,10 +1328,11 @@ const components_1 = __webpack_require__(/*! Client/Constants/components */ "./s
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 const FileUpload_1 = __webpack_require__(/*! Client/Service/FileUpload */ "./src/Client/Service/FileUpload.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
-const SpriteMakerWindowBox_1 = __webpack_require__(Object(function webpackMissingModule() { var e = new Error("Cannot find module 'Client/Component/WindowBox/SpriteMakerWindowBox'"); e.code = 'MODULE_NOT_FOUND'; throw e; }()));
 const fileToBase64_1 = __webpack_require__(/*! Client/Service/fileToBase64 */ "./src/Client/Service/fileToBase64.ts");
 const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
-const SpriteSheetsWindowBox_1 = __webpack_require__(Object(function webpackMissingModule() { var e = new Error("Cannot find module 'Client/Component/WindowBox/SpriteSheetsWindowBox'"); e.code = 'MODULE_NOT_FOUND'; throw e; }()));
+const WindowBoxFactory_1 = __webpack_require__(/*! Client/Service/WindowBoxFactory */ "./src/Client/Service/WindowBoxFactory.ts");
+const SheetImporter_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetImporter/SheetImporter */ "./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts");
+const SheetMaker_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetMaker/SheetMaker */ "./src/Client/Component/SpriteSheets/SheetMaker/SheetMaker.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
@@ -1231,7 +1343,8 @@ document.addEventListener('DOMContentLoaded', () => {
         FileUpload_1.FileUpload.uploadMultiple(files);
     });
     Events_1.Events.listenToOpenSheet(async (file) => {
-        document.body.append(Dom_1.Dom.makeComponent(SpriteMakerWindowBox_1.SpriteMakerWindowBox, { imageSrc: await (0, fileToBase64_1.fileToBase64)(file) }));
+        const component = Dom_1.Dom.makeComponent(SheetMaker_1.SheetMaker, { imageSrc: await (0, fileToBase64_1.fileToBase64)(file) });
+        WindowBoxFactory_1.WindowBoxFactory.make(component, 'Sheet Editor');
     });
     Events_1.Events.listenMouseDownOnWindowBox(windowBox => {
         Dom_1.Dom.getAllOfComponent(WindowBox_1.WindowBox).forEach(box => {
@@ -1240,10 +1353,8 @@ document.addEventListener('DOMContentLoaded', () => {
         windowBox.zIndexMoveUp();
     });
     Events_1.Events.listenToSheetImportOpen(() => {
-        const component = Dom_1.Dom.makeComponent(SpriteSheetsWindowBox_1.SpriteSheetsWindowBox);
-        if (!component.isConnected) {
-            document.body.append(Dom_1.Dom.makeComponent(SpriteSheetsWindowBox_1.SpriteSheetsWindowBox));
-        }
+        const component = Dom_1.Dom.makeComponent(SheetImporter_1.SheetImporter);
+        WindowBoxFactory_1.WindowBoxFactory.make(component, 'Import Sheets', true);
     });
 });
 

@@ -7,23 +7,22 @@ export class WindowBoxFactory {
         component: Component,
         title: string,
         isSingleton: boolean = false,
-    ): WindowBoxFactory {
+    ): void {
         const windowBox: WindowBox = Dom.makeComponent(WindowBox) as WindowBox
 
-        if (isSingleton) {
-            windowBox.dataset.isSingleton = 'true'
-        }
-
-        windowBox.dataset.title = title
-
-        windowBox.append(component)
-
         if (!windowBox.isConnected) {
+
+            if (isSingleton) {
+                windowBox.dataset.isSingleton = 'true'
+            }
+
+            windowBox.dataset.title = title
+
+            windowBox.append(component)
+
             document.body.append(
                 windowBox
             )
         }
-
-        return windowBox
     }
 }
