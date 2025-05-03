@@ -1,7 +1,10 @@
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
+import { Events } from 'Client/Service/Events'
 
 export class NewLayerForm extends Component {
+
+    private name: string = ''
 
     protected css(): string {
         return /*css*/`
@@ -45,11 +48,24 @@ export class NewLayerForm extends Component {
 
         const input = Dom.inputText('text-input')
         input.placeholder = 'Enter layer name'
+        input.addEventListener('keyup', () => this.name = input.value)
+
+        const submitButton = Dom.button('Save')
+        submitButton.addEventListener('click', this.handleSubmit.bind(this))
 
         formGroup.appendChild(label)
         formGroup.appendChild(input)
-        container.appendChild(formGroup)
+
+        container.append(
+            formGroup,
+            submitButton,
+        )
 
         return container
+    }
+
+    private handleSubmit(): void {
+        console.log(this.name)
+        Events.emit('new-layer-submit', { name: this.name })
     }
 }

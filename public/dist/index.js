@@ -703,7 +703,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NewLayerForm = void 0;
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class NewLayerForm extends Component_1.Component {
+    name = '';
     css() {
         return /*css*/ `
             .form-container {
@@ -743,10 +745,17 @@ class NewLayerForm extends Component_1.Component {
         const label = Dom_1.Dom.label('Layer Name', 'form-label');
         const input = Dom_1.Dom.inputText('text-input');
         input.placeholder = 'Enter layer name';
+        input.addEventListener('keyup', () => this.name = input.value);
+        const submitButton = Dom_1.Dom.button('Save');
+        submitButton.addEventListener('click', this.handleSubmit.bind(this));
         formGroup.appendChild(label);
         formGroup.appendChild(input);
-        container.appendChild(formGroup);
+        container.append(formGroup, submitButton);
         return container;
+    }
+    handleSubmit() {
+        console.log(this.name);
+        Events_1.Events.emit('new-layer-submit', { name: this.name });
     }
 }
 exports.NewLayerForm = NewLayerForm;
