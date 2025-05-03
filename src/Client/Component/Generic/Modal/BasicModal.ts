@@ -40,8 +40,4 @@ export class BasicModal extends Component {
         backdrop.appendChild(content)
         return backdrop
     }
-
-    protected destroy(): void {
-        this.remove()
-    }
 }

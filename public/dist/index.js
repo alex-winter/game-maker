@@ -612,9 +612,6 @@ class BasicModal extends Component_1.Component {
         backdrop.appendChild(content);
         return backdrop;
     }
-    destroy() {
-        this.remove();
-    }
 }
 exports.BasicModal = BasicModal;
 
