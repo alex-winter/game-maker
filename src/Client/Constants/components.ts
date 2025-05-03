@@ -5,6 +5,7 @@ import { FileListing } from 'Client/Component/File/FileListing/FileListing'
 import { SheetMaker } from 'Client/Component/SpriteSheets/SheetMaker/SheetMaker'
 import { SideMenu } from 'Client/Component/SideMenu/SideMenu'
 import { SheetImporter } from 'Client/Component/SpriteSheets/SheetImporter/SheetImporter'
+import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 
 export const COMPONENTS = new Map<CustomElementConstructor, string>([
 
@@ -20,6 +21,8 @@ export const COMPONENTS = new Map<CustomElementConstructor, string>([
 
   [SheetMaker, 'sheet-maker'],
 
-  [SheetImporter, 'sheet-importer']
+  [SheetImporter, 'sheet-importer'],
+
+  [BasicModal, 'modal-basic'],
 
 ])

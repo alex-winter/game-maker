@@ -6,6 +6,8 @@ export const EVENTS = {
 
     openSheetImporter: 'open-sheet-importer',
 
+    openAddNewLayer: 'open-add-new-layer',
+
     mouseDownWindowBox: 'mouse-down-window-box',
 
 }

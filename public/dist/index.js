@@ -566,6 +566,40 @@ exports.FileUploader = FileUploader;
 
 /***/ }),
 
+/***/ "./src/Client/Component/Generic/Modal/BasicModal.ts":
+/*!**********************************************************!*\
+  !*** ./src/Client/Component/Generic/Modal/BasicModal.ts ***!
+  \**********************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.BasicModal = void 0;
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+class BasicModal extends Component_1.Component {
+    css() {
+        return /*css*/ `
+            :host {
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+            }
+        `;
+    }
+    build() {
+        const container = Dom_1.Dom.div();
+        return container;
+    }
+}
+exports.BasicModal = BasicModal;
+
+
+/***/ }),
+
 /***/ "./src/Client/Component/Generic/handleDragAndDrop.ts":
 /*!***********************************************************!*\
   !*** ./src/Client/Component/Generic/handleDragAndDrop.ts ***!
@@ -609,8 +643,10 @@ exports.handleDragAndDrop = handleDragAndDrop;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.LayerListing = void 0;
+const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class LayerListing extends Component_1.Component {
     layers;
     async setup() {
@@ -620,6 +656,7 @@ class LayerListing extends Component_1.Component {
     build() {
         const container = Dom_1.Dom.div();
         const addNewLayerButton = Dom_1.Dom.button('Add New Layer');
+        addNewLayerButton.addEventListener('click', () => Events_1.Events.emit(events_1.EVENTS.openAddNewLayer));
         container.append(...this.layers.map(this.buildLayer));
         container.append(addNewLayerButton);
         return container;
@@ -876,6 +913,7 @@ const FileListing_1 = __webpack_require__(/*! Client/Component/File/FileListing/
 const SheetMaker_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetMaker/SheetMaker */ "./src/Client/Component/SpriteSheets/SheetMaker/SheetMaker.ts");
 const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */ "./src/Client/Component/SideMenu/SideMenu.ts");
 const SheetImporter_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetImporter/SheetImporter */ "./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts");
+const BasicModal_1 = __webpack_require__(/*! Client/Component/Generic/Modal/BasicModal */ "./src/Client/Component/Generic/Modal/BasicModal.ts");
 exports.COMPONENTS = new Map([
     [SideMenu_1.SideMenu, 'side-menu'],
     [LayerListing_1.LayerListing, 'layer-listing'],
@@ -883,7 +921,8 @@ exports.COMPONENTS = new Map([
     [FileUploader_1.FileUploader, 'file-uploader'],
     [FileListing_1.FileListing, 'file-listing'],
     [SheetMaker_1.SheetMaker, 'sheet-maker'],
-    [SheetImporter_1.SheetImporter, 'sheet-importer']
+    [SheetImporter_1.SheetImporter, 'sheet-importer'],
+    [BasicModal_1.BasicModal, 'modal-basic'],
 ]);
 
 
@@ -902,6 +941,7 @@ exports.EVENTS = {
     uploadFilesSubmission: 'upload-files-submission',
     openSheet: 'open-sheet',
     openSheetImporter: 'open-sheet-importer',
+    openAddNewLayer: 'open-add-new-layer',
     mouseDownWindowBox: 'mouse-down-window-box',
 };
 
@@ -1336,6 +1376,8 @@ const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox
 const WindowBoxFactory_1 = __webpack_require__(/*! Client/Service/WindowBoxFactory */ "./src/Client/Service/WindowBoxFactory.ts");
 const SheetImporter_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetImporter/SheetImporter */ "./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts");
 const SheetMaker_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetMaker/SheetMaker */ "./src/Client/Component/SpriteSheets/SheetMaker/SheetMaker.ts");
+const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
+const BasicModal_1 = __webpack_require__(/*! Client/Component/Generic/Modal/BasicModal */ "./src/Client/Component/Generic/Modal/BasicModal.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
@@ -1346,7 +1388,6 @@ document.addEventListener('DOMContentLoaded', () => {
         FileUpload_1.FileUpload.uploadMultiple(files);
     });
     Events_1.Events.listenToOpenSheet(async (file) => {
-        console.log('here');
         const component = Dom_1.Dom.makeComponent(SheetMaker_1.SheetMaker, { imageSrc: await (0, fileToBase64_1.fileToBase64)(file) });
         WindowBoxFactory_1.WindowBoxFactory.make(component, 'Sheet Editor');
     });
@@ -1358,7 +1399,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     Events_1.Events.listenToSheetImportOpen(() => {
         const component = Dom_1.Dom.makeComponent(SheetImporter_1.SheetImporter);
-        WindowBoxFactory_1.WindowBoxFactory.make(component, 'Import Sheets', true);
+        WindowBoxFactory_1.WindowBoxFactory.make(component, 'Import Sheets');
+    });
+    Events_1.Events.listen(events_1.EVENTS.openAddNewLayer, () => {
+        document.body.append(Dom_1.Dom.makeComponent(BasicModal_1.BasicModal));
     });
 });
 

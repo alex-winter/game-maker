@@ -8,6 +8,8 @@ import { WindowBox } from 'Client/Component/WindowBox/WindowBox'
 import { WindowBoxFactory } from 'Client/Service/WindowBoxFactory'
 import { SheetImporter } from 'Client/Component/SpriteSheets/SheetImporter/SheetImporter'
 import { SheetMaker } from 'Client/Component/SpriteSheets/SheetMaker/SheetMaker'
+import { EVENTS } from 'Client/Constants/events'
+import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -24,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     Events.listenToOpenSheet(async file => {
-        console.log('here')
         const component = Dom.makeComponent(SheetMaker, { imageSrc: await fileToBase64(file) })
 
         WindowBoxFactory.make(component, 'Sheet Editor')
@@ -40,7 +41,13 @@ document.addEventListener('DOMContentLoaded', () => {
     Events.listenToSheetImportOpen(() => {
         const component = Dom.makeComponent(SheetImporter)
 
-        WindowBoxFactory.make(component, 'Import Sheets', true)
+        WindowBoxFactory.make(component, 'Import Sheets')
+    })
+
+    Events.listen(EVENTS.openAddNewLayer, () => {
+        document.body.append(
+            Dom.makeComponent(BasicModal)
+        )
     })
 })
 
