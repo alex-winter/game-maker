@@ -2,6 +2,7 @@ import { EVENTS } from 'Client/Constants/events'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
+import { LayerRepository } from 'Client/Service/Repository/LayerRepository'
 import { Layer } from 'Model/Layer'
 
 export class LayerListing extends Component {
@@ -9,9 +10,7 @@ export class LayerListing extends Component {
     private layers!: Layer[]
 
     protected async setup(): Promise<void> {
-        const resposne = await fetch('/layers')
-
-        this.layers = await resposne.json()
+        this.layers = await LayerRepository.getAll()
     }
 
     protected build(): HTMLElement {

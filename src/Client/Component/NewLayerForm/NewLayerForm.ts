@@ -1,3 +1,4 @@
+import { EVENTS } from 'Client/Constants/events'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
@@ -65,7 +66,11 @@ export class NewLayerForm extends Component {
     }
 
     private handleSubmit(): void {
-        console.log(this.name)
-        Events.emit('new-layer-submit', { name: this.name })
+        Events.emit(
+            EVENTS.newLayerSubmit,
+            {
+                name: this.name,
+            }
+        )
     }
 }

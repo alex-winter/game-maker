@@ -11,6 +11,9 @@ import { SheetMaker } from 'Client/Component/SpriteSheets/SheetMaker/SheetMaker'
 import { EVENTS } from 'Client/Constants/events'
 import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 import { NewLayerForm } from 'Client/Component/NewLayerForm/NewLayerForm'
+import { Layer } from 'Model/Layer'
+import { LayerInput } from 'Client/Model/LayerInput'
+import { LayerFactory } from 'Model/Factory/LayerFactory'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -54,6 +57,17 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.append(
             modal
         )
+    })
+
+    Events.listen(EVENTS.newLayerSubmit, (data) => {
+        const input: LayerInput = data as unknown as LayerInput
+
+        const layer = Object.assign(
+            LayerFactory.make(),
+            input
+        )
+
+        console.log(layer)
     })
 })
 

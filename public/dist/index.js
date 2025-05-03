@@ -667,11 +667,11 @@ const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Clien
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
+const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
 class LayerListing extends Component_1.Component {
     layers;
     async setup() {
-        const resposne = await fetch('/layers');
-        this.layers = await resposne.json();
+        this.layers = await LayerRepository_1.LayerRepository.getAll();
     }
     build() {
         const container = Dom_1.Dom.div();
@@ -701,6 +701,7 @@ exports.LayerListing = LayerListing;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NewLayerForm = void 0;
+const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
@@ -754,8 +755,9 @@ class NewLayerForm extends Component_1.Component {
         return container;
     }
     handleSubmit() {
-        console.log(this.name);
-        Events_1.Events.emit('new-layer-submit', { name: this.name });
+        Events_1.Events.emit(events_1.EVENTS.newLayerSubmit, {
+            name: this.name,
+        });
     }
 }
 exports.NewLayerForm = NewLayerForm;
@@ -1036,6 +1038,7 @@ exports.EVENTS = {
     openSheetImporter: 'open-sheet-importer',
     openAddNewLayer: 'open-add-new-layer',
     mouseDownWindowBox: 'mouse-down-window-box',
+    newLayerSubmit: 'new-layer-submit',
 };
 
 
@@ -1280,6 +1283,59 @@ exports.FileUpload = FileUpload;
 
 /***/ }),
 
+/***/ "./src/Client/Service/Repository/LayerRepository.ts":
+/*!**********************************************************!*\
+  !*** ./src/Client/Service/Repository/LayerRepository.ts ***!
+  \**********************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.LayerRepository = void 0;
+const Repository_1 = __webpack_require__(/*! Client/Service/Repository/Repository */ "./src/Client/Service/Repository/Repository.ts");
+class LayerRepository extends Repository_1.Repository {
+    static API_PATH = '/layers';
+    static async persist(layers) {
+        await this.post(this.API_PATH, layers);
+    }
+    static async getAll() {
+        return await this.get(this.API_PATH);
+    }
+}
+exports.LayerRepository = LayerRepository;
+
+
+/***/ }),
+
+/***/ "./src/Client/Service/Repository/Repository.ts":
+/*!*****************************************************!*\
+  !*** ./src/Client/Service/Repository/Repository.ts ***!
+  \*****************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Repository = void 0;
+class Repository {
+    static post(path, body) {
+        return fetch(path, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+    }
+    static async get(path) {
+        const response = await fetch(path);
+        return response.json();
+    }
+}
+exports.Repository = Repository;
+
+
+/***/ }),
+
 /***/ "./src/Client/Service/WindowBoxFactory.ts":
 /*!************************************************!*\
   !*** ./src/Client/Service/WindowBoxFactory.ts ***!
@@ -1388,6 +1444,29 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
        /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_styles_css__WEBPACK_IMPORTED_MODULE_6__["default"] && _node_modules_css_loader_dist_cjs_js_styles_css__WEBPACK_IMPORTED_MODULE_6__["default"].locals ? _node_modules_css_loader_dist_cjs_js_styles_css__WEBPACK_IMPORTED_MODULE_6__["default"].locals : undefined);
 
 
+/***/ }),
+
+/***/ "./src/Model/Factory/LayerFactory.ts":
+/*!*******************************************!*\
+  !*** ./src/Model/Factory/LayerFactory.ts ***!
+  \*******************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.LayerFactory = void 0;
+class LayerFactory {
+    static make() {
+        return {
+            uuid: crypto.randomUUID(),
+            name: '',
+            created_at: new Date().toISOString(),
+        };
+    }
+}
+exports.LayerFactory = LayerFactory;
+
+
 /***/ })
 
 /******/ 	});
@@ -1485,6 +1564,7 @@ const SheetMaker_1 = __webpack_require__(/*! Client/Component/SpriteSheets/Sheet
 const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
 const BasicModal_1 = __webpack_require__(/*! Client/Component/Generic/Modal/BasicModal */ "./src/Client/Component/Generic/Modal/BasicModal.ts");
 const NewLayerForm_1 = __webpack_require__(/*! Client/Component/NewLayerForm/NewLayerForm */ "./src/Client/Component/NewLayerForm/NewLayerForm.ts");
+const LayerFactory_1 = __webpack_require__(/*! Model/Factory/LayerFactory */ "./src/Model/Factory/LayerFactory.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
@@ -1513,6 +1593,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const newLayerForm = Dom_1.Dom.makeComponent(NewLayerForm_1.NewLayerForm);
         modal.append(newLayerForm);
         document.body.append(modal);
+    });
+    Events_1.Events.listen(events_1.EVENTS.newLayerSubmit, (data) => {
+        const input = data;
+        const layer = Object.assign(LayerFactory_1.LayerFactory.make(), input);
+        console.log(layer);
     });
 });
 

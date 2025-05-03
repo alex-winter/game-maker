@@ -10,4 +10,6 @@ export const EVENTS = {
 
     mouseDownWindowBox: 'mouse-down-window-box',
 
+    newLayerSubmit: 'new-layer-submit',
+
 }
