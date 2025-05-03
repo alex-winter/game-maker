@@ -5,20 +5,43 @@ export class BasicModal extends Component {
 
     protected css(): string {
         return /*css*/`
-            :host {
+            .backdrop {
                 position: fixed;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.7);
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            }
+
+            .modal-content {
+                background: white;
+                border-radius: 12px;
+                padding: 2rem;
+                max-width: 500px;
+                width: 90%;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+                font-family: sans-serif;
             }
         `
     }
 
     protected build(): HTMLElement {
-        const container = Dom.div()
+        const backdrop = Dom.div('backdrop')
+        const content = Dom.div('modal-content')
 
-        return container
+        backdrop.addEventListener('click', (event: MouseEvent) => {
+            if (event.target === backdrop) {
+                this.destroy()
+            }
+        })
+
+        backdrop.appendChild(content)
+        return backdrop
+    }
+
+    protected destroy(): void {
+        this.remove()
     }
 }

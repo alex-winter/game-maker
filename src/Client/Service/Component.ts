@@ -14,7 +14,7 @@ export abstract class Component extends HTMLElement {
         return ''
     }
 
-    public destory() {
+    public destroy() {
         this.shadow.host.remove()
     }
 

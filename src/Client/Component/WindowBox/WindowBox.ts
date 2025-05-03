@@ -87,7 +87,7 @@ export class WindowBox extends Component implements DraggableHTMLElement {
         element.addEventListener('mousedown', (e) => handleDragAndDrop(this, e))
         close.addEventListener('click', (event) => {
             event.stopPropagation()
-            this.destory()
+            this.destroy()
         }, true)
 
         options.append(close)

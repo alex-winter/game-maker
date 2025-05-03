@@ -580,19 +580,40 @@ const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Servic
 class BasicModal extends Component_1.Component {
     css() {
         return /*css*/ `
-            :host {
+            .backdrop {
                 position: fixed;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.7);
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            }
+
+            .modal-content {
+                background: white;
+                border-radius: 12px;
+                padding: 2rem;
+                max-width: 500px;
+                width: 90%;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+                font-family: sans-serif;
             }
         `;
     }
     build() {
-        const container = Dom_1.Dom.div();
-        return container;
+        const backdrop = Dom_1.Dom.div('backdrop');
+        const content = Dom_1.Dom.div('modal-content');
+        backdrop.addEventListener('click', (event) => {
+            if (event.target === backdrop) {
+                this.destroy();
+            }
+        });
+        backdrop.appendChild(content);
+        return backdrop;
+    }
+    destroy() {
+        this.remove();
     }
 }
 exports.BasicModal = BasicModal;
@@ -885,7 +906,7 @@ class WindowBox extends Component_1.Component {
         element.addEventListener('mousedown', (e) => (0, handleDragAndDrop_1.handleDragAndDrop)(this, e));
         close.addEventListener('click', (event) => {
             event.stopPropagation();
-            this.destory();
+            this.destroy();
         }, true);
         options.append(close);
         element.append(title, options);
@@ -968,7 +989,7 @@ class Component extends HTMLElement {
     css() {
         return '';
     }
-    destory() {
+    destroy() {
         this.shadow.host.remove();
     }
     connectedCallback() {
