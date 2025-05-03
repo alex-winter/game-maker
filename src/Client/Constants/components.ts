@@ -6,6 +6,7 @@ import { SheetMaker } from 'Client/Component/SpriteSheets/SheetMaker/SheetMaker'
 import { SideMenu } from 'Client/Component/SideMenu/SideMenu'
 import { SheetImporter } from 'Client/Component/SpriteSheets/SheetImporter/SheetImporter'
 import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
+import { NewLayerForm } from 'Client/Component/NewLayerForm/NewLayerForm'
 
 export const COMPONENTS = new Map<CustomElementConstructor, string>([
 
@@ -24,5 +25,7 @@ export const COMPONENTS = new Map<CustomElementConstructor, string>([
   [SheetImporter, 'sheet-importer'],
 
   [BasicModal, 'modal-basic'],
+
+  [NewLayerForm, 'new-layer-form'],
 
 ])

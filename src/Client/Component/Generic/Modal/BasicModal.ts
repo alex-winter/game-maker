@@ -30,6 +30,7 @@ export class BasicModal extends Component {
     protected build(): HTMLElement {
         const backdrop = Dom.div('backdrop')
         const content = Dom.div('modal-content')
+        const slot = Dom.slot()
 
         backdrop.addEventListener('click', (event: MouseEvent) => {
             if (event.target === backdrop) {
@@ -37,7 +38,10 @@ export class BasicModal extends Component {
             }
         })
 
+        content.append(slot)
+
         backdrop.appendChild(content)
+
         return backdrop
     }
 }

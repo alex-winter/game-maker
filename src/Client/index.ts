@@ -10,6 +10,7 @@ import { SheetImporter } from 'Client/Component/SpriteSheets/SheetImporter/Sheet
 import { SheetMaker } from 'Client/Component/SpriteSheets/SheetMaker/SheetMaker'
 import { EVENTS } from 'Client/Constants/events'
 import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
+import { NewLayerForm } from 'Client/Component/NewLayerForm/NewLayerForm'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -45,8 +46,13 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     Events.listen(EVENTS.openAddNewLayer, () => {
+        const modal = Dom.makeComponent(BasicModal)
+        const newLayerForm = Dom.makeComponent(NewLayerForm)
+
+        modal.append(newLayerForm)
+
         document.body.append(
-            Dom.makeComponent(BasicModal)
+            modal
         )
     })
 })

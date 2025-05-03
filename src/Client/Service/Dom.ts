@@ -16,6 +16,26 @@ export class Dom {
         return element
     }
 
+    public static label(text: string, ...classList: string[]): HTMLLabelElement {
+        const element = document.createElement('label')
+
+        element.innerText = text
+
+        if (classList.length) {
+            element.classList.add(...classList)
+        }
+
+        return element
+    }
+
+    public static inputText(...classList: string[]): HTMLInputElement {
+        const element = document.createElement('input')
+
+        element.type = 'text'
+
+        return element
+    }
+
     public static canvas(): HTMLCanvasElement {
         return document.createElement('canvas')
     }

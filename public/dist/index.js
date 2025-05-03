@@ -604,11 +604,13 @@ class BasicModal extends Component_1.Component {
     build() {
         const backdrop = Dom_1.Dom.div('backdrop');
         const content = Dom_1.Dom.div('modal-content');
+        const slot = Dom_1.Dom.slot();
         backdrop.addEventListener('click', (event) => {
             if (event.target === backdrop) {
                 this.destroy();
             }
         });
+        content.append(slot);
         backdrop.appendChild(content);
         return backdrop;
     }
@@ -686,6 +688,68 @@ class LayerListing extends Component_1.Component {
     }
 }
 exports.LayerListing = LayerListing;
+
+
+/***/ }),
+
+/***/ "./src/Client/Component/NewLayerForm/NewLayerForm.ts":
+/*!***********************************************************!*\
+  !*** ./src/Client/Component/NewLayerForm/NewLayerForm.ts ***!
+  \***********************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.NewLayerForm = void 0;
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+class NewLayerForm extends Component_1.Component {
+    css() {
+        return /*css*/ `
+            .form-container {
+                font-family: sans-serif;
+                width: 100%;
+            }
+
+            .form-group {
+                margin-bottom: 1rem;
+            }
+
+            .form-label {
+                display: block;
+                margin-bottom: 0.5rem;
+                font-weight: 600;
+                color: #333;
+            }
+
+            .text-input {
+                width: 100%;
+                padding: 0.5rem;
+                font-size: 1rem;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                outline: none;
+            }
+
+            .text-input:focus {
+                border-color: #007bff;
+                box-shadow: 0 0 0 2px rgba(0,123,255,0.2);
+            }
+        `;
+    }
+    build() {
+        const container = Dom_1.Dom.div('form-container');
+        const formGroup = Dom_1.Dom.div('form-group');
+        const label = Dom_1.Dom.label('Layer Name', 'form-label');
+        const input = Dom_1.Dom.inputText('text-input');
+        input.placeholder = 'Enter layer name';
+        formGroup.appendChild(label);
+        formGroup.appendChild(input);
+        container.appendChild(formGroup);
+        return container;
+    }
+}
+exports.NewLayerForm = NewLayerForm;
 
 
 /***/ }),
@@ -932,6 +996,7 @@ const SheetMaker_1 = __webpack_require__(/*! Client/Component/SpriteSheets/Sheet
 const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */ "./src/Client/Component/SideMenu/SideMenu.ts");
 const SheetImporter_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetImporter/SheetImporter */ "./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts");
 const BasicModal_1 = __webpack_require__(/*! Client/Component/Generic/Modal/BasicModal */ "./src/Client/Component/Generic/Modal/BasicModal.ts");
+const NewLayerForm_1 = __webpack_require__(/*! Client/Component/NewLayerForm/NewLayerForm */ "./src/Client/Component/NewLayerForm/NewLayerForm.ts");
 exports.COMPONENTS = new Map([
     [SideMenu_1.SideMenu, 'side-menu'],
     [LayerListing_1.LayerListing, 'layer-listing'],
@@ -941,6 +1006,7 @@ exports.COMPONENTS = new Map([
     [SheetMaker_1.SheetMaker, 'sheet-maker'],
     [SheetImporter_1.SheetImporter, 'sheet-importer'],
     [BasicModal_1.BasicModal, 'modal-basic'],
+    [NewLayerForm_1.NewLayerForm, 'new-layer-form'],
 ]);
 
 
@@ -1025,6 +1091,19 @@ class Dom {
         if (classList.length) {
             element.classList.add(...classList);
         }
+        return element;
+    }
+    static label(text, ...classList) {
+        const element = document.createElement('label');
+        element.innerText = text;
+        if (classList.length) {
+            element.classList.add(...classList);
+        }
+        return element;
+    }
+    static inputText(...classList) {
+        const element = document.createElement('input');
+        element.type = 'text';
         return element;
     }
     static canvas() {
@@ -1396,6 +1475,7 @@ const SheetImporter_1 = __webpack_require__(/*! Client/Component/SpriteSheets/Sh
 const SheetMaker_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetMaker/SheetMaker */ "./src/Client/Component/SpriteSheets/SheetMaker/SheetMaker.ts");
 const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
 const BasicModal_1 = __webpack_require__(/*! Client/Component/Generic/Modal/BasicModal */ "./src/Client/Component/Generic/Modal/BasicModal.ts");
+const NewLayerForm_1 = __webpack_require__(/*! Client/Component/NewLayerForm/NewLayerForm */ "./src/Client/Component/NewLayerForm/NewLayerForm.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
@@ -1420,7 +1500,10 @@ document.addEventListener('DOMContentLoaded', () => {
         WindowBoxFactory_1.WindowBoxFactory.make(component, 'Import Sheets');
     });
     Events_1.Events.listen(events_1.EVENTS.openAddNewLayer, () => {
-        document.body.append(Dom_1.Dom.makeComponent(BasicModal_1.BasicModal));
+        const modal = Dom_1.Dom.makeComponent(BasicModal_1.BasicModal);
+        const newLayerForm = Dom_1.Dom.makeComponent(NewLayerForm_1.NewLayerForm);
+        modal.append(newLayerForm);
+        document.body.append(modal);
     });
 });
 
