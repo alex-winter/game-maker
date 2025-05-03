@@ -612,17 +612,17 @@ exports.LayerListing = void 0;
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 class LayerListing extends Component_1.Component {
+    layers;
+    async setup() {
+        const resposne = await fetch('/layers');
+        this.layers = await resposne.json();
+    }
     build() {
         const container = Dom_1.Dom.div();
-        this.data().then(layers => {
-            container.append(...layers.map(this.buildLayer));
-        });
+        const addNewLayerButton = Dom_1.Dom.button('Add New Layer');
+        container.append(...this.layers.map(this.buildLayer));
+        container.append(addNewLayerButton);
         return container;
-    }
-    async data() {
-        const resposne = await fetch('/layers');
-        const data = await resposne.json();
-        return data;
     }
     buildLayer(layer) {
         const container = Dom_1.Dom.div('layer-item');

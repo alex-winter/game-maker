@@ -23,7 +23,10 @@ export class SideMenu extends Component {
         const slot = Dom.slot()
         const sheetImportOption = this.buildMiniOption()
 
-        container.append(slot, sheetImportOption)
+        container.append(
+            slot,
+            sheetImportOption,
+        )
 
         return container
     }

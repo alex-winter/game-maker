@@ -3,23 +3,26 @@ import { Dom } from 'Client/Service/Dom'
 import { Layer } from 'Model/Layer'
 
 export class LayerListing extends Component {
-    protected build(): HTMLElement {
-        const container = Dom.div()
 
-        this.data().then(layers => {
-            container.append(
-                ...layers.map(this.buildLayer)
-            )
-        })
+    private layers!: Layer[]
 
-        return container
+    protected async setup(): Promise<void> {
+        const resposne = await fetch('/layers')
+
+        this.layers = await resposne.json()
     }
 
-    private async data(): Promise<Layer[]> {
-        const resposne = await fetch('/layers')
-        const data = await resposne.json()
+    protected build(): HTMLElement {
+        const container = Dom.div()
+        const addNewLayerButton = Dom.button('Add New Layer')
 
-        return data
+        container.append(
+            ...this.layers.map(this.buildLayer)
+        )
+
+        container.append(addNewLayerButton)
+
+        return container
     }
 
     private buildLayer(layer: Layer): HTMLElement {
