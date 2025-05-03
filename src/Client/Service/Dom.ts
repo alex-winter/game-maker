@@ -55,16 +55,17 @@ export class Dom {
         })
     }
 
-    public static component(
+    public static makeComponent(
         component: CustomElementConstructor,
         dataset: Object = {},
     ): HTMLElement {
         const tag = this.findComponentTag(component)
+        const existing = Dom.queryAllDeep(tag)
 
-        if ((component as unknown as typeof Component).isSingleton) {
-            const existing = Dom.queryAllDeep(tag)
-            if (existing.length) {
-                return existing[0] as HTMLElement
+        if (existing.length) {
+            const found = existing[0] as Component
+            if (found.isSingleton) {
+                return found
             }
         }
 

@@ -3,6 +3,10 @@ import { Dom } from 'Client/Service/Dom'
 import { Layer } from 'Model/Layer'
 
 export class LayerListing extends Component {
+    public isSingleton(): boolean {
+        return false
+    }
+
     protected build(): HTMLElement {
         const container = Dom.div()
 

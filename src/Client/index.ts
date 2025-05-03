@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     Events.listenToOpenSheet(async file => {
         document.body.append(
-            Dom.component(SpriteMakerWindowBox, { imageSrc: await fileToBase64(file) })
+            Dom.makeComponent(SpriteMakerWindowBox, { imageSrc: await fileToBase64(file) })
         )
     })
 
@@ -36,16 +36,11 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     Events.listenToSheetImportOpen(() => {
-        const component = Dom.component(SpriteSheetsWindowBox)
-
-        console.log(
-            component,
-            component.isConnected
-        )
+        const component = Dom.makeComponent(SpriteSheetsWindowBox)
 
         if (!component.isConnected) {
             document.body.append(
-                Dom.component(SpriteSheetsWindowBox)
+                Dom.makeComponent(SpriteSheetsWindowBox)
             )
         }
     })

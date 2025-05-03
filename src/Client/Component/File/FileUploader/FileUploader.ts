@@ -5,6 +5,8 @@ import { Events } from 'Client/Service/Events'
 export class FileUploader extends Component {
     private readonly container: HTMLDivElement = Dom.div('uploader')
 
+    public isSingleton: boolean = true
+
     protected css(): string {
         return /*css*/`
             :host {

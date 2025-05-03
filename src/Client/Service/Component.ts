@@ -1,7 +1,6 @@
 export abstract class Component extends HTMLElement {
     private readonly shadow: ShadowRoot
-
-    public static readonly isSingleton: boolean = false
+    public isSingleton: boolean = false
 
     constructor() {
         super()
@@ -10,15 +9,16 @@ export abstract class Component extends HTMLElement {
     }
 
     protected abstract build(): HTMLElement
-
+    protected async setup(): Promise<void> { }
     protected css(): string {
         return ''
     }
 
-    protected async setup(): Promise<void> { }
+    public destory() {
+        this.shadow.host.remove()
+    }
 
     protected connectedCallback(): void {
-        console.log('added to dom')
         this.setup().then(() => {
             const css = this.css().trim()
 
@@ -32,13 +32,5 @@ export abstract class Component extends HTMLElement {
                 this.build()
             )
         })
-    }
-
-    disconnectedCallback() {
-        console.log('Removed from DOM')
-    }
-
-    destory() {
-        this.shadow.host.remove()
     }
 }

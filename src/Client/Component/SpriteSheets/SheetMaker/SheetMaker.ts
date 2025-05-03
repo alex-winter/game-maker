@@ -1,7 +1,7 @@
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 
-export class SpriteMaker extends Component {
+export class SheetMaker extends Component {
     private image: HTMLImageElement | null = null
 
     protected css(): string {

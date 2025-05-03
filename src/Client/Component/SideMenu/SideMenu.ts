@@ -3,6 +3,8 @@ import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 
 export class SideMenu extends Component {
+    public isSingleton: boolean = true
+
     protected css(): string {
         return /*css*/`
             :host {
