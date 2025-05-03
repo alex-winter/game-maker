@@ -1295,7 +1295,7 @@ exports.LayerRepository = void 0;
 const Repository_1 = __webpack_require__(/*! Client/Service/Repository/Repository */ "./src/Client/Service/Repository/Repository.ts");
 class LayerRepository extends Repository_1.Repository {
     static API_PATH = '/layers';
-    static async persist(layers) {
+    static async persist(...layers) {
         await this.post(this.API_PATH, layers);
     }
     static async getAll() {
@@ -1565,6 +1565,7 @@ const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Clien
 const BasicModal_1 = __webpack_require__(/*! Client/Component/Generic/Modal/BasicModal */ "./src/Client/Component/Generic/Modal/BasicModal.ts");
 const NewLayerForm_1 = __webpack_require__(/*! Client/Component/NewLayerForm/NewLayerForm */ "./src/Client/Component/NewLayerForm/NewLayerForm.ts");
 const LayerFactory_1 = __webpack_require__(/*! Model/Factory/LayerFactory */ "./src/Model/Factory/LayerFactory.ts");
+const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
@@ -1595,9 +1596,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.append(modal);
     });
     Events_1.Events.listen(events_1.EVENTS.newLayerSubmit, (data) => {
-        const input = data;
+        const input = data.detail;
         const layer = Object.assign(LayerFactory_1.LayerFactory.make(), input);
-        console.log(layer);
+        LayerRepository_1.LayerRepository.persist(layer);
     });
 });
 

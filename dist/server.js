@@ -29,19 +29,29 @@ const storage = multer_1.default.diskStorage({
     }
 });
 const upload = (0, multer_1.default)({ storage });
+const layers = [
+    {
+        uuid: (0, crypto_1.randomUUID)().toString(),
+        name: 'Layer 1',
+        created_at: new Date().toISOString(),
+    },
+];
 app.use(express_1.default.static(publicDir));
+app.use(express_1.default.json());
 app.get('/', (req, res) => {
     res.sendFile(path_1.default.join(publicDir, 'index.html'));
 });
 app.get('/layers', (_, response) => {
-    const layers = [
-        {
-            uuid: (0, crypto_1.randomUUID)().toString(),
-            name: 'Layer 1',
-            created_at: new Date().toISOString(),
-        }
-    ];
     response.json(layers);
+});
+// @ts-ignore
+app.post('/layers', (request, response) => {
+    if (!Array.isArray(request.body)) {
+        return response.status(400).json({ error: 'bad' });
+    }
+    layers.push(...request.body);
+    console.log('moo', layers);
+    response.json({ ok: true });
 });
 app.post('/upload-files', upload.array('files[]'), (req, res) => {
     res.json({

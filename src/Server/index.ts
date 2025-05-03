@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import express from 'express'
+import express, { Request, Response } from 'express'
 import { Layer } from 'Model/Layer'
 import path from 'path'
 import multer from 'multer'
@@ -19,22 +19,36 @@ const storage = multer.diskStorage({
 })
 const upload = multer({ storage })
 
+const layers = [
+  {
+    uuid: randomUUID().toString(),
+    name: 'Layer 1',
+    created_at: new Date().toISOString(),
+  },
+]
+
 app.use(express.static(publicDir))
+app.use(express.json())
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(publicDir, 'index.html'))
 })
 
 app.get('/layers', (_, response) => {
-  const layers: Layer[] = [
-    {
-      uuid: randomUUID().toString(),
-      name: 'Layer 1',
-      created_at: new Date().toISOString(),
-    }
-  ]
-
   response.json(layers)
+})
+
+// @ts-ignore
+app.post('/layers', (request: Request, response: Response) => {
+  if (!Array.isArray(request.body)) {
+    return response.status(400).json({ error: 'bad' })
+  }
+
+  layers.push(...request.body)
+
+  console.log('moo', layers)
+
+  response.json({ ok: true })
 })
 
 app.post('/upload-files', upload.array('files[]'), (req, res) => {

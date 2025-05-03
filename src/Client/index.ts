@@ -14,6 +14,7 @@ import { NewLayerForm } from 'Client/Component/NewLayerForm/NewLayerForm'
 import { Layer } from 'Model/Layer'
 import { LayerInput } from 'Client/Model/LayerInput'
 import { LayerFactory } from 'Model/Factory/LayerFactory'
+import { LayerRepository } from 'Client/Service/Repository/LayerRepository'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -60,14 +61,14 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     Events.listen(EVENTS.newLayerSubmit, (data) => {
-        const input: LayerInput = data as unknown as LayerInput
+        const input: LayerInput = data.detail as LayerInput
 
         const layer = Object.assign(
             LayerFactory.make(),
             input
         )
 
-        console.log(layer)
+        LayerRepository.persist(layer)
     })
 })
 
