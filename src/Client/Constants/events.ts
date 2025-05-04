@@ -12,4 +12,6 @@ export const EVENTS = {
 
     newLayerSubmit: 'new-layer-submit',
 
+    closeModal: 'close-modal',
+
 }

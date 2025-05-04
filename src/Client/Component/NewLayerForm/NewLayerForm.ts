@@ -46,7 +46,6 @@ export class NewLayerForm extends Component {
         const formGroup = Dom.div('form-group')
 
         const label = Dom.label('Layer Name', 'form-label')
-
         const input = Dom.inputText('text-input')
         input.placeholder = 'Enter layer name'
         input.addEventListener('keyup', () => this.name = input.value)
@@ -66,6 +65,10 @@ export class NewLayerForm extends Component {
     }
 
     private handleSubmit(): void {
+        Events.emit(
+            EVENTS.closeModal,
+            this
+        )
         Events.emit(
             EVENTS.newLayerSubmit,
             {

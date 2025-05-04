@@ -1,5 +1,7 @@
+import { EVENTS } from 'Client/Constants/events'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
+import { Events } from 'Client/Service/Events'
 
 export class BasicModal extends Component {
 
@@ -12,7 +14,7 @@ export class BasicModal extends Component {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: 1000;
+                z-index: 2000;
             }
 
             .modal-content {
@@ -34,6 +36,12 @@ export class BasicModal extends Component {
 
         backdrop.addEventListener('click', (event: MouseEvent) => {
             if (event.target === backdrop) {
+                this.destroy()
+            }
+        })
+
+        Events.listen(EVENTS.closeModal, (event) => {
+            if (this.contains(event.detail as Component)) {
                 this.destroy()
             }
         })
