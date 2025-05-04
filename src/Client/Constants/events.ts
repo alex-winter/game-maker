@@ -16,4 +16,6 @@ export const EVENTS = {
 
     closeModal: 'close-modal',
 
+    sheetSelectionMade: 'sheet-selection-made',
+
 }

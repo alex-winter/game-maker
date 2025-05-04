@@ -858,10 +858,14 @@ exports.SheetImporter = SheetImporter;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SheetMaker = void 0;
+const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
+const extract_image_from_canvas_area_1 = __webpack_require__(/*! Client/Service/extract-image-from-canvas-area */ "./src/Client/Service/extract-image-from-canvas-area.ts");
 class SheetMaker extends Component_1.Component {
     image = null;
+    canvas;
     css() {
         return /*css*/ `
             :host {
@@ -885,13 +889,13 @@ class SheetMaker extends Component_1.Component {
     }
     build() {
         const element = Dom_1.Dom.div();
-        const canvas = Dom_1.Dom.canvas();
-        const context = canvas.getContext('2d');
+        this.canvas = Dom_1.Dom.canvas();
+        const context = this.canvas.getContext('2d');
         const selectorBox = this.buildSelectorBox();
         if (this.image) {
             context.drawImage(this.image, 0, 0);
         }
-        element.append(canvas, selectorBox);
+        element.append(this.canvas, selectorBox);
         return element;
     }
     buildSelectorBox() {
@@ -924,6 +928,11 @@ class SheetMaker extends Component_1.Component {
             isDragging = false;
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
+            const boxX = parseInt(box.style.left || '0', 10);
+            const boxY = parseInt(box.style.top || '0', 10);
+            const boxWidth = parseInt(box.style.width || '0', 10);
+            const boxHeight = parseInt(box.style.height || '0', 10);
+            Events_1.Events.emit(events_1.EVENTS.sheetSelectionMade, (0, extract_image_from_canvas_area_1.extractImageFromCanvasArea)(this.canvas, boxX, boxY, boxWidth, boxHeight));
         };
         this.addEventListener('mousedown', (event) => {
             const rect = this.getBoundingClientRect();
@@ -1087,6 +1096,7 @@ exports.EVENTS = {
     newLayerSubmit: 'new-layer-submit',
     newLayerMapped: 'new-layer-mapped',
     closeModal: 'close-modal',
+    sheetSelectionMade: 'sheet-selection-made',
 };
 
 
@@ -1426,6 +1436,29 @@ class WindowBoxFactory {
     }
 }
 exports.WindowBoxFactory = WindowBoxFactory;
+
+
+/***/ }),
+
+/***/ "./src/Client/Service/extract-image-from-canvas-area.ts":
+/*!**************************************************************!*\
+  !*** ./src/Client/Service/extract-image-from-canvas-area.ts ***!
+  \**************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.extractImageFromCanvasArea = void 0;
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+async function extractImageFromCanvasArea(sourceCanvas, x, y, width, height) {
+    const tempCanvas = Dom_1.Dom.canvas();
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    const ctx = tempCanvas.getContext('2d');
+    ctx.drawImage(sourceCanvas, x, y, width, height, 0, 0, width, height);
+    return await Dom_1.Dom.image(tempCanvas.toDataURL());
+}
+exports.extractImageFromCanvasArea = extractImageFromCanvasArea;
 
 
 /***/ }),

@@ -1,8 +1,12 @@
+import { EVENTS } from 'Client/Constants/events'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
+import { Events } from 'Client/Service/Events'
+import { extractImageFromCanvasArea } from 'Client/Service/extract-image-from-canvas-area'
 
 export class SheetMaker extends Component {
     private image: HTMLImageElement | null = null
+    private canvas!: HTMLCanvasElement
 
     protected css(): string {
         return /*css*/`
@@ -29,18 +33,19 @@ export class SheetMaker extends Component {
 
     protected build(): HTMLElement {
         const element = Dom.div()
-        const canvas = Dom.canvas()
-        const context = canvas.getContext('2d') as CanvasRenderingContext2D
+        this.canvas = Dom.canvas()
+        const context = this.canvas.getContext('2d')!
         const selectorBox = this.buildSelectorBox()
 
         if (this.image) {
             context.drawImage(this.image, 0, 0)
         }
 
-        element.append(canvas, selectorBox)
+        element.append(this.canvas, selectorBox)
 
         return element
     }
+
     protected buildSelectorBox(): HTMLDivElement {
         const box = Dom.div('selector-box')
 
@@ -78,6 +83,22 @@ export class SheetMaker extends Component {
             isDragging = false
             document.removeEventListener('mousemove', onMouseMove)
             document.removeEventListener('mouseup', onMouseUp)
+
+            const boxX = parseInt(box.style.left || '0', 10)
+            const boxY = parseInt(box.style.top || '0', 10)
+            const boxWidth = parseInt(box.style.width || '0', 10)
+            const boxHeight = parseInt(box.style.height || '0', 10)
+
+            Events.emit(
+                EVENTS.sheetSelectionMade,
+                extractImageFromCanvasArea(
+                    this.canvas,
+                    boxX,
+                    boxY,
+                    boxWidth,
+                    boxHeight
+                )
+            )
         }
 
         this.addEventListener('mousedown', (event: MouseEvent) => {
