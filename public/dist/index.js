@@ -682,10 +682,14 @@ class LayerListing extends Component_1.Component {
     }
     build() {
         const container = Dom_1.Dom.div();
+        const listing = Dom_1.Dom.div();
         const addNewLayerButton = Dom_1.Dom.button('Add New Layer');
         addNewLayerButton.addEventListener('click', () => Events_1.Events.emit(events_1.EVENTS.openAddNewLayer));
-        container.append(...this.layers.map(this.buildLayer));
-        container.append(addNewLayerButton);
+        listing.append(...this.layers.map(this.buildLayer));
+        Events_1.Events.listen(events_1.EVENTS.newLayerMapped, event => {
+            listing.append(this.buildLayer(event.detail));
+        });
+        container.append(listing, addNewLayerButton);
         return container;
     }
     buildLayer(layer) {
@@ -1047,6 +1051,7 @@ exports.EVENTS = {
     openAddNewLayer: 'open-add-new-layer',
     mouseDownWindowBox: 'mouse-down-window-box',
     newLayerSubmit: 'new-layer-submit',
+    newLayerMapped: 'new-layer-mapped',
     closeModal: 'close-modal',
 };
 
@@ -1065,6 +1070,7 @@ exports.Component = void 0;
 class Component extends HTMLElement {
     shadow;
     isSingleton = false;
+    content;
     constructor() {
         super();
         this.shadow = this.attachShadow({ mode: 'open' });
@@ -1076,15 +1082,27 @@ class Component extends HTMLElement {
     destroy() {
         this.shadow.host.remove();
     }
+    reload() {
+        this.render(true);
+    }
     connectedCallback() {
+        this.render();
+    }
+    render(isReload = false) {
         this.setup().then(() => {
             const css = this.css().trim();
             if (css.length) {
-                const style = document.createElement('style');
-                style.innerText = css;
-                this.shadow.appendChild(style);
+                const sheet = new CSSStyleSheet();
+                sheet.replaceSync(css);
+                this.shadowRoot.adoptedStyleSheets = [sheet];
             }
-            this.shadow.appendChild(this.build());
+            this.content = this.build();
+            if (isReload) {
+                this.shadow.replaceChild(this.build(), this.content);
+            }
+            else {
+                this.shadow.appendChild(this.content);
+            }
         });
     }
 }
@@ -1607,6 +1625,7 @@ document.addEventListener('DOMContentLoaded', () => {
     Events_1.Events.listen(events_1.EVENTS.newLayerSubmit, (data) => {
         const input = data.detail;
         const layer = Object.assign(LayerFactory_1.LayerFactory.make(), input);
+        Events_1.Events.emit(events_1.EVENTS.newLayerMapped, layer);
         LayerRepository_1.LayerRepository.persist(layer);
     });
 });

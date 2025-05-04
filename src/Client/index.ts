@@ -68,6 +68,8 @@ document.addEventListener('DOMContentLoaded', () => {
             input
         )
 
+        Events.emit(EVENTS.newLayerMapped, layer)
+
         LayerRepository.persist(layer)
     })
 })

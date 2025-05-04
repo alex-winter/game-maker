@@ -15,15 +15,22 @@ export class LayerListing extends Component {
 
     protected build(): HTMLElement {
         const container = Dom.div()
+        const listing = Dom.div()
         const addNewLayerButton = Dom.button('Add New Layer')
 
         addNewLayerButton.addEventListener('click', () => Events.emit(EVENTS.openAddNewLayer))
 
-        container.append(
+        listing.append(
             ...this.layers.map(this.buildLayer)
         )
 
-        container.append(addNewLayerButton)
+        Events.listen(EVENTS.newLayerMapped, event => {
+            listing.append(
+                this.buildLayer(event.detail as Layer)
+            )
+        })
+
+        container.append(listing, addNewLayerButton)
 
         return container
     }
