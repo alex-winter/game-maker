@@ -24,6 +24,7 @@ const layers = [
     uuid: randomUUID().toString(),
     name: 'Layer 1',
     created_at: new Date().toISOString(),
+    is_visible: true,
   },
 ]
 

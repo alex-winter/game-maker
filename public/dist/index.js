@@ -1488,6 +1488,7 @@ class LayerFactory {
             uuid: crypto.randomUUID(),
             name: '',
             created_at: new Date().toISOString(),
+            is_visible: true,
         };
     }
 }

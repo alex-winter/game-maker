@@ -4,4 +4,7 @@ export interface Layer {
     name: string
 
     created_at: string
+
+    is_visible: boolean
+
 }

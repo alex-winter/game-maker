@@ -8,6 +8,8 @@ export class LayerFactory {
             name: '',
 
             created_at: new Date().toISOString(),
+
+            is_visible: true,
         }
     }
 }
