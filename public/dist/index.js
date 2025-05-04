@@ -1667,6 +1667,16 @@ components_1.COMPONENTS.forEach((tagName, constructor) => {
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.querySelector('canvas');
     const ctx = canvas?.getContext('2d');
+    canvas?.addEventListener('mousedown', (event) => {
+        const mouseMove = (event) => {
+        };
+        const mouseUp = (event) => {
+            document.removeEventListener('mouseup', mouseUp);
+            document.removeEventListener('mousemove', mouseMove);
+        };
+        document.addEventListener('mousemove', mouseMove);
+        document.addEventListener('mouseup', mouseUp);
+    });
     Events_1.Events.listenToFilesUploadSubmitted(files => {
         FileUpload_1.FileUpload.uploadMultiple(files);
     });

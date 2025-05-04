@@ -23,7 +23,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.querySelector('canvas')
     const ctx = canvas?.getContext('2d')
 
+    canvas?.addEventListener('mousedown', (event: MouseEvent) => {
 
+        const mouseMove = (event: MouseEvent) => {
+
+        }
+        const mouseUp = (event: MouseEvent) => {
+            document.removeEventListener('mouseup', mouseUp)
+            document.removeEventListener('mousemove', mouseMove)
+        }
+
+        document.addEventListener('mousemove', mouseMove)
+        document.addEventListener('mouseup', mouseUp)
+    })
 
     Events.listenToFilesUploadSubmitted(files => {
         FileUpload.uploadMultiple(files)
