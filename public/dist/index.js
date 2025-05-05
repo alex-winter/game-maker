@@ -940,7 +940,7 @@ class SheetMaker extends Component_1.Component {
             box.style.width = width + 'px';
             box.style.height = height + 'px';
         };
-        const onMouseUp = () => {
+        const onMouseUp = async () => {
             isDragging = false;
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
@@ -948,7 +948,7 @@ class SheetMaker extends Component_1.Component {
             const boxY = parseInt(box.style.top || '0', 10);
             const boxWidth = parseInt(box.style.width || '0', 10);
             const boxHeight = parseInt(box.style.height || '0', 10);
-            Events_1.Events.emit(events_1.EVENTS.sheetSelectionMade, (0, extract_image_from_canvas_area_1.extractImageFromCanvasArea)(this.canvas, boxX, boxY, boxWidth, boxHeight));
+            Events_1.Events.emit(events_1.EVENTS.sheetSelectionMade, await (0, extract_image_from_canvas_area_1.extractImageFromCanvasArea)(this.canvas, boxX, boxY, boxWidth, boxHeight));
         };
         this.addEventListener('mousedown', (event) => {
             const rect = this.getBoundingClientRect();
@@ -1471,7 +1471,9 @@ async function extractImageFromCanvasArea(sourceCanvas, x, y, width, height) {
     tempCanvas.width = width;
     tempCanvas.height = height;
     const ctx = tempCanvas.getContext('2d');
-    ctx.drawImage(sourceCanvas, x, y, width, height, 0, 0, width, height);
+    const image = await Dom_1.Dom.image(sourceCanvas.toDataURL());
+    ctx.drawImage(image, x, y, width, height, 0, 0, width, height);
+    console.log(await Dom_1.Dom.image(tempCanvas.toDataURL()));
     return await Dom_1.Dom.image(tempCanvas.toDataURL());
 }
 exports.extractImageFromCanvasArea = extractImageFromCanvasArea;
@@ -1680,10 +1682,12 @@ const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/Laye
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
+let currentSelection = null;
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.querySelector('canvas');
     const ctx = canvas?.getContext('2d');
     canvas?.addEventListener('mousedown', (event) => {
+        ctx?.drawImage(currentSelection, event.clientX, event.clientY);
         const mouseMove = (event) => {
         };
         const mouseUp = (event) => {
@@ -1715,6 +1719,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const newLayerForm = Dom_1.Dom.makeComponent(NewLayerForm_1.NewLayerForm);
         modal.append(newLayerForm);
         document.body.append(modal);
+    });
+    Events_1.Events.listen(events_1.EVENTS.sheetSelectionMade, (event) => {
+        currentSelection = event.detail;
     });
     Events_1.Events.listen(events_1.EVENTS.newLayerSubmit, (data) => {
         const input = data.detail;

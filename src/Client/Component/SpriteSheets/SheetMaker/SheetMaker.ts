@@ -79,7 +79,7 @@ export class SheetMaker extends Component {
             box.style.height = height + 'px'
         }
 
-        const onMouseUp = () => {
+        const onMouseUp = async () => {
             isDragging = false
             document.removeEventListener('mousemove', onMouseMove)
             document.removeEventListener('mouseup', onMouseUp)
@@ -91,7 +91,7 @@ export class SheetMaker extends Component {
 
             Events.emit(
                 EVENTS.sheetSelectionMade,
-                extractImageFromCanvasArea(
+                await extractImageFromCanvasArea(
                     this.canvas,
                     boxX,
                     boxY,

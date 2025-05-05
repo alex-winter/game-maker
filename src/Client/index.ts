@@ -19,15 +19,23 @@ COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
 })
 
+let currentSelection: HTMLImageElement | null = null
+
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.querySelector('canvas')
     const ctx = canvas?.getContext('2d')
 
     canvas?.addEventListener('mousedown', (event: MouseEvent) => {
+        ctx?.drawImage(
+            currentSelection!,
+            event.clientX,
+            event.clientY,
+        )
 
         const mouseMove = (event: MouseEvent) => {
 
         }
+
         const mouseUp = (event: MouseEvent) => {
             document.removeEventListener('mouseup', mouseUp)
             document.removeEventListener('mousemove', mouseMove)
@@ -69,6 +77,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.append(
             modal
         )
+    })
+
+    Events.listen(EVENTS.sheetSelectionMade, (event) => {
+        currentSelection = event.detail as HTMLImageElement
     })
 
     Events.listen(EVENTS.newLayerSubmit, (data) => {

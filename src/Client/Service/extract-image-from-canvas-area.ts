@@ -14,7 +14,13 @@ export async function extractImageFromCanvasArea(
 
     const ctx = tempCanvas.getContext('2d')!
 
-    ctx.drawImage(sourceCanvas, x, y, width, height, 0, 0, width, height)
+    const image = await Dom.image(sourceCanvas.toDataURL())
+
+    ctx.drawImage(image, x, y, width, height, 0, 0, width, height)
+
+
+    console.log(await Dom.image(tempCanvas.toDataURL()))
+
 
     return await Dom.image(tempCanvas.toDataURL())
 }
