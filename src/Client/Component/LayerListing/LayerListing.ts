@@ -9,6 +9,18 @@ export class LayerListing extends Component {
 
     private layers!: Layer[]
 
+    protected css(): string {
+        return /*css*/`
+            .layer-item {
+                display: flex;
+            }
+
+            .layer-item > div {
+                flex: 1;
+            }
+        `
+    }
+
     protected async setup(): Promise<void> {
         this.layers = await LayerRepository.getAll()
     }
@@ -37,8 +49,20 @@ export class LayerListing extends Component {
 
     private buildLayer(layer: Layer): HTMLElement {
         const container = Dom.div('layer-item')
+        const name = Dom.div()
+        const options = Dom.div()
+        const visibleButton = Dom.button('o')
 
-        container.innerText = layer.name
+        name.innerText = layer.name
+
+        options.append(
+            visibleButton,
+        )
+
+        container.append(
+            name,
+            options,
+        )
 
         return container
     }

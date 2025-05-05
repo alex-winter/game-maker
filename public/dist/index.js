@@ -677,6 +677,17 @@ const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/
 const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
 class LayerListing extends Component_1.Component {
     layers;
+    css() {
+        return /*css*/ `
+            .layer-item {
+                display: flex;
+            }
+
+            .layer-item > div {
+                flex: 1;
+            }
+        `;
+    }
     async setup() {
         this.layers = await LayerRepository_1.LayerRepository.getAll();
     }
@@ -694,7 +705,12 @@ class LayerListing extends Component_1.Component {
     }
     buildLayer(layer) {
         const container = Dom_1.Dom.div('layer-item');
-        container.innerText = layer.name;
+        const name = Dom_1.Dom.div();
+        const options = Dom_1.Dom.div();
+        const visibleButton = Dom_1.Dom.button('o');
+        name.innerText = layer.name;
+        options.append(visibleButton);
+        container.append(name, options);
         return container;
     }
 }
