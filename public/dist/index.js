@@ -1687,6 +1687,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.querySelector('canvas');
     const ctx = canvas?.getContext('2d');
     canvas?.addEventListener('mousedown', (event) => {
+        ctx?.setTransform(1, 0, 0, 1, 0, 0);
         ctx?.drawImage(currentSelection, event.clientX, event.clientY);
         const mouseMove = (event) => {
         };
@@ -1729,6 +1730,12 @@ document.addEventListener('DOMContentLoaded', () => {
         Events_1.Events.emit(events_1.EVENTS.newLayerMapped, layer);
         LayerRepository_1.LayerRepository.persist(layer);
     });
+    function setCanvasSize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', setCanvasSize);
+    setCanvasSize();
 });
 
 })();

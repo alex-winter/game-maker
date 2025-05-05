@@ -22,10 +22,11 @@ COMPONENTS.forEach((tagName, constructor) => {
 let currentSelection: HTMLImageElement | null = null
 
 document.addEventListener('DOMContentLoaded', () => {
-    const canvas = document.querySelector('canvas')
+    const canvas = document.querySelector('canvas') as HTMLCanvasElement
     const ctx = canvas?.getContext('2d')
 
     canvas?.addEventListener('mousedown', (event: MouseEvent) => {
+        ctx?.setTransform(1, 0, 0, 1, 0, 0)
         ctx?.drawImage(
             currentSelection!,
             event.clientX,
@@ -95,5 +96,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         LayerRepository.persist(layer)
     })
+
+    function setCanvasSize(): void {
+        canvas.width = window.innerWidth
+        canvas.height = window.innerHeight
+    }
+
+    window.addEventListener('resize', setCanvasSize)
+
+    setCanvasSize()
 })
 
