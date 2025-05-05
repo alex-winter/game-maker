@@ -107,13 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
         LayerRepository.persist(layer)
     })
 
-    function setCanvasSize(): void {
-        canvas.width = window.innerWidth
-        canvas.height = window.innerHeight
-    }
-
-    window.addEventListener('resize', setCanvasSize)
-
-    setCanvasSize()
+    window.addEventListener('resize', () => Events.emit(EVENTS.windowResize))
 })
 

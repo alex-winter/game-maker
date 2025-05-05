@@ -1144,6 +1144,7 @@ exports.EVENTS = {
     newLayerMapped: 'new-layer-mapped',
     closeModal: 'close-modal',
     sheetSelectionMade: 'sheet-selection-made',
+    windowResize: 'window-resize',
 };
 
 
@@ -1236,7 +1237,7 @@ class Dom {
         element.type = 'text';
         return element;
     }
-    static canvas(width, height) {
+    static canvas(width = 0, height = 0) {
         const element = document.createElement('canvas');
         element.width = width;
         element.height = height;
@@ -1770,12 +1771,7 @@ document.addEventListener('DOMContentLoaded', () => {
         Events_1.Events.emit(events_1.EVENTS.newLayerMapped, layer);
         LayerRepository_1.LayerRepository.persist(layer);
     });
-    function setCanvasSize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', setCanvasSize);
-    setCanvasSize();
+    window.addEventListener('resize', () => Events_1.Events.emit(events_1.EVENTS.windowResize));
 });
 
 })();

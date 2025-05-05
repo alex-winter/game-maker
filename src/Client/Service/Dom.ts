@@ -36,7 +36,7 @@ export class Dom {
         return element
     }
 
-    public static canvas(width: number, height: number): HTMLCanvasElement {
+    public static canvas(width: number = 0, height: number = 0): HTMLCanvasElement {
         const element = document.createElement('canvas')
 
         element.width = width

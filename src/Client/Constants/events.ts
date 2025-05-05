@@ -18,4 +18,5 @@ export const EVENTS = {
 
     sheetSelectionMade: 'sheet-selection-made',
 
+    windowResize: 'window-resize',
 }
