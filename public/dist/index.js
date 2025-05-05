@@ -443,6 +443,12 @@ const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/
 class FileListing extends Component_1.Component {
     css() {
         return /*css*/ `
+            :host {
+                display: block;
+                max-height: 400px;
+                overflow-y: scroll;
+            }        
+
             .file {
                 display: flex;
                 padding: 10px;
@@ -894,6 +900,11 @@ class SheetMaker extends Component_1.Component {
 
             .selector-box {
                 position: absolute;
+                border: 1px solid #0078D7;
+                background-color: rgba(0, 120, 215, 0.2);
+                pointer-events: none;
+                display: none;
+                z-index: 10;
             }
         `;
     }
@@ -917,12 +928,6 @@ class SheetMaker extends Component_1.Component {
     }
     buildSelectorBox() {
         const box = Dom_1.Dom.div('selector-box');
-        box.style.position = 'absolute';
-        box.style.border = '1px solid #0078D7';
-        box.style.backgroundColor = 'rgba(0, 120, 215, 0.2)';
-        box.style.pointerEvents = 'none';
-        box.style.display = 'none';
-        box.style.zIndex = '10';
         let startX = 0;
         let startY = 0;
         let isDragging = false;

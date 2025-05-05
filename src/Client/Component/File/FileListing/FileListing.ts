@@ -5,6 +5,12 @@ import { Events } from 'Client/Service/Events'
 export class FileListing extends Component {
     protected css(): string {
         return /*css*/`
+            :host {
+                display: block;
+                max-height: 400px;
+                overflow-y: scroll;
+            }        
+
             .file {
                 display: flex;
                 padding: 10px;
