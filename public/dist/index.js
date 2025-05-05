@@ -1323,8 +1323,8 @@ class Events {
             callback(event.detail);
         });
     }
-    static emitOpenSheet(file = null) {
-        this.emit('open-sheet', file);
+    static emitOpenSheet(file) {
+        this.emit(events_1.EVENTS.openSheet, file);
     }
     static listenToOpenSheet(callback) {
         Events.listen(events_1.EVENTS.openSheet, event => {
@@ -1690,6 +1690,7 @@ components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
 let currentSelection = null;
+let openSheets = [];
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.querySelector('canvas');
     const ctx = canvas?.getContext('2d');
@@ -1709,8 +1710,12 @@ document.addEventListener('DOMContentLoaded', () => {
         FileUpload_1.FileUpload.uploadMultiple(files);
     });
     Events_1.Events.listenToOpenSheet(async (file) => {
+        if (openSheets.includes(file.name)) {
+            return;
+        }
         const component = Dom_1.Dom.makeComponent(SheetMaker_1.SheetMaker, { imageSrc: await (0, fileToBase64_1.fileToBase64)(file) });
-        WindowBoxFactory_1.WindowBoxFactory.make(component, 'Sheet Editor');
+        openSheets.push(file.name);
+        WindowBoxFactory_1.WindowBoxFactory.make(component, file.name);
     });
     Events_1.Events.listenMouseDownOnWindowBox(windowBox => {
         Dom_1.Dom.getAllOfComponent(WindowBox_1.WindowBox).forEach(box => {
