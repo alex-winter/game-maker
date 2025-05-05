@@ -36,8 +36,13 @@ export class Dom {
         return element
     }
 
-    public static canvas(): HTMLCanvasElement {
-        return document.createElement('canvas')
+    public static canvas(width: number, height: number): HTMLCanvasElement {
+        const element = document.createElement('canvas')
+
+        element.width = width
+        element.height = height
+
+        return element
     }
 
     public static button(text: string, ...classList: string[]): HTMLButtonElement {

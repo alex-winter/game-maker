@@ -886,15 +886,14 @@ class SheetMaker extends Component_1.Component {
         return /*css*/ `
             :host {
                 position: relative;
-            }
-
-            canvas {
-                width: 400px;
+                max-width: 400px;
+                max-height: 400px;
+                overflow: scroll;
+                display: block;
             }
 
             .selector-box {
                 position: absolute;
-                color
             }
         `;
     }
@@ -905,10 +904,12 @@ class SheetMaker extends Component_1.Component {
     }
     build() {
         const element = Dom_1.Dom.div();
-        this.canvas = Dom_1.Dom.canvas();
+        this.canvas = Dom_1.Dom.canvas(element.offsetHeight, element.offsetWidth);
         const context = this.canvas.getContext('2d');
         const selectorBox = this.buildSelectorBox();
         if (this.image) {
+            this.canvas.width = this.image.width;
+            this.canvas.height = this.image.height;
             context.drawImage(this.image, 0, 0);
         }
         element.append(this.canvas, selectorBox);
@@ -1205,8 +1206,11 @@ class Dom {
         element.type = 'text';
         return element;
     }
-    static canvas() {
-        return document.createElement('canvas');
+    static canvas(width, height) {
+        const element = document.createElement('canvas');
+        element.width = width;
+        element.height = height;
+        return element;
     }
     static button(text, ...classList) {
         const element = document.createElement('button');
@@ -1467,9 +1471,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.extractImageFromCanvasArea = void 0;
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 async function extractImageFromCanvasArea(sourceCanvas, x, y, width, height) {
-    const tempCanvas = Dom_1.Dom.canvas();
-    tempCanvas.width = width;
-    tempCanvas.height = height;
+    const tempCanvas = Dom_1.Dom.canvas(width, height);
     const ctx = tempCanvas.getContext('2d');
     const image = await Dom_1.Dom.image(sourceCanvas.toDataURL());
     ctx.drawImage(image, x, y, width, height, 0, 0, width, height);

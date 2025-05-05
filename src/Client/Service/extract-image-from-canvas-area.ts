@@ -7,11 +7,7 @@ export async function extractImageFromCanvasArea(
     width: number,
     height: number,
 ): Promise<HTMLImageElement> {
-    const tempCanvas = Dom.canvas()
-
-    tempCanvas.width = width
-    tempCanvas.height = height
-
+    const tempCanvas = Dom.canvas(width, height)
     const ctx = tempCanvas.getContext('2d')!
 
     const image = await Dom.image(sourceCanvas.toDataURL())

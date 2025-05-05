@@ -12,15 +12,14 @@ export class SheetMaker extends Component {
         return /*css*/`
             :host {
                 position: relative;
-            }
-
-            canvas {
-                width: 400px;
+                max-width: 400px;
+                max-height: 400px;
+                overflow: scroll;
+                display: block;
             }
 
             .selector-box {
                 position: absolute;
-                color
             }
         `
     }
@@ -33,11 +32,17 @@ export class SheetMaker extends Component {
 
     protected build(): HTMLElement {
         const element = Dom.div()
-        this.canvas = Dom.canvas()
+        this.canvas = Dom.canvas(
+            element.offsetHeight,
+            element.offsetWidth,
+        )
         const context = this.canvas.getContext('2d')!
         const selectorBox = this.buildSelectorBox()
 
         if (this.image) {
+            this.canvas.width = this.image.width
+            this.canvas.height = this.image.height
+
             context.drawImage(this.image, 0, 0)
         }
 
