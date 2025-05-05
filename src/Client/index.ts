@@ -23,6 +23,8 @@ let currentSelection: HTMLImageElement | null = null
 
 let openSheets: string[] = []
 
+let windowBoxes: { [key: string]: WindowBox } = {}
+
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.querySelector('canvas') as HTMLCanvasElement
     const ctx = canvas?.getContext('2d')
@@ -54,13 +56,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     Events.listenToOpenSheet(async file => {
         if (openSheets.includes(file.name)) {
+            windowBoxes[file.name].flash()
             return
         }
         const component = Dom.makeComponent(SheetMaker, { imageSrc: await fileToBase64(file) })
 
         openSheets.push(file.name)
 
-        WindowBoxFactory.make(component, file.name)
+        windowBoxes[file.name] = WindowBoxFactory.make(component, file.name)
     })
 
     Events.listenMouseDownOnWindowBox(windowBox => {

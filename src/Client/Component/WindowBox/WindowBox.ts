@@ -16,6 +16,13 @@ export class WindowBox extends Component implements DraggableHTMLElement {
         this.style.zIndex = '1001'
     }
 
+    public flash(): void {
+        this.classList.add('flash')
+        setTimeout(() => {
+            this.classList.remove('flash')
+        }, 500)
+    }
+
     protected css(): string {
         return /*css*/`
             :host {
@@ -54,6 +61,25 @@ export class WindowBox extends Component implements DraggableHTMLElement {
                 background: white;
                 border: 1px solid #ccc;
             }
+
+            @keyframes flash {
+                0% {
+                  box-shadow: 0 0 0px rgba(255, 200, 0, 0.8);
+                  transform: scale(1);
+                }
+                50% {
+                  box-shadow: 0 0 12px rgba(255, 200, 0, 0.9);
+                  transform: scale(1.02);
+                }
+                100% {
+                  box-shadow: 0 0 0px rgba(255, 200, 0, 0);
+                  transform: scale(1);
+                }
+              }
+              
+              :host(.flash) {
+                animation: flash 0.5s ease-in-out;
+              }
         `
     }
 

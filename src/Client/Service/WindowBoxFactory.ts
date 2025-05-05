@@ -8,12 +8,12 @@ export class WindowBoxFactory {
     public static make(
         component: Component,
         title: string,
-    ): void {
-        if (component.isSingleton && singletonInstances.includes(component)) {
-            return
-        }
-
+    ): WindowBox {
         const windowBox: WindowBox = Dom.makeComponent(WindowBox) as WindowBox
+
+        if (component.isSingleton && singletonInstances.includes(component)) {
+            return windowBox
+        }
 
         if (!windowBox.isConnected) {
             windowBox.dataset.title = title
@@ -28,5 +28,7 @@ export class WindowBoxFactory {
                 windowBox
             )
         }
+
+        return windowBox
     }
 }

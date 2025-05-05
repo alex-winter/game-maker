@@ -996,6 +996,12 @@ class WindowBox extends Component_1.Component {
     zIndexMoveUp() {
         this.style.zIndex = '1001';
     }
+    flash() {
+        this.classList.add('flash');
+        setTimeout(() => {
+            this.classList.remove('flash');
+        }, 500);
+    }
     css() {
         return /*css*/ `
             :host {
@@ -1034,6 +1040,25 @@ class WindowBox extends Component_1.Component {
                 background: white;
                 border: 1px solid #ccc;
             }
+
+            @keyframes flash {
+                0% {
+                  box-shadow: 0 0 0px rgba(255, 200, 0, 0.8);
+                  transform: scale(1);
+                }
+                50% {
+                  box-shadow: 0 0 12px rgba(255, 200, 0, 0.9);
+                  transform: scale(1.02);
+                }
+                100% {
+                  box-shadow: 0 0 0px rgba(255, 200, 0, 0);
+                  transform: scale(1);
+                }
+              }
+              
+              :host(.flash) {
+                animation: flash 0.5s ease-in-out;
+              }
         `;
     }
     build() {
@@ -1446,10 +1471,10 @@ const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Servic
 const singletonInstances = [];
 class WindowBoxFactory {
     static make(component, title) {
-        if (component.isSingleton && singletonInstances.includes(component)) {
-            return;
-        }
         const windowBox = Dom_1.Dom.makeComponent(WindowBox_1.WindowBox);
+        if (component.isSingleton && singletonInstances.includes(component)) {
+            return windowBox;
+        }
         if (!windowBox.isConnected) {
             windowBox.dataset.title = title;
             windowBox.append(component);
@@ -1458,6 +1483,7 @@ class WindowBoxFactory {
             }
             document.body.append(windowBox);
         }
+        return windowBox;
     }
 }
 exports.WindowBoxFactory = WindowBoxFactory;
@@ -1691,6 +1717,7 @@ components_1.COMPONENTS.forEach((tagName, constructor) => {
 });
 let currentSelection = null;
 let openSheets = [];
+let windowBoxes = {};
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.querySelector('canvas');
     const ctx = canvas?.getContext('2d');
@@ -1711,11 +1738,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     Events_1.Events.listenToOpenSheet(async (file) => {
         if (openSheets.includes(file.name)) {
+            windowBoxes[file.name].flash();
             return;
         }
         const component = Dom_1.Dom.makeComponent(SheetMaker_1.SheetMaker, { imageSrc: await (0, fileToBase64_1.fileToBase64)(file) });
         openSheets.push(file.name);
-        WindowBoxFactory_1.WindowBoxFactory.make(component, file.name);
+        windowBoxes[file.name] = WindowBoxFactory_1.WindowBoxFactory.make(component, file.name);
     });
     Events_1.Events.listenMouseDownOnWindowBox(windowBox => {
         Dom_1.Dom.getAllOfComponent(WindowBox_1.WindowBox).forEach(box => {
