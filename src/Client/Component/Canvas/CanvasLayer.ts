@@ -14,6 +14,8 @@ export class CanvasLayer extends Component {
 
         this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this))
 
+        this.handleWindowResize()
+
         return this.canvas
     }
 

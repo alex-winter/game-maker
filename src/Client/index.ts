@@ -14,6 +14,8 @@ import { NewLayerForm } from 'Client/Component/NewLayerForm/NewLayerForm'
 import { LayerInput } from 'Client/Model/LayerInput'
 import { LayerFactory } from 'Model/Factory/LayerFactory'
 import { LayerRepository } from 'Client/Service/Repository/LayerRepository'
+import { Layer } from 'Model/Layer'
+import { CanvasLayer } from 'Client/Component/Canvas/CanvasLayer'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -66,8 +68,8 @@ document.addEventListener('DOMContentLoaded', () => {
         )
     }, EVENTS.openAddNewLayer)
 
-    Events.listen((data) => {
-        const input: LayerInput = data.detail as LayerInput
+    Events.listen((event) => {
+        const input: LayerInput = event.detail as LayerInput
 
         const layer = Object.assign(
             LayerFactory.make(),
@@ -78,6 +80,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         layerRepository.persist(layer)
     }, EVENTS.newLayerSubmit)
+
+    Events.listen(
+        event => {
+            console.log(
+                Dom.makeComponent(CanvasLayer)
+            )
+
+            document.body.append(
+                ...(event.detail as Layer[]).map(layer => Dom.makeComponent(CanvasLayer))
+            )
+        },
+        EVENTS.gotLayer,
+    )
 
     layerRepository.getAll().then(layers => {
         Events.emit(EVENTS.gotLayer, layers)

@@ -449,6 +449,7 @@ class CanvasLayer extends Component_1.Component {
         Events_1.Events.listen(this.handleWindowResize.bind(this), events_1.EVENTS.windowResize);
         Events_1.Events.listen(this.handleCurrentImageChange.bind(this), events_1.EVENTS.sheetSelectionMade);
         this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
+        this.handleWindowResize();
         return this.canvas;
     }
     handleMouseDown(event) {
@@ -1762,6 +1763,7 @@ const BasicModal_1 = __webpack_require__(/*! Client/Component/Generic/Modal/Basi
 const NewLayerForm_1 = __webpack_require__(/*! Client/Component/NewLayerForm/NewLayerForm */ "./src/Client/Component/NewLayerForm/NewLayerForm.ts");
 const LayerFactory_1 = __webpack_require__(/*! Model/Factory/LayerFactory */ "./src/Model/Factory/LayerFactory.ts");
 const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
+const CanvasLayer_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasLayer */ "./src/Client/Component/Canvas/CanvasLayer.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
@@ -1797,12 +1799,16 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.append(newLayerForm);
         document.body.append(modal);
     }, events_1.EVENTS.openAddNewLayer);
-    Events_1.Events.listen((data) => {
-        const input = data.detail;
+    Events_1.Events.listen((event) => {
+        const input = event.detail;
         const layer = Object.assign(LayerFactory_1.LayerFactory.make(), input);
         Events_1.Events.emit(events_1.EVENTS.newLayerMapped, [layer]);
         layerRepository.persist(layer);
     }, events_1.EVENTS.newLayerSubmit);
+    Events_1.Events.listen(event => {
+        console.log(Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer));
+        document.body.append(...event.detail.map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer)));
+    }, events_1.EVENTS.gotLayer);
     layerRepository.getAll().then(layers => {
         Events_1.Events.emit(events_1.EVENTS.gotLayer, layers);
     });
