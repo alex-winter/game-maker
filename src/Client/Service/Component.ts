@@ -2,6 +2,7 @@ export abstract class Component extends HTMLElement {
     private readonly shadow: ShadowRoot
     public isSingleton: boolean = false
     private content!: HTMLElement
+    protected readonly parameters: { [key: string]: any } = {}
 
     constructor() {
         super()
@@ -36,6 +37,12 @@ export abstract class Component extends HTMLElement {
                 sheet.replaceSync(css)
                 this.shadowRoot!.adoptedStyleSheets = [sheet]
             }
+
+            Object.entries(this.dataset).forEach(([key, value]) => {
+                this.parameters[key] = isJSON(value)
+                    ? JSON.parse(value)
+                    : value
+            })
 
             this.content = this.build()
 

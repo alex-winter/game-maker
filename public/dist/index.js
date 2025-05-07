@@ -445,7 +445,9 @@ class CanvasLayer extends Component_1.Component {
     canvas = Dom_1.Dom.canvas();
     ctx = this.canvas.getContext('2d');
     currentImage;
+    layer;
     build() {
+        this.layer = this.parameters.layer;
         Events_1.Events.listen(this.handleWindowResize.bind(this), events_1.EVENTS.windowResize);
         Events_1.Events.listen(this.handleCurrentImageChange.bind(this), events_1.EVENTS.sheetSelectionMade);
         this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
@@ -1208,6 +1210,7 @@ class Component extends HTMLElement {
     shadow;
     isSingleton = false;
     content;
+    parameters = {};
     constructor() {
         super();
         this.shadow = this.attachShadow({ mode: 'open' });
@@ -1233,6 +1236,11 @@ class Component extends HTMLElement {
                 sheet.replaceSync(css);
                 this.shadowRoot.adoptedStyleSheets = [sheet];
             }
+            Object.entries(this.dataset).forEach(([key, value]) => {
+                this.parameters[key] = isJSON(value)
+                    ? JSON.parse(value)
+                    : value;
+            });
             this.content = this.build();
             if (isReload) {
                 this.shadow.replaceChild(this.build(), this.content);
@@ -1806,8 +1814,7 @@ document.addEventListener('DOMContentLoaded', () => {
         layerRepository.persist(layer);
     }, events_1.EVENTS.newLayerSubmit);
     Events_1.Events.listen(event => {
-        console.log(Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer));
-        document.body.append(...event.detail.map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer)));
+        document.body.append(...event.detail.map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer })));
     }, events_1.EVENTS.gotLayer);
     layerRepository.getAll().then(layers => {
         Events_1.Events.emit(events_1.EVENTS.gotLayer, layers);

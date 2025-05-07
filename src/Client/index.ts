@@ -83,12 +83,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     Events.listen(
         event => {
-            console.log(
-                Dom.makeComponent(CanvasLayer)
-            )
-
             document.body.append(
-                ...(event.detail as Layer[]).map(layer => Dom.makeComponent(CanvasLayer))
+                ...(event.detail as Layer[]).map(layer => Dom.makeComponent(CanvasLayer, { layer }))
             )
         },
         EVENTS.gotLayer,

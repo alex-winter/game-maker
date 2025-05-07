@@ -2,13 +2,17 @@ import { EVENTS } from 'Client/Constants/events'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
+import { Layer } from 'Model/Layer'
 
 export class CanvasLayer extends Component {
     private readonly canvas: HTMLCanvasElement = Dom.canvas()
     private readonly ctx: CanvasRenderingContext2D = this.canvas.getContext('2d')!
     private currentImage: HTMLImageElement | undefined
+    private layer!: Layer
 
     protected build(): HTMLElement {
+        this.layer = this.parameters.layer
+
         Events.listen(this.handleWindowResize.bind(this), EVENTS.windowResize)
         Events.listen(this.handleCurrentImageChange.bind(this), EVENTS.sheetSelectionMade)
 
