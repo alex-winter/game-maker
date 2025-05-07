@@ -1,4 +1,4 @@
-function isJSON(value: any): value is string {
+export function isJSON(value: any): value is string {
     if (typeof value !== 'string') {
         return false
     }

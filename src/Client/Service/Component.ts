@@ -1,3 +1,5 @@
+import { isJSON } from 'Client/Service/is-json'
+
 export abstract class Component extends HTMLElement {
     private readonly shadow: ShadowRoot
     public isSingleton: boolean = false

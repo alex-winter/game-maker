@@ -1201,11 +1201,12 @@ exports.EVENTS = {
 /*!*****************************************!*\
   !*** ./src/Client/Service/Component.ts ***!
   \*****************************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Component = void 0;
+const is_json_1 = __webpack_require__(/*! Client/Service/is-json */ "./src/Client/Service/is-json.ts");
 class Component extends HTMLElement {
     shadow;
     isSingleton = false;
@@ -1237,7 +1238,7 @@ class Component extends HTMLElement {
                 this.shadowRoot.adoptedStyleSheets = [sheet];
             }
             Object.entries(this.dataset).forEach(([key, value]) => {
-                this.parameters[key] = isJSON(value)
+                this.parameters[key] = (0, is_json_1.isJSON)(value)
                     ? JSON.parse(value)
                     : value;
             });
@@ -1594,6 +1595,32 @@ async function fileToBase64(file) {
     });
 }
 exports.fileToBase64 = fileToBase64;
+
+
+/***/ }),
+
+/***/ "./src/Client/Service/is-json.ts":
+/*!***************************************!*\
+  !*** ./src/Client/Service/is-json.ts ***!
+  \***************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.isJSON = void 0;
+function isJSON(value) {
+    if (typeof value !== 'string') {
+        return false;
+    }
+    try {
+        const parsed = JSON.parse(value);
+        return typeof parsed === 'object' && parsed !== null;
+    }
+    catch {
+        return false;
+    }
+}
+exports.isJSON = isJSON;
 
 
 /***/ }),
