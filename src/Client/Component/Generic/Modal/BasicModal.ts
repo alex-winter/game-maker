@@ -40,11 +40,11 @@ export class BasicModal extends Component {
             }
         })
 
-        Events.listen(EVENTS.closeModal, (event) => {
+        Events.listen((event) => {
             if (this.contains(event.detail as Component)) {
                 this.destroy()
             }
-        })
+        }, EVENTS.closeModal)
 
         content.append(slot)
 

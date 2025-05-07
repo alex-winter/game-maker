@@ -1,5 +1,5 @@
 export abstract class Repository {
-    protected static post(
+    protected post(
         path: string,
         body: Array<Object> | Object,
     ): Promise<Response> {
@@ -12,7 +12,7 @@ export abstract class Repository {
         })
     }
 
-    protected static async get<T>(path: string): Promise<T> {
+    protected async get<T>(path: string): Promise<T> {
         const response = await fetch(path)
 
         return response.json()

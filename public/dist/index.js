@@ -428,6 +428,53 @@ module.exports = styleTagTransform;
 
 /***/ }),
 
+/***/ "./src/Client/Component/Canvas/CanvasLayer.ts":
+/*!****************************************************!*\
+  !*** ./src/Client/Component/Canvas/CanvasLayer.ts ***!
+  \****************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CanvasLayer = void 0;
+const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
+class CanvasLayer extends Component_1.Component {
+    canvas = Dom_1.Dom.canvas();
+    ctx = this.canvas.getContext('2d');
+    currentImage;
+    build() {
+        Events_1.Events.listen(this.handleWindowResize.bind(this), events_1.EVENTS.windowResize);
+        Events_1.Events.listen(this.handleCurrentImageChange.bind(this), events_1.EVENTS.sheetSelectionMade);
+        this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
+        return this.canvas;
+    }
+    handleMouseDown(event) {
+        this.ctx.drawImage(this.currentImage, event.clientX, event.clientY);
+        const mouseMove = (event) => {
+        };
+        const mouseUp = (event) => {
+            document.removeEventListener('mouseup', mouseUp);
+            document.removeEventListener('mousemove', mouseMove);
+        };
+        document.addEventListener('mousemove', mouseMove);
+        document.addEventListener('mouseup', mouseUp);
+    }
+    handleCurrentImageChange(event) {
+        this.currentImage = event.detail;
+    }
+    handleWindowResize() {
+        this.canvas.width = window.outerWidth;
+        this.canvas.height = window.outerHeight;
+    }
+}
+exports.CanvasLayer = CanvasLayer;
+
+
+/***/ }),
+
 /***/ "./src/Client/Component/File/FileListing/FileListing.ts":
 /*!**************************************************************!*\
   !*** ./src/Client/Component/File/FileListing/FileListing.ts ***!
@@ -618,11 +665,11 @@ class BasicModal extends Component_1.Component {
                 this.destroy();
             }
         });
-        Events_1.Events.listen(events_1.EVENTS.closeModal, (event) => {
+        Events_1.Events.listen((event) => {
             if (this.contains(event.detail)) {
                 this.destroy();
             }
-        });
+        }, events_1.EVENTS.closeModal);
         content.append(slot);
         backdrop.appendChild(content);
         return backdrop;
@@ -680,9 +727,7 @@ const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Clien
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
-const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
 class LayerListing extends Component_1.Component {
-    layers;
     css() {
         return /*css*/ `
             .layer-item {
@@ -694,18 +739,14 @@ class LayerListing extends Component_1.Component {
             }
         `;
     }
-    async setup() {
-        this.layers = await LayerRepository_1.LayerRepository.getAll();
-    }
     build() {
         const container = Dom_1.Dom.div();
         const listing = Dom_1.Dom.div();
         const addNewLayerButton = Dom_1.Dom.button('Add New Layer');
         addNewLayerButton.addEventListener('click', () => Events_1.Events.emit(events_1.EVENTS.openAddNewLayer));
-        listing.append(...this.layers.map(this.buildLayer));
-        Events_1.Events.listen(events_1.EVENTS.newLayerMapped, event => {
-            listing.append(this.buildLayer(event.detail));
-        });
+        Events_1.Events.listen(event => {
+            listing.append(...event.detail.map(this.buildLayer.bind(this)));
+        }, events_1.EVENTS.newLayerMapped, events_1.EVENTS.gotLayer);
         container.append(listing, addNewLayerButton);
         return container;
     }
@@ -1110,6 +1151,7 @@ const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */
 const SheetImporter_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetImporter/SheetImporter */ "./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts");
 const BasicModal_1 = __webpack_require__(/*! Client/Component/Generic/Modal/BasicModal */ "./src/Client/Component/Generic/Modal/BasicModal.ts");
 const NewLayerForm_1 = __webpack_require__(/*! Client/Component/NewLayerForm/NewLayerForm */ "./src/Client/Component/NewLayerForm/NewLayerForm.ts");
+const CanvasLayer_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasLayer */ "./src/Client/Component/Canvas/CanvasLayer.ts");
 exports.COMPONENTS = new Map([
     [SideMenu_1.SideMenu, 'side-menu'],
     [LayerListing_1.LayerListing, 'layer-listing'],
@@ -1120,6 +1162,7 @@ exports.COMPONENTS = new Map([
     [SheetImporter_1.SheetImporter, 'sheet-importer'],
     [BasicModal_1.BasicModal, 'modal-basic'],
     [NewLayerForm_1.NewLayerForm, 'new-layer-form'],
+    [CanvasLayer_1.CanvasLayer, 'canvas-layer'],
 ]);
 
 
@@ -1142,6 +1185,7 @@ exports.EVENTS = {
     mouseDownWindowBox: 'mouse-down-window-box',
     newLayerSubmit: 'new-layer-submit',
     newLayerMapped: 'new-layer-mapped',
+    gotLayer: 'got-layer',
     closeModal: 'close-modal',
     sheetSelectionMade: 'sheet-selection-made',
     windowResize: 'window-resize',
@@ -1338,40 +1382,45 @@ class Events {
             composed: true
         }));
     }
-    static listen(key, callback) {
+    static addListener(key, callback) {
         document.addEventListener(key, callback);
+    }
+    static listen(callback, ...keys) {
+        keys.forEach(key => {
+            this.addListener(key, callback);
+        });
     }
     static emitFilesUploadSubmitted(files) {
         Events.emit(events_1.EVENTS.uploadFilesSubmission, files);
     }
     static listenToFilesUploadSubmitted(callback) {
-        Events.listen(events_1.EVENTS.uploadFilesSubmission, event => {
+        Events.listen(event => {
             callback(event.detail);
-        });
+        }, events_1.EVENTS.uploadFilesSubmission);
     }
     static emitOpenSheet(file) {
         this.emit(events_1.EVENTS.openSheet, file);
     }
     static listenToOpenSheet(callback) {
-        Events.listen(events_1.EVENTS.openSheet, event => {
+        Events.listen(event => {
             callback(event.detail);
-        });
+        }, events_1.EVENTS.openSheet);
     }
     static emitMouseDownOnWindowBox(windowBox) {
         Events.emit(events_1.EVENTS.mouseDownWindowBox, windowBox);
     }
     static listenMouseDownOnWindowBox(callback) {
-        Events.listen(events_1.EVENTS.mouseDownWindowBox, event => {
+        Events.listen(event => {
             callback(event.detail);
-        });
+        }, events_1.EVENTS.mouseDownWindowBox);
     }
     static emitSheetImportOpen() {
         Events.emit(events_1.EVENTS.openSheetImporter);
     }
     static listenToSheetImportOpen(callback) {
-        Events.listen(events_1.EVENTS.openSheetImporter, (event) => {
+        Events.listen((event) => {
             callback();
-        });
+        }, events_1.EVENTS.openSheetImporter);
     }
 }
 exports.Events = Events;
@@ -1416,11 +1465,11 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.LayerRepository = void 0;
 const Repository_1 = __webpack_require__(/*! Client/Service/Repository/Repository */ "./src/Client/Service/Repository/Repository.ts");
 class LayerRepository extends Repository_1.Repository {
-    static API_PATH = '/layers';
-    static async persist(...layers) {
+    API_PATH = '/layers';
+    async persist(...layers) {
         await this.post(this.API_PATH, layers);
     }
-    static async getAll() {
+    async getAll() {
         return await this.get(this.API_PATH);
     }
 }
@@ -1439,7 +1488,7 @@ exports.LayerRepository = LayerRepository;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Repository = void 0;
 class Repository {
-    static post(path, body) {
+    post(path, body) {
         return fetch(path, {
             method: 'POST',
             headers: {
@@ -1448,7 +1497,7 @@ class Repository {
             body: JSON.stringify(body),
         });
     }
-    static async get(path) {
+    async get(path) {
         const response = await fetch(path);
         return response.json();
     }
@@ -1716,24 +1765,10 @@ const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/Laye
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
-let currentSelection = null;
 let openSheets = [];
 let windowBoxes = {};
+const layerRepository = new LayerRepository_1.LayerRepository();
 document.addEventListener('DOMContentLoaded', () => {
-    const canvas = document.querySelector('canvas');
-    const ctx = canvas?.getContext('2d');
-    canvas?.addEventListener('mousedown', (event) => {
-        ctx?.setTransform(1, 0, 0, 1, 0, 0);
-        ctx?.drawImage(currentSelection, event.clientX, event.clientY);
-        const mouseMove = (event) => {
-        };
-        const mouseUp = (event) => {
-            document.removeEventListener('mouseup', mouseUp);
-            document.removeEventListener('mousemove', mouseMove);
-        };
-        document.addEventListener('mousemove', mouseMove);
-        document.addEventListener('mouseup', mouseUp);
-    });
     Events_1.Events.listenToFilesUploadSubmitted(files => {
         FileUpload_1.FileUpload.uploadMultiple(files);
     });
@@ -1756,20 +1791,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const component = Dom_1.Dom.makeComponent(SheetImporter_1.SheetImporter);
         WindowBoxFactory_1.WindowBoxFactory.make(component, 'Import Sheets');
     });
-    Events_1.Events.listen(events_1.EVENTS.openAddNewLayer, () => {
+    Events_1.Events.listen(() => {
         const modal = Dom_1.Dom.makeComponent(BasicModal_1.BasicModal);
         const newLayerForm = Dom_1.Dom.makeComponent(NewLayerForm_1.NewLayerForm);
         modal.append(newLayerForm);
         document.body.append(modal);
-    });
-    Events_1.Events.listen(events_1.EVENTS.sheetSelectionMade, (event) => {
-        currentSelection = event.detail;
-    });
-    Events_1.Events.listen(events_1.EVENTS.newLayerSubmit, (data) => {
+    }, events_1.EVENTS.openAddNewLayer);
+    Events_1.Events.listen((data) => {
         const input = data.detail;
         const layer = Object.assign(LayerFactory_1.LayerFactory.make(), input);
-        Events_1.Events.emit(events_1.EVENTS.newLayerMapped, layer);
-        LayerRepository_1.LayerRepository.persist(layer);
+        Events_1.Events.emit(events_1.EVENTS.newLayerMapped, [layer]);
+        layerRepository.persist(layer);
+    }, events_1.EVENTS.newLayerSubmit);
+    layerRepository.getAll().then(layers => {
+        Events_1.Events.emit(events_1.EVENTS.gotLayer, layers);
     });
     window.addEventListener('resize', () => Events_1.Events.emit(events_1.EVENTS.windowResize));
 });

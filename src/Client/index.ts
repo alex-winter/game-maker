@@ -19,37 +19,13 @@ COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
 })
 
-let currentSelection: HTMLImageElement | null = null
-
 let openSheets: string[] = []
 
 let windowBoxes: { [key: string]: WindowBox } = {}
 
+const layerRepository = new LayerRepository()
+
 document.addEventListener('DOMContentLoaded', () => {
-    const canvas = document.querySelector('canvas') as HTMLCanvasElement
-    const ctx = canvas?.getContext('2d')
-
-    canvas?.addEventListener('mousedown', (event: MouseEvent) => {
-        ctx?.setTransform(1, 0, 0, 1, 0, 0)
-        ctx?.drawImage(
-            currentSelection!,
-            event.clientX,
-            event.clientY,
-        )
-
-        const mouseMove = (event: MouseEvent) => {
-
-        }
-
-        const mouseUp = (event: MouseEvent) => {
-            document.removeEventListener('mouseup', mouseUp)
-            document.removeEventListener('mousemove', mouseMove)
-        }
-
-        document.addEventListener('mousemove', mouseMove)
-        document.addEventListener('mouseup', mouseUp)
-    })
-
     Events.listenToFilesUploadSubmitted(files => {
         FileUpload.uploadMultiple(files)
     })
@@ -79,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         WindowBoxFactory.make(component, 'Import Sheets')
     })
 
-    Events.listen(EVENTS.openAddNewLayer, () => {
+    Events.listen(() => {
         const modal = Dom.makeComponent(BasicModal)
         const newLayerForm = Dom.makeComponent(NewLayerForm)
 
@@ -88,13 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.append(
             modal
         )
-    })
+    }, EVENTS.openAddNewLayer)
 
-    Events.listen(EVENTS.sheetSelectionMade, (event) => {
-        currentSelection = event.detail as HTMLImageElement
-    })
-
-    Events.listen(EVENTS.newLayerSubmit, (data) => {
+    Events.listen((data) => {
         const input: LayerInput = data.detail as LayerInput
 
         const layer = Object.assign(
@@ -102,9 +74,13 @@ document.addEventListener('DOMContentLoaded', () => {
             input
         )
 
-        Events.emit(EVENTS.newLayerMapped, layer)
+        Events.emit(EVENTS.newLayerMapped, [layer])
 
-        LayerRepository.persist(layer)
+        layerRepository.persist(layer)
+    }, EVENTS.newLayerSubmit)
+
+    layerRepository.getAll().then(layers => {
+        Events.emit(EVENTS.gotLayer, layers)
     })
 
     window.addEventListener('resize', () => Events.emit(EVENTS.windowResize))

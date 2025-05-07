@@ -2,13 +2,9 @@ import { EVENTS } from 'Client/Constants/events'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
-import { LayerRepository } from 'Client/Service/Repository/LayerRepository'
 import { Layer } from 'Model/Layer'
 
 export class LayerListing extends Component {
-
-    private layers!: Layer[]
-
     protected css(): string {
         return /*css*/`
             .layer-item {
@@ -21,10 +17,6 @@ export class LayerListing extends Component {
         `
     }
 
-    protected async setup(): Promise<void> {
-        this.layers = await LayerRepository.getAll()
-    }
-
     protected build(): HTMLElement {
         const container = Dom.div()
         const listing = Dom.div()
@@ -32,15 +24,15 @@ export class LayerListing extends Component {
 
         addNewLayerButton.addEventListener('click', () => Events.emit(EVENTS.openAddNewLayer))
 
-        listing.append(
-            ...this.layers.map(this.buildLayer)
+        Events.listen(
+            event => {
+                listing.append(
+                    ...(event.detail as Layer[]).map(this.buildLayer.bind(this))
+                )
+            },
+            EVENTS.newLayerMapped,
+            EVENTS.gotLayer,
         )
-
-        Events.listen(EVENTS.newLayerMapped, event => {
-            listing.append(
-                this.buildLayer(event.detail as Layer)
-            )
-        })
 
         container.append(listing, addNewLayerButton)
 

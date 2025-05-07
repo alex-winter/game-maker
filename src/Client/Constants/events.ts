@@ -14,6 +14,8 @@ export const EVENTS = {
 
     newLayerMapped: 'new-layer-mapped',
 
+    gotLayer: 'got-layer',
+
     closeModal: 'close-modal',
 
     sheetSelectionMade: 'sheet-selection-made',

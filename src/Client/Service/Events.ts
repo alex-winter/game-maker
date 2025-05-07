@@ -21,11 +21,20 @@ export class Events {
         )
     }
 
+    private static addListener<T>(key: string, callback: EventFn<T>): void {
+        document.addEventListener(
+            key,
+            callback as EventListener,
+        )
+    }
+
     public static listen<T>(
-        key: string,
         callback: EventFn<T>,
+        ...keys: string[]
     ): void {
-        document.addEventListener(key, callback as EventListener)
+        keys.forEach(key => {
+            this.addListener(key, callback)
+        })
     }
 
     public static emitFilesUploadSubmitted(files: File[]): void {
@@ -37,10 +46,10 @@ export class Events {
 
     public static listenToFilesUploadSubmitted(callback: (files: File[]) => void): void {
         Events.listen<File[]>(
-            EVENTS.uploadFilesSubmission,
             event => {
                 callback(event.detail)
-            }
+            },
+            EVENTS.uploadFilesSubmission,
         )
     }
 
@@ -50,10 +59,10 @@ export class Events {
 
     public static listenToOpenSheet(callback: (file: File) => void): void {
         Events.listen<File>(
-            EVENTS.openSheet,
             event => {
                 callback(event.detail)
-            }
+            },
+            EVENTS.openSheet,
         )
     }
 
@@ -66,10 +75,10 @@ export class Events {
 
     public static listenMouseDownOnWindowBox(callback: (windowBox: WindowBox) => void): void {
         Events.listen<HTMLElement>(
-            EVENTS.mouseDownWindowBox,
             event => {
                 callback(event.detail as WindowBox)
-            }
+            },
+            EVENTS.mouseDownWindowBox,
         )
     }
 
@@ -81,10 +90,10 @@ export class Events {
 
     public static listenToSheetImportOpen(callback: () => void): void {
         Events.listen(
-            EVENTS.openSheetImporter,
             (event) => {
                 callback()
-            }
+            },
+            EVENTS.openSheetImporter,
         )
     }
 }

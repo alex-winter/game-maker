@@ -7,6 +7,7 @@ import { SideMenu } from 'Client/Component/SideMenu/SideMenu'
 import { SheetImporter } from 'Client/Component/SpriteSheets/SheetImporter/SheetImporter'
 import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 import { NewLayerForm } from 'Client/Component/NewLayerForm/NewLayerForm'
+import { CanvasLayer } from 'Client/Component/Canvas/CanvasLayer'
 
 export const COMPONENTS = new Map<CustomElementConstructor, string>([
 
@@ -27,5 +28,7 @@ export const COMPONENTS = new Map<CustomElementConstructor, string>([
   [BasicModal, 'modal-basic'],
 
   [NewLayerForm, 'new-layer-form'],
+
+  [CanvasLayer, 'canvas-layer'],
 
 ])

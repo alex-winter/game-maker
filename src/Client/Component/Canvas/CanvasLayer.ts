@@ -9,8 +9,8 @@ export class CanvasLayer extends Component {
     private currentImage: HTMLImageElement | undefined
 
     protected build(): HTMLElement {
-        Events.listen(EVENTS.windowResize, this.handleWindowResize.bind(this))
-        Events.listen(EVENTS.sheetSelectionMade, this.handleCurrentImageChange.bind(this))
+        Events.listen(this.handleWindowResize.bind(this), EVENTS.windowResize)
+        Events.listen(this.handleCurrentImageChange.bind(this), EVENTS.sheetSelectionMade)
 
         this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this))
 
