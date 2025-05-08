@@ -496,7 +496,6 @@ class CanvasLayer extends Component_1.Component {
                 },
                 image: this.currentImage,
             });
-            console.log(this.layer);
             const mouseUp = (event) => {
                 document.removeEventListener('mouseup', mouseUp);
             };
