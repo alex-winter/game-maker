@@ -1,3 +1,5 @@
+import { Placement } from 'Client/Model/Placement'
+
 export interface Layer {
     uuid: string
 
@@ -7,4 +9,5 @@ export interface Layer {
 
     is_visible: boolean
 
+    placements: Placement[]
 }

@@ -82,7 +82,7 @@ export class Dom {
 
     public static makeComponent(
         component: CustomElementConstructor,
-        dataset: Object = {},
+        dataset: { [key: string]: string | any[] | Object } = {},
     ): Component {
         const tag = this.findComponentTag(component)
         const existing = Dom.queryAllDeep(tag)
@@ -95,6 +95,12 @@ export class Dom {
         }
 
         const element = document.createElement(tag)
+
+        Object.entries(dataset).forEach(([key, value]) => {
+            if (value instanceof Object || Array.isArray(value)) {
+                dataset[key] = JSON.stringify(value)
+            }
+        })
 
         Object.assign(
             element.dataset,

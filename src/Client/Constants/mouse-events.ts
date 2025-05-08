@@ -1,0 +1,1 @@
+export const LEFT_BUTTON = 0

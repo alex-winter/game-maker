@@ -438,6 +438,7 @@ module.exports = styleTagTransform;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CanvasLayer = void 0;
 const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
+const mouse_events_1 = __webpack_require__(/*! Client/Constants/mouse-events */ "./src/Client/Constants/mouse-events.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
@@ -446,27 +447,72 @@ class CanvasLayer extends Component_1.Component {
     ctx = this.canvas.getContext('2d');
     currentImage;
     layer;
+    isLeftMouseDown = false;
+    mouseCoordinates = { x: 0, y: 0 };
+    css() {
+        return /*css*/ `
+            .current-image {
+                position: fixed;
+                pointer-events: none;
+            }
+        `;
+    }
     build() {
         this.layer = this.parameters.layer;
         Events_1.Events.listen(this.handleWindowResize.bind(this), events_1.EVENTS.windowResize);
         Events_1.Events.listen(this.handleCurrentImageChange.bind(this), events_1.EVENTS.sheetSelectionMade);
         this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
+        this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
         this.handleWindowResize();
+        this.frame();
         return this.canvas;
     }
+    drawPlacement(placement) {
+        this.ctx.drawImage(placement.image, placement.coordinate.x, placement.coordinate.y);
+    }
+    frame() {
+        setTimeout(() => {
+            this.layer.placements.forEach(this.drawPlacement.bind(this));
+            window.requestAnimationFrame(this.frame.bind(this));
+        }, 100);
+    }
+    handleMouseMove(event) {
+        const x = event.clientX;
+        const y = event.clientY;
+        this.mouseCoordinates.x = x;
+        this.mouseCoordinates.y = y;
+        if (this.currentImage) {
+            this.currentImage.style.left = x + 'px';
+            this.currentImage.style.top = y + 'px';
+        }
+    }
     handleMouseDown(event) {
-        this.ctx.drawImage(this.currentImage, event.clientX, event.clientY);
-        const mouseMove = (event) => {
-        };
-        const mouseUp = (event) => {
-            document.removeEventListener('mouseup', mouseUp);
-            document.removeEventListener('mousemove', mouseMove);
-        };
-        document.addEventListener('mousemove', mouseMove);
-        document.addEventListener('mouseup', mouseUp);
+        if (event.button === mouse_events_1.LEFT_BUTTON) {
+            this.isLeftMouseDown = true;
+            this.layer.placements.push({
+                coordinate: {
+                    x: this.mouseCoordinates.x,
+                    y: this.mouseCoordinates.y,
+                },
+                image: this.currentImage,
+            });
+            console.log(this.layer);
+            const mouseUp = (event) => {
+                document.removeEventListener('mouseup', mouseUp);
+            };
+            document.addEventListener('mouseup', mouseUp);
+        }
     }
     handleCurrentImageChange(event) {
-        this.currentImage = event.detail;
+        const newImage = event.detail;
+        if (this.currentImage) {
+            this.shadowRoot.replaceChild(this.currentImage, newImage);
+        }
+        else {
+            this.shadowRoot.append(newImage);
+        }
+        this.currentImage = newImage;
+        this.currentImage.classList.add('current-image');
     }
     handleWindowResize() {
         this.canvas.width = window.outerWidth;
@@ -1197,6 +1243,20 @@ exports.EVENTS = {
 
 /***/ }),
 
+/***/ "./src/Client/Constants/mouse-events.ts":
+/*!**********************************************!*\
+  !*** ./src/Client/Constants/mouse-events.ts ***!
+  \**********************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.LEFT_BUTTON = void 0;
+exports.LEFT_BUTTON = 0;
+
+
+/***/ }),
+
 /***/ "./src/Client/Service/Component.ts":
 /*!*****************************************!*\
   !*** ./src/Client/Service/Component.ts ***!
@@ -1333,6 +1393,11 @@ class Dom {
             }
         }
         const element = document.createElement(tag);
+        Object.entries(dataset).forEach(([key, value]) => {
+            if (value instanceof Object || Array.isArray(value)) {
+                dataset[key] = JSON.stringify(value);
+            }
+        });
         Object.assign(element.dataset, dataset);
         return element;
     }
@@ -1693,6 +1758,7 @@ class LayerFactory {
             name: '',
             created_at: new Date().toISOString(),
             is_visible: true,
+            placements: [],
         };
     }
 }

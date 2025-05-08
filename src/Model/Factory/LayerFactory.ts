@@ -10,6 +10,8 @@ export class LayerFactory {
             created_at: new Date().toISOString(),
 
             is_visible: true,
+
+            placements: [],
         }
     }
 }
