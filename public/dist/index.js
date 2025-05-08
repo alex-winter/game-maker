@@ -1701,31 +1701,6 @@ exports.extractImageFromCanvasArea = extractImageFromCanvasArea;
 
 /***/ }),
 
-/***/ "./src/Client/Service/fileToBase64.ts":
-/*!********************************************!*\
-  !*** ./src/Client/Service/fileToBase64.ts ***!
-  \********************************************/
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.fileToBase64 = void 0;
-async function fileToBase64(file) {
-    if (file === null) {
-        return '';
-    }
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
-exports.fileToBase64 = fileToBase64;
-
-
-/***/ }),
-
 /***/ "./src/Client/Service/is-json.ts":
 /*!***************************************!*\
   !*** ./src/Client/Service/is-json.ts ***!
@@ -1916,7 +1891,6 @@ const components_1 = __webpack_require__(/*! Client/Constants/components */ "./s
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 const FileUpload_1 = __webpack_require__(/*! Client/Service/FileUpload */ "./src/Client/Service/FileUpload.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
-const fileToBase64_1 = __webpack_require__(/*! Client/Service/fileToBase64 */ "./src/Client/Service/fileToBase64.ts");
 const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
 const WindowBoxFactory_1 = __webpack_require__(/*! Client/Service/WindowBoxFactory */ "./src/Client/Service/WindowBoxFactory.ts");
 const SheetImporter_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetImporter/SheetImporter */ "./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts");
@@ -1939,14 +1913,14 @@ document.addEventListener('DOMContentLoaded', () => {
     Events_1.Events.listenToFilesUploadSubmitted(files => {
         FileUpload_1.FileUpload.uploadMultiple(files);
     });
-    Events_1.Events.listenToOpenSheet(async (file) => {
-        if (openSheets.includes(file.name)) {
-            windowBoxes[file.name].flash();
+    Events_1.Events.listenToOpenSheet(async (sheet) => {
+        if (openSheets.includes(sheet.name)) {
+            windowBoxes[sheet.name].flash();
             return;
         }
-        const component = Dom_1.Dom.makeComponent(SheetMaker_1.SheetMaker, { imageSrc: await (0, fileToBase64_1.fileToBase64)(file) });
-        openSheets.push(file.name);
-        windowBoxes[file.name] = WindowBoxFactory_1.WindowBoxFactory.make(component, file.name);
+        const component = Dom_1.Dom.makeComponent(SheetMaker_1.SheetMaker, { imageSrc: sheet.imageSrc });
+        openSheets.push(sheet.name);
+        windowBoxes[sheet.name] = WindowBoxFactory_1.WindowBoxFactory.make(component, sheet.name);
     });
     Events_1.Events.listenMouseDownOnWindowBox(windowBox => {
         Dom_1.Dom.getAllOfComponent(WindowBox_1.WindowBox).forEach(box => {

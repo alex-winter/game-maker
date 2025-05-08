@@ -34,16 +34,16 @@ document.addEventListener('DOMContentLoaded', () => {
         FileUpload.uploadMultiple(files)
     })
 
-    Events.listenToOpenSheet(async file => {
-        if (openSheets.includes(file.name)) {
-            windowBoxes[file.name].flash()
+    Events.listenToOpenSheet(async sheet => {
+        if (openSheets.includes(sheet.name)) {
+            windowBoxes[sheet.name].flash()
             return
         }
-        const component = Dom.makeComponent(SheetMaker, { imageSrc: await fileToBase64(file) })
+        const component = Dom.makeComponent(SheetMaker, { imageSrc: sheet.imageSrc })
 
-        openSheets.push(file.name)
+        openSheets.push(sheet.name)
 
-        windowBoxes[file.name] = WindowBoxFactory.make(component, file.name)
+        windowBoxes[sheet.name] = WindowBoxFactory.make(component, sheet.name)
     })
 
     Events.listenMouseDownOnWindowBox(windowBox => {

@@ -58,8 +58,8 @@ export class Events {
         this.emit(EVENTS.openSheet, sheet)
     }
 
-    public static listenToOpenSheet(callback: (file: File) => void): void {
-        Events.listen<File>(
+    public static listenToOpenSheet(callback: (sheet: Sheet) => void): void {
+        Events.listen<Sheet>(
             event => {
                 callback(event.detail)
             },
