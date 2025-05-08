@@ -19,6 +19,8 @@ export const EVENTS = {
     getSheets: 'get-sheets',
     gotSheets: 'got-sheets',
 
+    layerActive: 'layer-active',
+
     closeModal: 'close-modal',
 
     sheetSelectionMade: 'sheet-selection-made',

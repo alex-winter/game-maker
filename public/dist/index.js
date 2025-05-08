@@ -451,6 +451,16 @@ class CanvasLayer extends Component_1.Component {
     mouseCoordinates = { x: 0, y: 0 };
     css() {
         return /*css*/ `
+            :host {
+                z-index: 500;
+                display: block;
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+            :host(.active) {
+                z-index: 501;
+            }
             .current-image {
                 position: fixed;
                 pointer-events: none;
@@ -461,6 +471,7 @@ class CanvasLayer extends Component_1.Component {
         this.layer = this.parameters.layer;
         Events_1.Events.listen(this.handleWindowResize.bind(this), events_1.EVENTS.windowResize);
         Events_1.Events.listen(this.handleCurrentImageChange.bind(this), events_1.EVENTS.sheetSelectionMade);
+        Events_1.Events.listen(this.handleCheckActive.bind(this), events_1.EVENTS.layerActive);
         this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
         this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
         this.handleWindowResize();
@@ -477,6 +488,15 @@ class CanvasLayer extends Component_1.Component {
             this.layer.placements.forEach(this.drawPlacement.bind(this));
             window.requestAnimationFrame(this.frame.bind(this));
         }, 100);
+    }
+    handleCheckActive(event) {
+        const layer = event.detail;
+        if (layer.uuid === this.layer.uuid) {
+            this.classList.add('active');
+        }
+        else {
+            this.classList.remove('active');
+        }
     }
     handleMouseMove(event) {
         const x = event.clientX;
@@ -755,6 +775,7 @@ class LayerListing extends Component_1.Component {
         const options = Dom_1.Dom.div();
         const visibleButton = Dom_1.Dom.button('o');
         name.innerText = layer.name;
+        container.addEventListener('click', () => Events_1.Events.emit(events_1.EVENTS.layerActive, layer));
         options.append(visibleButton);
         container.append(name, options);
         return container;
@@ -939,6 +960,7 @@ class SideMenu extends Component_1.Component {
                 right: 0;
                 height: 100vh;
                 width: 200px;
+                z-index: 800;
             }
         `;
     }
@@ -1264,6 +1286,7 @@ exports.EVENTS = {
     gotLayer: 'got-layer',
     getSheets: 'get-sheets',
     gotSheets: 'got-sheets',
+    layerActive: 'layer-active',
     closeModal: 'close-modal',
     sheetSelectionMade: 'sheet-selection-made',
     windowResize: 'window-resize',

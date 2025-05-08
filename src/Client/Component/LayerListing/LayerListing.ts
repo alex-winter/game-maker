@@ -47,6 +47,8 @@ export class LayerListing extends Component {
 
         name.innerText = layer.name
 
+        container.addEventListener('click', () => Events.emit(EVENTS.layerActive, layer))
+
         options.append(
             visibleButton,
         )

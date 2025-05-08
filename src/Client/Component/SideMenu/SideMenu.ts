@@ -14,6 +14,7 @@ export class SideMenu extends Component {
                 right: 0;
                 height: 100vh;
                 width: 200px;
+                z-index: 800;
             }
         `
     }

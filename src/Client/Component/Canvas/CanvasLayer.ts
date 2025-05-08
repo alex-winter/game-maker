@@ -17,6 +17,16 @@ export class CanvasLayer extends Component {
 
     protected css(): string {
         return /*css*/`
+            :host {
+                z-index: 500;
+                display: block;
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+            :host(.active) {
+                z-index: 501;
+            }
             .current-image {
                 position: fixed;
                 pointer-events: none;
@@ -29,6 +39,7 @@ export class CanvasLayer extends Component {
 
         Events.listen(this.handleWindowResize.bind(this), EVENTS.windowResize)
         Events.listen(this.handleCurrentImageChange.bind(this), EVENTS.sheetSelectionMade)
+        Events.listen(this.handleCheckActive.bind(this), EVENTS.layerActive)
 
         this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this))
         this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this))
@@ -60,6 +71,16 @@ export class CanvasLayer extends Component {
             },
             100
         )
+    }
+
+    private handleCheckActive(event: CustomEvent): void {
+        const layer = event.detail as Layer
+
+        if (layer.uuid === this.layer.uuid) {
+            this.classList.add('active')
+        } else {
+            this.classList.remove('active')
+        }
     }
 
     private handleMouseMove(event: MouseEvent): void {
