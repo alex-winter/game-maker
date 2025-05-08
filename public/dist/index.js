@@ -468,7 +468,9 @@ class CanvasLayer extends Component_1.Component {
         return this.canvas;
     }
     drawPlacement(placement) {
-        this.ctx.drawImage(placement.image, placement.coordinate.x, placement.coordinate.y);
+        Dom_1.Dom.image(placement.imageSrc).then(image => {
+            this.ctx.drawImage(image, placement.coordinate.x, placement.coordinate.y);
+        });
     }
     frame() {
         setTimeout(() => {
@@ -489,14 +491,16 @@ class CanvasLayer extends Component_1.Component {
     handleMouseDown(event) {
         if (event.button === mouse_events_1.LEFT_BUTTON) {
             this.isLeftMouseDown = true;
-            this.layer.placements.push({
+            const placement = {
                 coordinate: {
                     x: this.mouseCoordinates.x,
                     y: this.mouseCoordinates.y,
                 },
-                image: this.currentImage,
-            });
+                imageSrc: this.currentImage.src,
+            };
+            this.layer.placements.push(placement);
             const mouseUp = (event) => {
+                Events_1.Events.emit(events_1.EVENTS.layerPlacementMade, this.layer);
                 document.removeEventListener('mouseup', mouseUp);
             };
             document.addEventListener('mouseup', mouseUp);
@@ -504,13 +508,14 @@ class CanvasLayer extends Component_1.Component {
     }
     handleCurrentImageChange(event) {
         const newImage = event.detail;
+        console.log(newImage);
         if (this.currentImage) {
-            this.shadowRoot.replaceChild(this.currentImage, newImage);
+            this.currentImage.src = newImage.src;
         }
         else {
+            this.currentImage = newImage;
             this.shadowRoot.append(newImage);
         }
-        this.currentImage = newImage;
         this.currentImage.classList.add('current-image');
     }
     handleWindowResize() {
@@ -519,60 +524,6 @@ class CanvasLayer extends Component_1.Component {
     }
 }
 exports.CanvasLayer = CanvasLayer;
-
-
-/***/ }),
-
-/***/ "./src/Client/Component/File/FileListing/FileListing.ts":
-/*!**************************************************************!*\
-  !*** ./src/Client/Component/File/FileListing/FileListing.ts ***!
-  \**************************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.FileListing = void 0;
-const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
-const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
-const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
-class FileListing extends Component_1.Component {
-    css() {
-        return /*css*/ `
-            :host {
-                display: block;
-                max-height: 400px;
-                overflow-y: scroll;
-            }        
-
-            .file {
-                display: flex;
-                padding: 10px;
-            }
-            .file div {
-                flex: 1;
-            }
-        `;
-    }
-    build() {
-        const container = Dom_1.Dom.div();
-        Events_1.Events.listenToFilesUploadSubmitted(fileList => {
-            container.append(...fileList.map(this.buildFile));
-        });
-        return container;
-    }
-    buildFile(file) {
-        const container = Dom_1.Dom.div('file');
-        const name = Dom_1.Dom.div();
-        const options = Dom_1.Dom.div();
-        const openButton = Dom_1.Dom.button('Open');
-        name.innerText = file.name;
-        openButton.addEventListener('click', (e) => Events_1.Events.emitOpenSheet(file));
-        options.append(openButton);
-        container.append(name, options);
-        return container;
-    }
-}
-exports.FileListing = FileListing;
 
 
 /***/ }),
@@ -888,6 +839,83 @@ exports.NewLayerForm = NewLayerForm;
 
 /***/ }),
 
+/***/ "./src/Client/Component/SheetListing/SheetListing.ts":
+/*!***********************************************************!*\
+  !*** ./src/Client/Component/SheetListing/SheetListing.ts ***!
+  \***********************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.FileListing = void 0;
+const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
+class FileListing extends Component_1.Component {
+    css() {
+        return /*css*/ `
+            :host {
+                display: block;
+                max-height: 400px;
+                overflow-y: scroll;
+            }        
+
+            .file {
+                display: flex;
+                padding: 10px;
+            }
+            .file div {
+                flex: 1;
+            }
+        `;
+    }
+    build() {
+        const container = Dom_1.Dom.div();
+        Events_1.Events.listenToFilesUploadSubmitted(async (fileList) => {
+            const sheets = await Promise.all(fileList.map(this.mapToSheet.bind(this)));
+            container.append(...sheets.map(this.buildSheet.bind(this)));
+        });
+        Events_1.Events.listen(event => {
+            container.append(...event.detail
+                .map(this.buildSheet.bind(this)));
+        }, events_1.EVENTS.gotSheets);
+        Events_1.Events.emit(events_1.EVENTS.getSheets);
+        return container;
+    }
+    mapToSheet(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const base64 = reader.result;
+                resolve({
+                    name: file.name,
+                    imageSrc: base64,
+                });
+            };
+            reader.onerror = () => {
+                reject(new Error('Failed to read file'));
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+    buildSheet(sheet) {
+        const container = Dom_1.Dom.div('file');
+        const name = Dom_1.Dom.div();
+        const options = Dom_1.Dom.div();
+        const openButton = Dom_1.Dom.button('Open');
+        name.innerText = sheet.name;
+        openButton.addEventListener('click', (e) => Events_1.Events.emitOpenSheet(sheet));
+        options.append(openButton);
+        container.append(name, options);
+        return container;
+    }
+}
+exports.FileListing = FileListing;
+
+
+/***/ }),
+
 /***/ "./src/Client/Component/SideMenu/SideMenu.ts":
 /*!***************************************************!*\
   !*** ./src/Client/Component/SideMenu/SideMenu.ts ***!
@@ -941,7 +969,7 @@ exports.SideMenu = SideMenu;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SheetImporter = void 0;
-const FileListing_1 = __webpack_require__(/*! Client/Component/File/FileListing/FileListing */ "./src/Client/Component/File/FileListing/FileListing.ts");
+const SheetListing_1 = __webpack_require__(/*! Client/Component/SheetListing/SheetListing */ "./src/Client/Component/SheetListing/SheetListing.ts");
 const FileUploader_1 = __webpack_require__(/*! Client/Component/File/FileUploader/FileUploader */ "./src/Client/Component/File/FileUploader/FileUploader.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
@@ -949,7 +977,7 @@ class SheetImporter extends Component_1.Component {
     isSingleton = true;
     build() {
         const container = Dom_1.Dom.div();
-        const fileListing = Dom_1.Dom.makeComponent(FileListing_1.FileListing);
+        const fileListing = Dom_1.Dom.makeComponent(SheetListing_1.FileListing);
         const uploader = Dom_1.Dom.makeComponent(FileUploader_1.FileUploader);
         container.append(fileListing, uploader);
         return container;
@@ -1193,7 +1221,7 @@ exports.COMPONENTS = void 0;
 const LayerListing_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerListing */ "./src/Client/Component/LayerListing/LayerListing.ts");
 const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
 const FileUploader_1 = __webpack_require__(/*! Client/Component/File/FileUploader/FileUploader */ "./src/Client/Component/File/FileUploader/FileUploader.ts");
-const FileListing_1 = __webpack_require__(/*! Client/Component/File/FileListing/FileListing */ "./src/Client/Component/File/FileListing/FileListing.ts");
+const SheetListing_1 = __webpack_require__(/*! Client/Component/SheetListing/SheetListing */ "./src/Client/Component/SheetListing/SheetListing.ts");
 const SheetMaker_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetMaker/SheetMaker */ "./src/Client/Component/SpriteSheets/SheetMaker/SheetMaker.ts");
 const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */ "./src/Client/Component/SideMenu/SideMenu.ts");
 const SheetImporter_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetImporter/SheetImporter */ "./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts");
@@ -1205,7 +1233,7 @@ exports.COMPONENTS = new Map([
     [LayerListing_1.LayerListing, 'layer-listing'],
     [WindowBox_1.WindowBox, 'window-box'],
     [FileUploader_1.FileUploader, 'file-uploader'],
-    [FileListing_1.FileListing, 'file-listing'],
+    [SheetListing_1.FileListing, 'file-listing'],
     [SheetMaker_1.SheetMaker, 'sheet-maker'],
     [SheetImporter_1.SheetImporter, 'sheet-importer'],
     [BasicModal_1.BasicModal, 'modal-basic'],
@@ -1234,9 +1262,12 @@ exports.EVENTS = {
     newLayerSubmit: 'new-layer-submit',
     newLayerMapped: 'new-layer-mapped',
     gotLayer: 'got-layer',
+    getSheets: 'get-sheets',
+    gotSheets: 'got-sheets',
     closeModal: 'close-modal',
     sheetSelectionMade: 'sheet-selection-made',
     windowResize: 'window-resize',
+    layerPlacementMade: 'layer-placement-made',
 };
 
 
@@ -1472,8 +1503,8 @@ class Events {
             callback(event.detail);
         }, events_1.EVENTS.uploadFilesSubmission);
     }
-    static emitOpenSheet(file) {
-        this.emit(events_1.EVENTS.openSheet, file);
+    static emitOpenSheet(sheet) {
+        this.emit(events_1.EVENTS.openSheet, sheet);
     }
     static listenToOpenSheet(callback) {
         Events.listen(event => {
@@ -1543,6 +1574,9 @@ class LayerRepository extends Repository_1.Repository {
     async persist(...layers) {
         await this.post(this.API_PATH, layers);
     }
+    async update(layer) {
+        await this.patch(this.API_PATH, layer);
+    }
     async getAll() {
         return await this.get(this.API_PATH);
     }
@@ -1571,12 +1605,42 @@ class Repository {
             body: JSON.stringify(body),
         });
     }
+    patch(path, body) {
+        return fetch(path, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+    }
     async get(path) {
         const response = await fetch(path);
         return response.json();
     }
 }
 exports.Repository = Repository;
+
+
+/***/ }),
+
+/***/ "./src/Client/Service/Repository/SheetRepository.ts":
+/*!**********************************************************!*\
+  !*** ./src/Client/Service/Repository/SheetRepository.ts ***!
+  \**********************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SheetRepository = void 0;
+const Repository_1 = __webpack_require__(/*! Client/Service/Repository/Repository */ "./src/Client/Service/Repository/Repository.ts");
+class SheetRepository extends Repository_1.Repository {
+    API_PATH = '/sheets';
+    async getAll() {
+        return await this.get(this.API_PATH);
+    }
+}
+exports.SheetRepository = SheetRepository;
 
 
 /***/ }),
@@ -1630,7 +1694,6 @@ async function extractImageFromCanvasArea(sourceCanvas, x, y, width, height) {
     const ctx = tempCanvas.getContext('2d');
     const image = await Dom_1.Dom.image(sourceCanvas.toDataURL());
     ctx.drawImage(image, x, y, width, height, 0, 0, width, height);
-    console.log(await Dom_1.Dom.image(tempCanvas.toDataURL()));
     return await Dom_1.Dom.image(tempCanvas.toDataURL());
 }
 exports.extractImageFromCanvasArea = extractImageFromCanvasArea;
@@ -1864,12 +1927,14 @@ const NewLayerForm_1 = __webpack_require__(/*! Client/Component/NewLayerForm/New
 const LayerFactory_1 = __webpack_require__(/*! Model/Factory/LayerFactory */ "./src/Model/Factory/LayerFactory.ts");
 const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
 const CanvasLayer_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasLayer */ "./src/Client/Component/Canvas/CanvasLayer.ts");
+const SheetRepository_1 = __webpack_require__(/*! Client/Service/Repository/SheetRepository */ "./src/Client/Service/Repository/SheetRepository.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
 let openSheets = [];
 let windowBoxes = {};
 const layerRepository = new LayerRepository_1.LayerRepository();
+const sheetRepository = new SheetRepository_1.SheetRepository();
 document.addEventListener('DOMContentLoaded', () => {
     Events_1.Events.listenToFilesUploadSubmitted(files => {
         FileUpload_1.FileUpload.uploadMultiple(files);
@@ -1907,10 +1972,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }, events_1.EVENTS.newLayerSubmit);
     Events_1.Events.listen(event => {
         document.body.append(...event.detail.map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer })));
-    }, events_1.EVENTS.gotLayer);
+    }, events_1.EVENTS.gotLayer, events_1.EVENTS.newLayerMapped);
+    Events_1.Events.listen(event => {
+        layerRepository.update(event.detail);
+    }, events_1.EVENTS.layerPlacementMade);
     layerRepository.getAll().then(layers => {
         Events_1.Events.emit(events_1.EVENTS.gotLayer, layers);
     });
+    const getSheets = () => {
+        sheetRepository.getAll().then(sheets => {
+            console.log('got some sheets son');
+            Events_1.Events.emit(events_1.EVENTS.gotSheets, sheets);
+        });
+    };
+    Events_1.Events.listen(event => {
+        getSheets();
+    }, events_1.EVENTS.getSheets);
     window.addEventListener('resize', () => Events_1.Events.emit(events_1.EVENTS.windowResize));
 });
 

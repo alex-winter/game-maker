@@ -11,6 +11,13 @@ export class LayerRepository extends Repository {
         )
     }
 
+    public async update(layer: Layer): Promise<void> {
+        await this.patch(
+            this.API_PATH,
+            layer,
+        )
+    }
+
     public async getAll(): Promise<Layer[]> {
         return await this.get(this.API_PATH)
     }

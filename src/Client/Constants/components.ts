@@ -1,7 +1,7 @@
 import { LayerListing } from 'Client/Component/LayerListing/LayerListing'
 import { WindowBox } from 'Client/Component/WindowBox/WindowBox'
 import { FileUploader } from 'Client/Component/File/FileUploader/FileUploader'
-import { FileListing } from 'Client/Component/File/FileListing/FileListing'
+import { FileListing } from 'Client/Component/SheetListing/SheetListing'
 import { SheetMaker } from 'Client/Component/SpriteSheets/SheetMaker/SheetMaker'
 import { SideMenu } from 'Client/Component/SideMenu/SideMenu'
 import { SheetImporter } from 'Client/Component/SpriteSheets/SheetImporter/SheetImporter'

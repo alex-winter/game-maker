@@ -1,4 +1,4 @@
-import { FileListing } from 'Client/Component/File/FileListing/FileListing'
+import { FileListing } from 'Client/Component/SheetListing/SheetListing'
 import { FileUploader } from 'Client/Component/File/FileUploader/FileUploader'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'

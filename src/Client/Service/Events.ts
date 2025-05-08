@@ -1,5 +1,6 @@
 import { WindowBox } from 'Client/Component/WindowBox/WindowBox'
 import { EVENTS } from 'Client/Constants/events'
+import { Sheet } from 'Client/Model/Sheet'
 
 type EventFn<T = any> = (event: CustomEvent<T>) => void
 
@@ -53,8 +54,8 @@ export class Events {
         )
     }
 
-    public static emitOpenSheet(file: File): void {
-        this.emit(EVENTS.openSheet, file)
+    public static emitOpenSheet(sheet: Sheet): void {
+        this.emit(EVENTS.openSheet, sheet)
     }
 
     public static listenToOpenSheet(callback: (file: File) => void): void {

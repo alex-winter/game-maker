@@ -1,7 +1,9 @@
+type Body = Array<Object> | Object
+
 export abstract class Repository {
     protected post(
         path: string,
-        body: Array<Object> | Object,
+        body: Body,
     ): Promise<Response> {
         return fetch(path, {
             method: 'POST',
@@ -9,6 +11,19 @@ export abstract class Repository {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(body),
+        })
+    }
+
+    protected patch(
+        path: string,
+        body: Body,
+    ): Promise<Response> {
+        return fetch(path, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
         })
     }
 

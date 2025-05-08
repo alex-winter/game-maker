@@ -16,6 +16,7 @@ import { LayerFactory } from 'Model/Factory/LayerFactory'
 import { LayerRepository } from 'Client/Service/Repository/LayerRepository'
 import { Layer } from 'Model/Layer'
 import { CanvasLayer } from 'Client/Component/Canvas/CanvasLayer'
+import { SheetRepository } from 'Client/Service/Repository/SheetRepository'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -26,6 +27,7 @@ let openSheets: string[] = []
 let windowBoxes: { [key: string]: WindowBox } = {}
 
 const layerRepository = new LayerRepository()
+const sheetRepository = new SheetRepository()
 
 document.addEventListener('DOMContentLoaded', () => {
     Events.listenToFilesUploadSubmitted(files => {
@@ -88,11 +90,34 @@ document.addEventListener('DOMContentLoaded', () => {
             )
         },
         EVENTS.gotLayer,
+        EVENTS.newLayerMapped,
+    )
+
+    Events.listen(
+        event => {
+            layerRepository.update(event.detail as Layer)
+        },
+        EVENTS.layerPlacementMade,
     )
 
     layerRepository.getAll().then(layers => {
         Events.emit(EVENTS.gotLayer, layers)
     })
+
+    const getSheets = () => {
+        sheetRepository.getAll().then(sheets => {
+            console.log('got some sheets son')
+            Events.emit(EVENTS.gotSheets, sheets)
+        })
+    }
+
+    Events.listen(
+        event => {
+            getSheets()
+        },
+        EVENTS.getSheets
+    )
+
 
     window.addEventListener('resize', () => Events.emit(EVENTS.windowResize))
 })

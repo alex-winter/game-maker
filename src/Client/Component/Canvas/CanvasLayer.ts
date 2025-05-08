@@ -42,11 +42,13 @@ export class CanvasLayer extends Component {
     }
 
     private drawPlacement(placement: Placement): void {
-        this.ctx.drawImage(
-            placement.image,
-            placement.coordinate.x,
-            placement.coordinate.y,
-        )
+        Dom.image(placement.imageSrc).then(image => {
+            this.ctx.drawImage(
+                image,
+                placement.coordinate.x,
+                placement.coordinate.y,
+            )
+        })
     }
 
     private frame(): void {
@@ -77,15 +79,18 @@ export class CanvasLayer extends Component {
         if (event.button === LEFT_BUTTON) {
             this.isLeftMouseDown = true
 
-            this.layer.placements.push({
+            const placement = {
                 coordinate: {
                     x: this.mouseCoordinates.x,
                     y: this.mouseCoordinates.y,
                 },
-                image: this.currentImage!,
-            })
+                imageSrc: this.currentImage!.src,
+            }
+
+            this.layer.placements.push(placement)
 
             const mouseUp = (event: MouseEvent) => {
+                Events.emit(EVENTS.layerPlacementMade, this.layer)
                 document.removeEventListener('mouseup', mouseUp)
             }
 
@@ -96,13 +101,14 @@ export class CanvasLayer extends Component {
     private handleCurrentImageChange(event: CustomEvent): void {
         const newImage = event.detail as HTMLImageElement
 
+        console.log(newImage)
+
         if (this.currentImage) {
-            this.shadowRoot!.replaceChild(this.currentImage, newImage)
+            this.currentImage.src = newImage.src
         } else {
+            this.currentImage = newImage
             this.shadowRoot!.append(newImage)
         }
-
-        this.currentImage = newImage
 
         this.currentImage.classList.add('current-image')
     }
