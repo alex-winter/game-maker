@@ -24,32 +24,58 @@ export class CanvasLayer extends Component {
                 top: 0;
                 left: 0;
             }
+            
             :host(.active) {
                 z-index: 501;
             }
+
             .current-image {
                 position: fixed;
                 pointer-events: none;
             }
+
+            .hide {
+                display: none;
+            }
         `
     }
 
-    protected build(): HTMLElement {
+    protected async setup(): Promise<void> {
         this.layer = this.parameters.layer
+    }
 
-        Events.listen(this.handleWindowResize.bind(this), EVENTS.windowResize)
-        Events.listen(this.handleCurrentImageChange.bind(this), EVENTS.sheetSelectionMade)
-        Events.listen(this.handleCheckActive.bind(this), EVENTS.layerActive)
-
+    protected build(): HTMLElement {
         this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this))
         this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this))
 
+        if (!this.layer.is_visible) {
+            this.canvas.classList.add('hide')
+        }
+
         this.handleWindowResize()
 
+        return this.canvas
+    }
+
+    protected after(): void {
+        Events.listen(this.handleWindowResize.bind(this), EVENTS.windowResize)
+        Events.listen(this.handleCurrentImageChange.bind(this), EVENTS.sheetSelectionMade)
+        Events.listen(this.handleCheckActive.bind(this), EVENTS.layerActive)
+        Events.listen(this.handleLayerUpdate.bind(this), 'layer-update')
 
         this.frame()
+    }
 
-        return this.canvas
+    private handleLayerUpdate(event: CustomEvent): void {
+        const layer = event.detail as Layer
+
+        if (this.layer.uuid === layer.uuid) {
+            Object.assign(
+                this.layer,
+                layer,
+            )
+            this.patch()
+        }
     }
 
     private drawPlacement(placement: Placement): void {

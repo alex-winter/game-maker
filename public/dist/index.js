@@ -458,25 +458,46 @@ class CanvasLayer extends Component_1.Component {
                 top: 0;
                 left: 0;
             }
+            
             :host(.active) {
                 z-index: 501;
             }
+
             .current-image {
                 position: fixed;
                 pointer-events: none;
             }
+
+            .hide {
+                display: none;
+            }
         `;
     }
-    build() {
+    async setup() {
         this.layer = this.parameters.layer;
+    }
+    build() {
+        this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
+        this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
+        if (!this.layer.is_visible) {
+            this.canvas.classList.add('hide');
+        }
+        this.handleWindowResize();
+        return this.canvas;
+    }
+    after() {
         Events_1.Events.listen(this.handleWindowResize.bind(this), events_1.EVENTS.windowResize);
         Events_1.Events.listen(this.handleCurrentImageChange.bind(this), events_1.EVENTS.sheetSelectionMade);
         Events_1.Events.listen(this.handleCheckActive.bind(this), events_1.EVENTS.layerActive);
-        this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
-        this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
-        this.handleWindowResize();
+        Events_1.Events.listen(this.handleLayerUpdate.bind(this), 'layer-update');
         this.frame();
-        return this.canvas;
+    }
+    handleLayerUpdate(event) {
+        const layer = event.detail;
+        if (this.layer.uuid === layer.uuid) {
+            Object.assign(this.layer, layer);
+            this.patch();
+        }
     }
     drawPlacement(placement) {
         Dom_1.Dom.image(placement.imageSrc).then(image => {
@@ -776,6 +797,10 @@ class LayerListing extends Component_1.Component {
         const visibleButton = Dom_1.Dom.button('o');
         name.innerText = layer.name;
         container.addEventListener('click', () => Events_1.Events.emit(events_1.EVENTS.layerActive, layer));
+        visibleButton.addEventListener('click', () => {
+            layer.is_visible = !layer.is_visible;
+            Events_1.Events.emit('layer-update', layer);
+        });
         options.append(visibleButton);
         container.append(name, options);
         return container;
@@ -1320,6 +1345,7 @@ exports.LEFT_BUTTON = 0;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Component = void 0;
 const is_json_1 = __webpack_require__(/*! Client/Service/is-json */ "./src/Client/Service/is-json.ts");
+const patch_dom_1 = __webpack_require__(/*! Client/Service/patch-dom */ "./src/Client/Service/patch-dom.ts");
 class Component extends HTMLElement {
     shadow;
     isSingleton = false;
@@ -1330,6 +1356,7 @@ class Component extends HTMLElement {
         this.shadow = this.attachShadow({ mode: 'open' });
     }
     async setup() { }
+    after() { }
     css() {
         return '';
     }
@@ -1342,7 +1369,18 @@ class Component extends HTMLElement {
     connectedCallback() {
         this.render();
     }
+    patch() {
+        const firstChild = this.shadow.firstChild;
+        if (firstChild) {
+            (0, patch_dom_1.patchDOM)(firstChild, this.build());
+        }
+    }
     render(isReload = false) {
+        Object.entries(this.dataset).forEach(([key, value]) => {
+            this.parameters[key] = (0, is_json_1.isJSON)(value)
+                ? JSON.parse(value)
+                : value;
+        });
         this.setup().then(() => {
             const css = this.css().trim();
             if (css.length) {
@@ -1350,11 +1388,6 @@ class Component extends HTMLElement {
                 sheet.replaceSync(css);
                 this.shadowRoot.adoptedStyleSheets = [sheet];
             }
-            Object.entries(this.dataset).forEach(([key, value]) => {
-                this.parameters[key] = (0, is_json_1.isJSON)(value)
-                    ? JSON.parse(value)
-                    : value;
-            });
             this.content = this.build();
             if (isReload) {
                 this.shadow.replaceChild(this.build(), this.content);
@@ -1363,6 +1396,7 @@ class Component extends HTMLElement {
                 this.shadow.appendChild(this.content);
             }
         });
+        this.after();
     }
 }
 exports.Component = Component;
@@ -1746,6 +1780,79 @@ function isJSON(value) {
     }
 }
 exports.isJSON = isJSON;
+
+
+/***/ }),
+
+/***/ "./src/Client/Service/patch-dom.ts":
+/*!*****************************************!*\
+  !*** ./src/Client/Service/patch-dom.ts ***!
+  \*****************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.patchDOM = void 0;
+function patchDOM(oldNode, newNode) {
+    if (!oldNode || !newNode)
+        return;
+    // Replace if node types or node names differ
+    if (oldNode.nodeType !== newNode.nodeType || oldNode.nodeName !== newNode.nodeName) {
+        if (oldNode.nodeType === Node.ELEMENT_NODE || oldNode.nodeType === Node.TEXT_NODE) {
+            oldNode.replaceWith(newNode.cloneNode(true));
+        }
+        return;
+    }
+    // Update text content for text nodes
+    if (oldNode.nodeType === Node.TEXT_NODE && newNode.nodeType === Node.TEXT_NODE) {
+        const oldText = oldNode;
+        const newText = newNode;
+        if (oldText.nodeValue !== newText.nodeValue) {
+            oldText.nodeValue = newText.nodeValue;
+        }
+        return;
+    }
+    // If we're here, assume ELEMENT_NODEs
+    if (oldNode.nodeType === Node.ELEMENT_NODE && newNode.nodeType === Node.ELEMENT_NODE) {
+        const oldEl = oldNode;
+        const newEl = newNode;
+        // Update attributes
+        const oldAttrs = oldEl.attributes;
+        const newAttrs = newEl.attributes;
+        // Add or update attributes
+        for (let i = 0; i < newAttrs.length; i++) {
+            const attr = newAttrs[i];
+            if (oldEl.getAttribute(attr.name) !== attr.value) {
+                oldEl.setAttribute(attr.name, attr.value);
+            }
+        }
+        // Remove old attributes not present in new
+        for (let i = 0; i < oldAttrs.length; i++) {
+            const attr = oldAttrs[i];
+            if (!newEl.hasAttribute(attr.name)) {
+                oldEl.removeAttribute(attr.name);
+            }
+        }
+        // Recursively patch children
+        const oldChildren = Array.from(oldEl.childNodes);
+        const newChildren = Array.from(newEl.childNodes);
+        const max = Math.max(oldChildren.length, newChildren.length);
+        for (let i = 0; i < max; i++) {
+            const oldChild = oldChildren[i];
+            const newChild = newChildren[i];
+            if (!oldChild && newChild) {
+                oldEl.appendChild(newChild.cloneNode(true));
+            }
+            else if (oldChild && !newChild) {
+                oldEl.removeChild(oldChild);
+            }
+            else if (oldChild && newChild) {
+                patchDOM(oldChild, newChild);
+            }
+        }
+    }
+}
+exports.patchDOM = patchDOM;
 
 
 /***/ }),

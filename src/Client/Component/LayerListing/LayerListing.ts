@@ -49,6 +49,12 @@ export class LayerListing extends Component {
 
         container.addEventListener('click', () => Events.emit(EVENTS.layerActive, layer))
 
+        visibleButton.addEventListener('click', () => {
+            layer.is_visible = !layer.is_visible
+
+            Events.emit('layer-update', layer)
+        })
+
         options.append(
             visibleButton,
         )

@@ -1,4 +1,5 @@
 import { isJSON } from 'Client/Service/is-json'
+import { patchDOM } from 'Client/Service/patch-dom'
 
 export abstract class Component extends HTMLElement {
     private readonly shadow: ShadowRoot
@@ -14,6 +15,7 @@ export abstract class Component extends HTMLElement {
 
     protected abstract build(): HTMLElement
     protected async setup(): Promise<void> { }
+    protected after(): void { }
     protected css(): string {
         return ''
     }
@@ -30,7 +32,21 @@ export abstract class Component extends HTMLElement {
         this.render()
     }
 
+    protected patch(): void {
+        const firstChild = this.shadow.firstChild
+
+        if (firstChild) {
+            patchDOM(firstChild, this.build())
+        }
+    }
+
     private render(isReload: boolean = false) {
+        Object.entries(this.dataset).forEach(([key, value]) => {
+            this.parameters[key] = isJSON(value)
+                ? JSON.parse(value)
+                : value
+        })
+
         this.setup().then(() => {
             const css = this.css().trim()
 
@@ -39,12 +55,6 @@ export abstract class Component extends HTMLElement {
                 sheet.replaceSync(css)
                 this.shadowRoot!.adoptedStyleSheets = [sheet]
             }
-
-            Object.entries(this.dataset).forEach(([key, value]) => {
-                this.parameters[key] = isJSON(value)
-                    ? JSON.parse(value)
-                    : value
-            })
 
             this.content = this.build()
 
@@ -59,5 +69,7 @@ export abstract class Component extends HTMLElement {
                 )
             }
         })
+
+        this.after()
     }
 }
