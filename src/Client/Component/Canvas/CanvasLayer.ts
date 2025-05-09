@@ -8,8 +8,8 @@ import { Events } from 'Client/Service/Events'
 import { Layer } from 'Model/Layer'
 
 export class CanvasLayer extends Component {
-    private readonly canvas: HTMLCanvasElement = Dom.canvas()
-    private readonly ctx: CanvasRenderingContext2D = this.canvas.getContext('2d')!
+    private canvas!: HTMLCanvasElement
+    private ctx!: CanvasRenderingContext2D
     private currentImage: HTMLImageElement | undefined
     private layer!: Layer
     private isLeftMouseDown: boolean = false
@@ -45,6 +45,9 @@ export class CanvasLayer extends Component {
     }
 
     protected build(): HTMLElement {
+        this.canvas = Dom.canvas()
+        this.ctx = this.canvas.getContext('2d')!
+
         this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this))
         this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this))
 

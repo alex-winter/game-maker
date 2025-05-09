@@ -443,8 +443,8 @@ const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/C
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class CanvasLayer extends Component_1.Component {
-    canvas = Dom_1.Dom.canvas();
-    ctx = this.canvas.getContext('2d');
+    canvas;
+    ctx;
     currentImage;
     layer;
     isLeftMouseDown = false;
@@ -477,6 +477,8 @@ class CanvasLayer extends Component_1.Component {
         this.layer = this.parameters.layer;
     }
     build() {
+        this.canvas = Dom_1.Dom.canvas();
+        this.ctx = this.canvas.getContext('2d');
         this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
         this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
         if (!this.layer.is_visible) {
