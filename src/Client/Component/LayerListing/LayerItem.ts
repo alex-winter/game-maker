@@ -55,7 +55,9 @@ export class LayerItem extends Component {
             Events.emit('layer-active', this.layer)
         })
 
-        this.visibleButton.addEventListener('click', () => {
+        this.visibleButton.addEventListener('click', (e: Event) => {
+            e.stopPropagation()
+
             this.layer.is_visible = !this.layer.is_visible
 
             Events.emit('layer-update', this.layer)

@@ -107,6 +107,13 @@ document.addEventListener('DOMContentLoaded', () => {
         'layer-active',
     )
 
+    Events.listen(
+        event => {
+            layerRepository.update(event.detail as Layer)
+        },
+        'layer-update',
+    )
+
     layerRepository.getAll().then(layers => {
         Events.emit(EVENTS.gotLayer, layers)
     })

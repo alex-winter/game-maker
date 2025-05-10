@@ -58,7 +58,7 @@ export class CanvasLayer extends Component {
     }
 
     protected afterBuild(): void {
-        Events.listen(this.handleWindowResize.bind(this), EVENTS.windowResize)
+        Events.listen(() => this.handleWindowResize(), EVENTS.windowResize)
         Events.listen(this.handleCurrentImageChange.bind(this), EVENTS.sheetSelectionMade)
         Events.listen(this.handleLayerUpdate.bind(this), 'layer-update')
 

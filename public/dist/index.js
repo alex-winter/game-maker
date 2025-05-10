@@ -59,7 +59,7 @@ class CanvasLayer extends Component_1.Component {
         return canvas;
     }
     afterBuild() {
-        Events_1.Events.listen(this.handleWindowResize.bind(this), events_1.EVENTS.windowResize);
+        Events_1.Events.listen(() => this.handleWindowResize(), events_1.EVENTS.windowResize);
         Events_1.Events.listen(this.handleCurrentImageChange.bind(this), events_1.EVENTS.sheetSelectionMade);
         Events_1.Events.listen(this.handleLayerUpdate.bind(this), 'layer-update');
         this.frame();
@@ -370,7 +370,8 @@ class LayerItem extends Component_1.Component {
         this.container.addEventListener('click', () => {
             Events_1.Events.emit('layer-active', this.layer);
         });
-        this.visibleButton.addEventListener('click', () => {
+        this.visibleButton.addEventListener('click', (e) => {
+            e.stopPropagation();
             this.layer.is_visible = !this.layer.is_visible;
             Events_1.Events.emit('layer-update', this.layer);
             this.patch();
@@ -1253,6 +1254,10 @@ class LayerRepository extends Repository_1.Repository {
         await this.post(this.API_PATH, layers);
     }
     async update(layer) {
+        const found = this.layers.find(l => l.uuid === layer.uuid);
+        if (found) {
+            Object.assign(found, layer);
+        }
         await this.patch(this.API_PATH, layer);
     }
     async getAll() {
@@ -1640,6 +1645,9 @@ document.addEventListener('DOMContentLoaded', () => {
     Events_1.Events.listen(event => {
         layerRepository.setActive(event.detail.uuid);
     }, 'layer-active');
+    Events_1.Events.listen(event => {
+        layerRepository.update(event.detail);
+    }, 'layer-update');
     layerRepository.getAll().then(layers => {
         Events_1.Events.emit(events_1.EVENTS.gotLayer, layers);
     });

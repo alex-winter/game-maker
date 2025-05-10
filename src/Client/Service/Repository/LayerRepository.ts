@@ -15,6 +15,15 @@ export class LayerRepository extends Repository {
     }
 
     public async update(layer: Layer): Promise<void> {
+        const found = this.layers.find(l => l.uuid === layer.uuid)
+
+        if (found) {
+            Object.assign(
+                found,
+                layer,
+            )
+        }
+
         await this.patch(
             this.API_PATH,
             layer,
