@@ -8,9 +8,8 @@ import { Events } from 'Client/Service/Events'
 import { Layer } from 'Model/Layer'
 
 export class CanvasLayer extends Component {
-    private canvas!: HTMLCanvasElement
     private ctx!: CanvasRenderingContext2D
-    private currentImage: HTMLImageElement | undefined
+    private currentImage!: HTMLImageElement
     private layer!: Layer
     private isLeftMouseDown: boolean = false
     private readonly mouseCoordinates: Coordinate = { x: 0, y: 0 }
@@ -45,18 +44,17 @@ export class CanvasLayer extends Component {
     }
 
     protected build(): HTMLElement {
-        this.canvas = Dom.canvas()
-        this.ctx = this.canvas.getContext('2d')!
+        const canvas = Dom.canvas()
 
-        this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this))
-        this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this))
+        canvas.addEventListener('mousedown', this.handleMouseDown.bind(this))
+        canvas.addEventListener('mousemove', this.handleMouseMove.bind(this))
 
-        this.canvas.classList.toggle('hide', !this.layer.is_visible)
+        canvas.classList.toggle('hide', !this.layer.is_visible)
         this.classList.toggle('active', this.layer.is_active)
 
-        this.handleWindowResize()
+        this.handleWindowResize(canvas)
 
-        return this.canvas
+        return canvas
     }
 
     protected afterBuild(): void {
@@ -82,7 +80,7 @@ export class CanvasLayer extends Component {
 
     private drawPlacement(placement: Placement): void {
         Dom.image(placement.imageSrc).then(image => {
-            this.ctx.drawImage(
+            this.getCtx().drawImage(
                 image,
                 placement.coordinate.x,
                 placement.coordinate.y,
@@ -91,14 +89,11 @@ export class CanvasLayer extends Component {
     }
 
     private frame(): void {
-        setTimeout(
-            () => {
-                this.layer.placements.forEach(this.drawPlacement.bind(this))
+        setTimeout(() => {
+            this.layer.placements.forEach(this.drawPlacement.bind(this))
 
-                window.requestAnimationFrame(this.frame.bind(this))
-            },
-            100
-        )
+            window.requestAnimationFrame(this.frame.bind(this))
+        }, 200)
     }
 
     private handleMouseMove(event: MouseEvent): void {
@@ -143,15 +138,23 @@ export class CanvasLayer extends Component {
         if (this.currentImage) {
             this.currentImage.src = newImage.src
         } else {
-            this.currentImage = newImage
-            this.shadowRoot!.append(newImage)
+            this.currentImage = newImage.cloneNode() as HTMLImageElement
+            this.shadowRoot!.append(this.currentImage)
+            this.currentImage.classList.add('current-image')
         }
-
-        this.currentImage.classList.add('current-image')
     }
 
-    private handleWindowResize(): void {
-        this.canvas.width = window.outerWidth
-        this.canvas.height = window.outerHeight
+    private getCanvas(): HTMLCanvasElement {
+        return this.shadowRoot!.querySelector('canvas')!
+    }
+
+    private getCtx(): CanvasRenderingContext2D {
+        return this.getCanvas().getContext('2d')!
+    }
+
+    private handleWindowResize(canvas: HTMLCanvasElement | undefined = undefined): void {
+        const currentCanvas = canvas || this.getCanvas()
+        currentCanvas.width = window.outerWidth
+        currentCanvas.height = window.outerHeight
     }
 }

@@ -17,7 +17,6 @@ const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/C
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class CanvasLayer extends Component_1.Component {
-    canvas;
     ctx;
     currentImage;
     layer;
@@ -51,14 +50,13 @@ class CanvasLayer extends Component_1.Component {
         this.layer = this.parameters.layer;
     }
     build() {
-        this.canvas = Dom_1.Dom.canvas();
-        this.ctx = this.canvas.getContext('2d');
-        this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
-        this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
-        this.canvas.classList.toggle('hide', !this.layer.is_visible);
+        const canvas = Dom_1.Dom.canvas();
+        canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
+        canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
+        canvas.classList.toggle('hide', !this.layer.is_visible);
         this.classList.toggle('active', this.layer.is_active);
-        this.handleWindowResize();
-        return this.canvas;
+        this.handleWindowResize(canvas);
+        return canvas;
     }
     afterBuild() {
         Events_1.Events.listen(this.handleWindowResize.bind(this), events_1.EVENTS.windowResize);
@@ -75,14 +73,14 @@ class CanvasLayer extends Component_1.Component {
     }
     drawPlacement(placement) {
         Dom_1.Dom.image(placement.imageSrc).then(image => {
-            this.ctx.drawImage(image, placement.coordinate.x, placement.coordinate.y);
+            this.getCtx().drawImage(image, placement.coordinate.x, placement.coordinate.y);
         });
     }
     frame() {
         setTimeout(() => {
             this.layer.placements.forEach(this.drawPlacement.bind(this));
             window.requestAnimationFrame(this.frame.bind(this));
-        }, 100);
+        }, 200);
     }
     handleMouseMove(event) {
         const x = event.clientX;
@@ -118,14 +116,21 @@ class CanvasLayer extends Component_1.Component {
             this.currentImage.src = newImage.src;
         }
         else {
-            this.currentImage = newImage;
-            this.shadowRoot.append(newImage);
+            this.currentImage = newImage.cloneNode();
+            this.shadowRoot.append(this.currentImage);
+            this.currentImage.classList.add('current-image');
         }
-        this.currentImage.classList.add('current-image');
     }
-    handleWindowResize() {
-        this.canvas.width = window.outerWidth;
-        this.canvas.height = window.outerHeight;
+    getCanvas() {
+        return this.shadowRoot.querySelector('canvas');
+    }
+    getCtx() {
+        return this.getCanvas().getContext('2d');
+    }
+    handleWindowResize(canvas = undefined) {
+        const currentCanvas = canvas || this.getCanvas();
+        currentCanvas.width = window.outerWidth;
+        currentCanvas.height = window.outerHeight;
     }
 }
 exports.CanvasLayer = CanvasLayer;
