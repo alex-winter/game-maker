@@ -1,4 +1,5 @@
 const path = require('path');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
     mode: 'development',
@@ -8,7 +9,7 @@ module.exports = {
     module: {
         rules: [
             {
-                test: /\.tsx?$/,    // good
+                test: /\.tsx?$/,
                 use: [
                     {
                         loader: 'ts-loader',
@@ -20,12 +21,11 @@ module.exports = {
                 exclude: /node_modules/,
             },
             {
-                test: /\.css$/,     // good
-                use: ['style-loader', 'css-loader'],
-            },
-            {
-                test: /\.scss$/,    // good
-                use: ['style-loader', 'css-loader', 'sass-loader'],
+                test: /\.css$/,
+                use: [
+                    MiniCssExtractPlugin.loader,
+                    'css-loader'
+                ],
             },
         ],
     },
@@ -35,7 +35,7 @@ module.exports = {
             path.resolve(__dirname, 'src'),
             'node_modules',
         ],
-        extensions: ['.tsx', '.ts', '.js', '.css', '.scss'],
+        extensions: ['.tsx', '.ts', '.js', '.css'],
     },
 
     output: {
@@ -46,4 +46,10 @@ module.exports = {
     },
 
     devtool: 'source-map',
+
+    plugins: [
+        new MiniCssExtractPlugin({
+            filename: 'styles.css',
+        }),
+    ],
 };

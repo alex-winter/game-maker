@@ -45,7 +45,7 @@ export class Dom {
         return element
     }
 
-    public static button(text: string, ...classList: string[]): HTMLButtonElement {
+    public static button(text: string = '', ...classList: string[]): HTMLButtonElement {
         const element = document.createElement('button')
 
         element.innerText = text

@@ -15,7 +15,7 @@ export abstract class Component extends HTMLElement {
 
     protected abstract build(): HTMLElement
     protected async setup(): Promise<void> { }
-    protected after(): void { }
+    protected afterBuild(): void { }
     protected css(): string {
         return ''
     }
@@ -33,7 +33,8 @@ export abstract class Component extends HTMLElement {
     }
 
     protected patch(): void {
-        const firstChild = this.shadow.firstChild
+        const firstChild = Array.from(this.shadow.children)
+            .filter(child => child.tagName !== 'LINK')[0]
 
         if (firstChild) {
             patchDOM(firstChild, this.build())
@@ -47,29 +48,38 @@ export abstract class Component extends HTMLElement {
                 : value
         })
 
-        this.setup().then(() => {
-            const css = this.css().trim()
+        this.setup()
+            .then(() => {
+                const css = this.css().trim()
 
-            if (css.length) {
-                const sheet = new CSSStyleSheet()
-                sheet.replaceSync(css)
-                this.shadowRoot!.adoptedStyleSheets = [sheet]
-            }
+                const link = document.createElement('link')
 
-            this.content = this.build()
+                link.rel = 'stylesheet'
+                link.href = '/dist/styles.css'
 
-            if (isReload) {
-                this.shadow.replaceChild(
-                    this.build(),
-                    this.content,
-                )
-            } else {
-                this.shadow.appendChild(
-                    this.content
-                )
-            }
-        })
+                this.shadow.append(link)
 
-        this.after()
+                if (css.length) {
+                    const sheet = new CSSStyleSheet()
+                    sheet.replaceSync(css)
+                    this.shadow.adoptedStyleSheets = [sheet]
+                }
+
+                this.content = this.build()
+
+                if (isReload) {
+                    this.shadow.replaceChild(
+                        this.build(),
+                        this.content,
+                    )
+                } else {
+                    this.shadow.appendChild(
+                        this.content
+                    )
+                }
+            })
+            .then(() => {
+                this.afterBuild()
+            })
     }
 }

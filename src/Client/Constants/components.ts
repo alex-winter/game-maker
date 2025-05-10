@@ -8,6 +8,7 @@ import { SheetImporter } from 'Client/Component/SpriteSheets/SheetImporter/Sheet
 import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 import { NewLayerForm } from 'Client/Component/NewLayerForm/NewLayerForm'
 import { CanvasLayer } from 'Client/Component/Canvas/CanvasLayer'
+import { LayerItem } from 'Client/Component/LayerListing/LayerItem'
 
 export const COMPONENTS = new Map<CustomElementConstructor, string>([
 
@@ -30,5 +31,7 @@ export const COMPONENTS = new Map<CustomElementConstructor, string>([
   [NewLayerForm, 'new-layer-form'],
 
   [CanvasLayer, 'canvas-layer'],
+
+  [LayerItem, 'layer-item'],
 
 ])

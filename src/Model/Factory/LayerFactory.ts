@@ -11,6 +11,8 @@ export class LayerFactory {
 
             is_visible: true,
 
+            is_active: false,
+
             placements: [],
         }
     }

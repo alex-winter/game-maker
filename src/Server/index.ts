@@ -28,6 +28,7 @@ const layers = [
     name: 'Layer 1',
     created_at: new Date().toISOString(),
     is_visible: true,
+    is_active: true,
     placements: [],
   },
 ]

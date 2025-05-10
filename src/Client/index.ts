@@ -100,6 +100,13 @@ document.addEventListener('DOMContentLoaded', () => {
         EVENTS.layerPlacementMade,
     )
 
+    Events.listen(
+        event => {
+            layerRepository.setActive((event.detail as Layer).uuid)
+        },
+        'layer-active',
+    )
+
     layerRepository.getAll().then(layers => {
         Events.emit(EVENTS.gotLayer, layers)
     })

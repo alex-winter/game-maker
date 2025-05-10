@@ -9,5 +9,7 @@ export interface Layer {
 
     is_visible: boolean
 
+    is_active: boolean
+
     placements: Placement[]
 }

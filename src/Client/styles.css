@@ -1,4 +1,7 @@
-html, body {
+@import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css");
+
+html,
+body {
     height: 100%;
     width: 100%;
     padding: 0;
@@ -8,7 +11,5 @@ html, body {
 
 canvas {
     display: block;
-    width: 100%;
-    height: 100%;
     background-color: black;
 }

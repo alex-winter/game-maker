@@ -51,19 +51,17 @@ export class CanvasLayer extends Component {
         this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this))
         this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this))
 
-        if (!this.layer.is_visible) {
-            this.canvas.classList.add('hide')
-        }
+        this.canvas.classList.toggle('hide', !this.layer.is_visible)
+        this.classList.toggle('active', this.layer.is_active)
 
         this.handleWindowResize()
 
         return this.canvas
     }
 
-    protected after(): void {
+    protected afterBuild(): void {
         Events.listen(this.handleWindowResize.bind(this), EVENTS.windowResize)
         Events.listen(this.handleCurrentImageChange.bind(this), EVENTS.sheetSelectionMade)
-        Events.listen(this.handleCheckActive.bind(this), EVENTS.layerActive)
         Events.listen(this.handleLayerUpdate.bind(this), 'layer-update')
 
         this.frame()
@@ -77,6 +75,7 @@ export class CanvasLayer extends Component {
                 this.layer,
                 layer,
             )
+
             this.patch()
         }
     }
@@ -102,16 +101,6 @@ export class CanvasLayer extends Component {
         )
     }
 
-    private handleCheckActive(event: CustomEvent): void {
-        const layer = event.detail as Layer
-
-        if (layer.uuid === this.layer.uuid) {
-            this.classList.add('active')
-        } else {
-            this.classList.remove('active')
-        }
-    }
-
     private handleMouseMove(event: MouseEvent): void {
         const x = event.clientX
         const y = event.clientY
@@ -126,7 +115,7 @@ export class CanvasLayer extends Component {
     }
 
     private handleMouseDown(event: MouseEvent): void {
-        if (event.button === LEFT_BUTTON) {
+        if (event.button === LEFT_BUTTON && this.currentImage) {
             this.isLeftMouseDown = true
 
             const placement = {
@@ -134,7 +123,7 @@ export class CanvasLayer extends Component {
                     x: this.mouseCoordinates.x,
                     y: this.mouseCoordinates.y,
                 },
-                imageSrc: this.currentImage!.src,
+                imageSrc: this.currentImage.src,
             }
 
             this.layer.placements.push(placement)
@@ -150,8 +139,6 @@ export class CanvasLayer extends Component {
 
     private handleCurrentImageChange(event: CustomEvent): void {
         const newImage = event.detail as HTMLImageElement
-
-        console.log(newImage)
 
         if (this.currentImage) {
             this.currentImage.src = newImage.src
