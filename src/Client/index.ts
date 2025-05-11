@@ -109,6 +109,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     Events.listen(
         event => {
+            layerRepository.toggleVisible((event.detail as Layer).uuid)
+        },
+        'layer-visible-toggle',
+    )
+
+    Events.listen(
+        event => {
             layerRepository.update(event.detail as Layer)
         },
         'layer-update',

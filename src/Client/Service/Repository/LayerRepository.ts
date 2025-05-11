@@ -44,4 +44,13 @@ export class LayerRepository extends Repository {
             Events.emit('layer-update', layer)
         }
     }
+
+    public toggleVisible(uuid: string): void {
+        for (const layer of this.layers) {
+            if (layer.uuid === uuid) {
+                layer.is_visible = !layer.is_visible
+            }
+            Events.emit('layer-update', layer)
+        }
+    }
 }
