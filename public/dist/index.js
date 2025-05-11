@@ -737,8 +737,8 @@ class SheetMaker extends Component_1.Component {
             if (!isDragging)
                 return;
             const rect = this.getBoundingClientRect();
-            const currentX = event.clientX - rect.left;
-            const currentY = event.clientY - rect.top;
+            const currentX = event.clientX - rect.left + this.scrollLeft;
+            const currentY = event.clientY - rect.top + this.scrollTop;
             const width = snap(Math.abs(currentX - startX));
             const height = snap(Math.abs(currentY - startY));
             box.style.display = 'block';
@@ -760,8 +760,8 @@ class SheetMaker extends Component_1.Component {
         this.addEventListener('mousedown', (event) => {
             const rect = this.getBoundingClientRect();
             isDragging = true;
-            startX = event.clientX - rect.left;
-            startY = event.clientY - rect.top;
+            startX = event.clientX - rect.left + this.scrollLeft;
+            startY = event.clientY - rect.top + this.scrollTop;
             box.style.display = 'none';
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);

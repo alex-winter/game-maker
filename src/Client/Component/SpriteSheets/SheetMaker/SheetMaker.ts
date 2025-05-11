@@ -69,8 +69,8 @@ export class SheetMaker extends Component {
             if (!isDragging) return
 
             const rect = this.getBoundingClientRect()
-            const currentX = event.clientX - rect.left
-            const currentY = event.clientY - rect.top
+            const currentX = event.clientX - rect.left + this.scrollLeft
+            const currentY = event.clientY - rect.top + this.scrollTop
 
             const width = snap(Math.abs(currentX - startX))
             const height = snap(Math.abs(currentY - startY))
@@ -107,8 +107,8 @@ export class SheetMaker extends Component {
         this.addEventListener('mousedown', (event: MouseEvent) => {
             const rect = this.getBoundingClientRect()
             isDragging = true
-            startX = event.clientX - rect.left
-            startY = event.clientY - rect.top
+            startX = event.clientX - rect.left + this.scrollLeft
+            startY = event.clientY - rect.top + this.scrollTop
 
             box.style.display = 'none'
 
