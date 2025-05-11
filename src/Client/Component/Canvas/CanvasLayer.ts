@@ -46,6 +46,7 @@ export class CanvasLayer extends Component {
     protected build(): HTMLElement {
         const canvas = Dom.canvas()
 
+        canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this))
         canvas.addEventListener('mousedown', this.handleMouseDown.bind(this))
         canvas.addEventListener('mousemove', this.handleMouseMove.bind(this))
 
@@ -104,6 +105,7 @@ export class CanvasLayer extends Component {
         this.mouseCoordinates.y = y
 
         if (this.currentImage) {
+            this.currentImage.classList.remove('hide')
             this.currentImage.style.left = x + 'px'
             this.currentImage.style.top = y + 'px'
         }
@@ -130,6 +132,10 @@ export class CanvasLayer extends Component {
 
             document.addEventListener('mouseup', mouseUp)
         }
+    }
+
+    private handleMouseLeave(event: MouseEvent): void {
+        this.currentImage?.classList.add('hide')
     }
 
     private handleCurrentImageChange(event: CustomEvent): void {

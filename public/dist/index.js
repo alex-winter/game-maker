@@ -51,6 +51,7 @@ class CanvasLayer extends Component_1.Component {
     }
     build() {
         const canvas = Dom_1.Dom.canvas();
+        canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
         canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
         canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
         canvas.classList.toggle('hide', !this.layer.is_visible);
@@ -88,6 +89,7 @@ class CanvasLayer extends Component_1.Component {
         this.mouseCoordinates.x = x;
         this.mouseCoordinates.y = y;
         if (this.currentImage) {
+            this.currentImage.classList.remove('hide');
             this.currentImage.style.left = x + 'px';
             this.currentImage.style.top = y + 'px';
         }
@@ -109,6 +111,9 @@ class CanvasLayer extends Component_1.Component {
             };
             document.addEventListener('mouseup', mouseUp);
         }
+    }
+    handleMouseLeave(event) {
+        this.currentImage?.classList.add('hide');
     }
     handleCurrentImageChange(event) {
         const newImage = event.detail;
