@@ -1,18 +1,22 @@
 import { EVENTS } from 'Client/Constants/events'
 import { LEFT_BUTTON } from 'Client/Constants/mouse-events'
 import { Coordinate } from 'Client/Model/Coordinate'
-import { Placement } from 'Client/Model/Placement'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 import { Layer } from 'Model/Layer'
 
+interface LoadedPlacement {
+    image: HTMLImageElement
+    x: number
+    y: number
+}
+
 export class CanvasLayer extends Component {
-    private ctx!: CanvasRenderingContext2D
     private currentImage!: HTMLImageElement
     private layer!: Layer
-    private isLeftMouseDown: boolean = false
     private readonly mouseCoordinates: Coordinate = { x: 0, y: 0 }
+    private readonly loadedPlacements: LoadedPlacement[] = []
 
     protected css(): string {
         return /*css*/`
@@ -41,6 +45,14 @@ export class CanvasLayer extends Component {
 
     protected async setup(): Promise<void> {
         this.layer = this.parameters.layer
+
+        this.layer.placements.forEach(async placement => {
+            this.loadedPlacements.push({
+                image: await Dom.image(placement.imageSrc),
+                x: placement.coordinate.x,
+                y: placement.coordinate.y,
+            })
+        })
     }
 
     protected build(): HTMLElement {
@@ -79,22 +91,20 @@ export class CanvasLayer extends Component {
         }
     }
 
-    private drawPlacement(placement: Placement): void {
-        Dom.image(placement.imageSrc).then(image => {
-            this.getCtx().drawImage(
-                image,
-                placement.coordinate.x,
-                placement.coordinate.y,
-            )
-        })
+    private drawPlacement(loadedPlacement: LoadedPlacement): void {
+        this.getCtx().drawImage(
+            loadedPlacement.image,
+            loadedPlacement.x,
+            loadedPlacement.y,
+        )
     }
 
     private frame(): void {
         setTimeout(() => {
-            this.layer.placements.forEach(this.drawPlacement.bind(this))
+            this.loadedPlacements.forEach(this.drawPlacement.bind(this))
 
             window.requestAnimationFrame(this.frame.bind(this))
-        }, 200)
+        }, 100)
     }
 
     private handleMouseMove(event: MouseEvent): void {
@@ -113,8 +123,6 @@ export class CanvasLayer extends Component {
 
     private handleMouseDown(event: MouseEvent): void {
         if (event.button === LEFT_BUTTON && this.currentImage) {
-            this.isLeftMouseDown = true
-
             const placement = {
                 coordinate: {
                     x: this.mouseCoordinates.x,

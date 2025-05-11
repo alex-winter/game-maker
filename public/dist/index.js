@@ -17,11 +17,10 @@ const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/C
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class CanvasLayer extends Component_1.Component {
-    ctx;
     currentImage;
     layer;
-    isLeftMouseDown = false;
     mouseCoordinates = { x: 0, y: 0 };
+    loadedPlacements = [];
     css() {
         return /*css*/ `
             :host {
@@ -48,6 +47,13 @@ class CanvasLayer extends Component_1.Component {
     }
     async setup() {
         this.layer = this.parameters.layer;
+        this.layer.placements.forEach(async (placement) => {
+            this.loadedPlacements.push({
+                image: await Dom_1.Dom.image(placement.imageSrc),
+                x: placement.coordinate.x,
+                y: placement.coordinate.y,
+            });
+        });
     }
     build() {
         const canvas = Dom_1.Dom.canvas();
@@ -72,16 +78,14 @@ class CanvasLayer extends Component_1.Component {
             this.patch();
         }
     }
-    drawPlacement(placement) {
-        Dom_1.Dom.image(placement.imageSrc).then(image => {
-            this.getCtx().drawImage(image, placement.coordinate.x, placement.coordinate.y);
-        });
+    drawPlacement(loadedPlacement) {
+        this.getCtx().drawImage(loadedPlacement.image, loadedPlacement.x, loadedPlacement.y);
     }
     frame() {
         setTimeout(() => {
-            this.layer.placements.forEach(this.drawPlacement.bind(this));
+            this.loadedPlacements.forEach(this.drawPlacement.bind(this));
             window.requestAnimationFrame(this.frame.bind(this));
-        }, 200);
+        }, 100);
     }
     handleMouseMove(event) {
         const x = event.clientX;
@@ -96,7 +100,6 @@ class CanvasLayer extends Component_1.Component {
     }
     handleMouseDown(event) {
         if (event.button === mouse_events_1.LEFT_BUTTON && this.currentImage) {
-            this.isLeftMouseDown = true;
             const placement = {
                 coordinate: {
                     x: this.mouseCoordinates.x,
