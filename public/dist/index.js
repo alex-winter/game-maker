@@ -45,15 +45,16 @@ class CanvasLayer extends Component_1.Component {
             }
         `;
     }
+    async loadPlacement(placement) {
+        this.loadedPlacements.push({
+            image: await Dom_1.Dom.image(placement.imageSrc),
+            x: placement.coordinate.x,
+            y: placement.coordinate.y,
+        });
+    }
     async setup() {
         this.layer = this.parameters.layer;
-        this.layer.placements.forEach(async (placement) => {
-            this.loadedPlacements.push({
-                image: await Dom_1.Dom.image(placement.imageSrc),
-                x: placement.coordinate.x,
-                y: placement.coordinate.y,
-            });
-        });
+        this.layer.placements.forEach(this.loadPlacement.bind(this));
     }
     build() {
         const canvas = Dom_1.Dom.canvas();
@@ -108,6 +109,7 @@ class CanvasLayer extends Component_1.Component {
                 imageSrc: this.currentImage.src,
             };
             this.layer.placements.push(placement);
+            this.loadPlacement(placement);
             const mouseUp = (event) => {
                 Events_1.Events.emit(events_1.EVENTS.layerPlacementMade, this.layer);
                 document.removeEventListener('mouseup', mouseUp);

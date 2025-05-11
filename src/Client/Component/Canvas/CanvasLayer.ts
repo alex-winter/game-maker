@@ -1,6 +1,7 @@
 import { EVENTS } from 'Client/Constants/events'
 import { LEFT_BUTTON } from 'Client/Constants/mouse-events'
 import { Coordinate } from 'Client/Model/Coordinate'
+import { Placement } from 'Client/Model/Placement'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
@@ -43,16 +44,18 @@ export class CanvasLayer extends Component {
         `
     }
 
+    private async loadPlacement(placement: Placement): Promise<void> {
+        this.loadedPlacements.push({
+            image: await Dom.image(placement.imageSrc),
+            x: placement.coordinate.x,
+            y: placement.coordinate.y,
+        })
+    }
+
     protected async setup(): Promise<void> {
         this.layer = this.parameters.layer
 
-        this.layer.placements.forEach(async placement => {
-            this.loadedPlacements.push({
-                image: await Dom.image(placement.imageSrc),
-                x: placement.coordinate.x,
-                y: placement.coordinate.y,
-            })
-        })
+        this.layer.placements.forEach(this.loadPlacement.bind(this))
     }
 
     protected build(): HTMLElement {
@@ -132,6 +135,7 @@ export class CanvasLayer extends Component {
             }
 
             this.layer.placements.push(placement)
+            this.loadPlacement(placement)
 
             const mouseUp = (event: MouseEvent) => {
                 Events.emit(EVENTS.layerPlacementMade, this.layer)
