@@ -45,8 +45,6 @@ export class LayerItem extends Component {
 
         eyeIcon.classList.add('fa-solid', this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash')
 
-        console.log(this.layer.is_active)
-
         this.container.classList.toggle('active', this.layer.is_active)
 
         this.visibleButton.append(eyeIcon)

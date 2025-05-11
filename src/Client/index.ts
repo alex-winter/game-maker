@@ -127,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const getSheets = () => {
         sheetRepository.getAll().then(sheets => {
-            console.log('got some sheets son')
             Events.emit(EVENTS.gotSheets, sheets)
         })
     }

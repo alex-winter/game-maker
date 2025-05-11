@@ -371,7 +371,6 @@ class LayerItem extends Component_1.Component {
         const eyeIcon = document.createElement('i');
         name.innerText = this.layer.name;
         eyeIcon.classList.add('fa-solid', this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash');
-        console.log(this.layer.is_active);
         this.container.classList.toggle('active', this.layer.is_active);
         this.visibleButton.append(eyeIcon);
         options.append(this.visibleButton);
@@ -1681,7 +1680,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const getSheets = () => {
         sheetRepository.getAll().then(sheets => {
-            console.log('got some sheets son');
             Events_1.Events.emit(events_1.EVENTS.gotSheets, sheets);
         });
     };
