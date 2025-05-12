@@ -1,5 +1,5 @@
 import { EVENTS } from 'Client/Constants/events'
-import { LEFT_BUTTON } from 'Client/Constants/mouse-events'
+import { LEFT_BUTTON, MIDDLE_BUTTON } from 'Client/Constants/mouse-events'
 import { Coordinate } from 'Client/Model/Coordinate'
 import { Placement } from 'Client/Model/Placement'
 import { Component } from 'Client/Service/Component'
@@ -18,6 +18,9 @@ export class CanvasLayer extends Component {
     private layer!: Layer
     private readonly mouseCoordinates: Coordinate = { x: 0, y: 0 }
     private readonly loadedPlacements: LoadedPlacement[] = []
+    private isMoving: boolean = false
+    private lastMousePosition: Coordinate = { x: 0, y: 0 }
+    private viewCoordinates: Coordinate = { x: 0, y: 0 }
 
     protected css(): string {
         return /*css*/`
@@ -78,6 +81,10 @@ export class CanvasLayer extends Component {
         Events.listen(this.handleCurrentImageChange.bind(this), EVENTS.sheetSelectionMade)
         Events.listen(this.handleLayerUpdate.bind(this), 'layer-update')
 
+        window.addEventListener('mouseup', () => {
+            this.isMoving = false
+        })
+
         this.frame()
     }
 
@@ -97,13 +104,15 @@ export class CanvasLayer extends Component {
     private drawPlacement(loadedPlacement: LoadedPlacement): void {
         this.getCtx().drawImage(
             loadedPlacement.image,
-            loadedPlacement.x,
-            loadedPlacement.y,
+            loadedPlacement.x - this.viewCoordinates.x,
+            loadedPlacement.y - this.viewCoordinates.y,
         )
     }
 
     private frame(): void {
         setTimeout(() => {
+            this.getCtx().clearRect(0, 0, this.getCanvas().width, this.getCanvas().height)
+
             this.loadedPlacements.forEach(this.drawPlacement.bind(this))
 
             window.requestAnimationFrame(this.frame.bind(this))
@@ -129,14 +138,25 @@ export class CanvasLayer extends Component {
             this.currentImage.style.left = snappedX + 'px'
             this.currentImage.style.top = snappedY + 'px'
         }
+
+        if (this.isMoving) {
+            const dx = event.clientX - this.lastMousePosition.x
+            const dy = event.clientY - this.lastMousePosition.y
+
+            this.viewCoordinates.x -= dx
+            this.viewCoordinates.y -= dy
+
+            this.lastMousePosition.x = event.clientX
+            this.lastMousePosition.y = event.clientY
+        }
     }
 
     private handleMouseDown(event: MouseEvent): void {
         if (event.button === LEFT_BUTTON && this.currentImage) {
             const placement = {
                 coordinate: {
-                    x: this.snap(this.mouseCoordinates.x),
-                    y: this.snap(this.mouseCoordinates.y),
+                    x: this.snap(this.mouseCoordinates.x) + this.viewCoordinates.x,
+                    y: this.snap(this.mouseCoordinates.y) + this.viewCoordinates.y,
                 },
                 imageSrc: this.currentImage.src,
             }
@@ -150,6 +170,11 @@ export class CanvasLayer extends Component {
             }
 
             document.addEventListener('mouseup', mouseUp)
+        }
+
+        if (event.button === MIDDLE_BUTTON) {
+            this.isMoving = true
+            this.lastMousePosition = { x: event.clientX, y: event.clientY }
         }
     }
 
