@@ -130,22 +130,30 @@ class CanvasLayer extends Component_1.Component {
             Events_1.Events.emit('moving-in-canvas', movement);
         }
     }
+    generatePlacement() {
+        const placement = {
+            coordinate: {
+                x: this.snap(this.mouseCoordinates.x) + this.viewCoordinates.x,
+                y: this.snap(this.mouseCoordinates.y) + this.viewCoordinates.y,
+            },
+            imageSrc: this.currentImage.src,
+        };
+        this.layer.placements.push(placement);
+        this.loadPlacement(placement);
+    }
     handleMouseDown(event) {
         if (event.button === mouse_events_1.LEFT_BUTTON && this.currentImage) {
-            const placement = {
-                coordinate: {
-                    x: this.snap(this.mouseCoordinates.x) + this.viewCoordinates.x,
-                    y: this.snap(this.mouseCoordinates.y) + this.viewCoordinates.y,
-                },
-                imageSrc: this.currentImage.src,
+            this.generatePlacement();
+            const mouseMove = (event) => {
+                this.generatePlacement();
             };
-            this.layer.placements.push(placement);
-            this.loadPlacement(placement);
             const mouseUp = (event) => {
                 Events_1.Events.emit(events_1.EVENTS.layerPlacementMade, this.layer);
                 document.removeEventListener('mouseup', mouseUp);
+                document.removeEventListener('mousemove', mouseMove);
             };
             document.addEventListener('mouseup', mouseUp);
+            document.addEventListener('mousemove', mouseMove);
         }
         if (event.button === mouse_events_1.MIDDLE_BUTTON) {
             this.isMoving = true;

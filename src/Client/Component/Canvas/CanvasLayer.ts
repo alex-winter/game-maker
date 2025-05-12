@@ -175,25 +175,35 @@ export class CanvasLayer extends Component {
         }
     }
 
+    private generatePlacement() {
+        const placement = {
+            coordinate: {
+                x: this.snap(this.mouseCoordinates.x) + this.viewCoordinates.x,
+                y: this.snap(this.mouseCoordinates.y) + this.viewCoordinates.y,
+            },
+            imageSrc: this.currentImage.src,
+        }
+
+        this.layer.placements.push(placement)
+        this.loadPlacement(placement)
+    }
+
     private handleMouseDown(event: MouseEvent): void {
         if (event.button === LEFT_BUTTON && this.currentImage) {
-            const placement = {
-                coordinate: {
-                    x: this.snap(this.mouseCoordinates.x) + this.viewCoordinates.x,
-                    y: this.snap(this.mouseCoordinates.y) + this.viewCoordinates.y,
-                },
-                imageSrc: this.currentImage.src,
-            }
+            this.generatePlacement()
 
-            this.layer.placements.push(placement)
-            this.loadPlacement(placement)
+            const mouseMove = (event: MouseEvent) => {
+                this.generatePlacement()
+            }
 
             const mouseUp = (event: MouseEvent) => {
                 Events.emit(EVENTS.layerPlacementMade, this.layer)
                 document.removeEventListener('mouseup', mouseUp)
+                document.removeEventListener('mousemove', mouseMove)
             }
 
             document.addEventListener('mouseup', mouseUp)
+            document.addEventListener('mousemove', mouseMove)
         }
 
         if (event.button === MIDDLE_BUTTON) {
