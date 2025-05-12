@@ -138,6 +138,11 @@ class CanvasLayer extends Component_1.Component {
             },
             imageSrc: this.currentImage.src,
         };
+        const lastPlacement = this.layer.placements[this.layer.placements.length - 1];
+        if (JSON.stringify(lastPlacement) === JSON.stringify(placement)) {
+            return;
+        }
+        console.log('placement made');
         this.layer.placements.push(placement);
         this.loadPlacement(placement);
     }

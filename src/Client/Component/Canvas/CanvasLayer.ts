@@ -175,7 +175,7 @@ export class CanvasLayer extends Component {
         }
     }
 
-    private generatePlacement() {
+    private generatePlacement(): void {
         const placement = {
             coordinate: {
                 x: this.snap(this.mouseCoordinates.x) + this.viewCoordinates.x,
@@ -183,6 +183,13 @@ export class CanvasLayer extends Component {
             },
             imageSrc: this.currentImage.src,
         }
+        const lastPlacement = this.layer.placements[this.layer.placements.length - 1]
+
+        if (JSON.stringify(lastPlacement) === JSON.stringify(placement)) {
+            return
+        }
+
+        console.log('placement made')
 
         this.layer.placements.push(placement)
         this.loadPlacement(placement)
