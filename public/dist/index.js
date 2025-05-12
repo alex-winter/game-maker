@@ -837,6 +837,8 @@ class WindowBox extends Component_1.Component {
                 z-index: 1001;
                 resize: both;
                 overflow: auto;
+                max-height: 90vh;
+                max-width: 90vw;
             }
 
             .header {
@@ -907,6 +909,8 @@ class WindowBox extends Component_1.Component {
         close.innerText = 'x';
         title.innerText = this.dataset.title || '';
         element.addEventListener('mousedown', (e) => (0, handleDragAndDrop_1.handleDragAndDrop)(this, e));
+        element.addEventListener('mouseup', (e) => {
+        });
         close.addEventListener('click', (event) => {
             event.stopPropagation();
             this.destroy();

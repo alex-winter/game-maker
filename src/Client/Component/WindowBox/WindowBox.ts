@@ -36,6 +36,8 @@ export class WindowBox extends Component implements DraggableHTMLElement {
                 z-index: 1001;
                 resize: both;
                 overflow: auto;
+                max-height: 90vh;
+                max-width: 90vw;
             }
 
             .header {
@@ -118,6 +120,11 @@ export class WindowBox extends Component implements DraggableHTMLElement {
         title.innerText = this.dataset.title || ''
 
         element.addEventListener('mousedown', (e) => handleDragAndDrop(this, e))
+
+        element.addEventListener('mouseup', (e) => {
+
+        })
+
         close.addEventListener('click', (event) => {
             event.stopPropagation()
             this.destroy()
