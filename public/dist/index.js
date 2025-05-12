@@ -88,11 +88,14 @@ class CanvasLayer extends Component_1.Component {
             window.requestAnimationFrame(this.frame.bind(this));
         }, 100);
     }
+    snap(value) {
+        return Math.floor(value / 16) * 16;
+    }
     handleMouseMove(event) {
         const rawX = event.clientX;
         const rawY = event.clientY;
-        const snappedX = Math.floor(rawX / 16) * 16;
-        const snappedY = Math.floor(rawY / 16) * 16;
+        const snappedX = this.snap(rawX);
+        const snappedY = this.snap(rawY);
         this.mouseCoordinates.x = snappedX;
         this.mouseCoordinates.y = snappedY;
         if (this.currentImage) {
@@ -105,8 +108,8 @@ class CanvasLayer extends Component_1.Component {
         if (event.button === mouse_events_1.LEFT_BUTTON && this.currentImage) {
             const placement = {
                 coordinate: {
-                    x: Math.floor(this.mouseCoordinates.x / 16) * 16,
-                    y: Math.floor(this.mouseCoordinates.y / 16) * 16,
+                    x: this.snap(this.mouseCoordinates.x),
+                    y: this.snap(this.mouseCoordinates.y),
                 },
                 imageSrc: this.currentImage.src,
             };

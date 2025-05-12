@@ -110,12 +110,16 @@ export class CanvasLayer extends Component {
         }, 100)
     }
 
+    private snap(value: number): number {
+        return Math.floor(value / 16) * 16
+    }
+
     private handleMouseMove(event: MouseEvent): void {
         const rawX = event.clientX
         const rawY = event.clientY
 
-        const snappedX = Math.floor(rawX / 16) * 16
-        const snappedY = Math.floor(rawY / 16) * 16
+        const snappedX = this.snap(rawX)
+        const snappedY = this.snap(rawY)
 
         this.mouseCoordinates.x = snappedX
         this.mouseCoordinates.y = snappedY
@@ -131,8 +135,8 @@ export class CanvasLayer extends Component {
         if (event.button === LEFT_BUTTON && this.currentImage) {
             const placement = {
                 coordinate: {
-                    x: Math.floor(this.mouseCoordinates.x / 16) * 16,
-                    y: Math.floor(this.mouseCoordinates.y / 16) * 16,
+                    x: this.snap(this.mouseCoordinates.x),
+                    y: this.snap(this.mouseCoordinates.y),
                 },
                 imageSrc: this.currentImage.src,
             }
