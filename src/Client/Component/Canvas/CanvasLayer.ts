@@ -111,16 +111,19 @@ export class CanvasLayer extends Component {
     }
 
     private handleMouseMove(event: MouseEvent): void {
-        const x = event.clientX
-        const y = event.clientY
+        const rawX = event.clientX
+        const rawY = event.clientY
 
-        this.mouseCoordinates.x = x
-        this.mouseCoordinates.y = y
+        const snappedX = Math.floor(rawX / 16) * 16
+        const snappedY = Math.floor(rawY / 16) * 16
+
+        this.mouseCoordinates.x = snappedX
+        this.mouseCoordinates.y = snappedY
 
         if (this.currentImage) {
             this.currentImage.classList.remove('hide')
-            this.currentImage.style.left = x + 'px'
-            this.currentImage.style.top = y + 'px'
+            this.currentImage.style.left = snappedX + 'px'
+            this.currentImage.style.top = snappedY + 'px'
         }
     }
 
@@ -128,8 +131,8 @@ export class CanvasLayer extends Component {
         if (event.button === LEFT_BUTTON && this.currentImage) {
             const placement = {
                 coordinate: {
-                    x: this.mouseCoordinates.x,
-                    y: this.mouseCoordinates.y,
+                    x: Math.floor(this.mouseCoordinates.x / 16) * 16,
+                    y: Math.floor(this.mouseCoordinates.y / 16) * 16,
                 },
                 imageSrc: this.currentImage.src,
             }
