@@ -50,7 +50,7 @@ export class FileUploader extends Component {
         this.container.addEventListener('dragleave', this.handleDragLeave.bind(this))
         this.container.addEventListener('drop', this.handleDragDrop.bind(this))
 
-        const input = Dom.multiFileInputWithDir()
+        const input = Dom.multiFileInput()
 
         input.addEventListener('change', () => {
             if (input.files) {

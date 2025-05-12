@@ -203,7 +203,7 @@ class FileUploader extends Component_1.Component {
         this.container.addEventListener('dragover', this.handleDragOver.bind(this));
         this.container.addEventListener('dragleave', this.handleDragLeave.bind(this));
         this.container.addEventListener('drop', this.handleDragDrop.bind(this));
-        const input = Dom_1.Dom.multiFileInputWithDir();
+        const input = Dom_1.Dom.multiFileInput();
         input.addEventListener('change', () => {
             if (input.files) {
                 this.handleFiles(input.files);
@@ -1101,10 +1101,9 @@ class Dom {
     static slot() {
         return document.createElement('slot');
     }
-    static multiFileInputWithDir() {
+    static multiFileInput() {
         const element = document.createElement('input');
         element.type = 'file';
-        element.webkitdirectory = true;
         element.multiple = true;
         return element;
     }
