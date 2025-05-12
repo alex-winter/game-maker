@@ -7,7 +7,7 @@ import { fileToBase64 } from 'Client/Service/fileToBase64'
 import { WindowBox } from 'Client/Component/WindowBox/WindowBox'
 import { WindowBoxFactory } from 'Client/Service/WindowBoxFactory'
 import { SheetImporter } from 'Client/Component/SpriteSheets/SheetImporter/SheetImporter'
-import { SheetMaker } from 'Client/Component/SpriteSheets/SheetMaker/SheetMaker'
+import { SheetViewer } from 'Client/Component/SpriteSheets/SheetViewer/SheetViewer'
 import { EVENTS } from 'Client/Constants/events'
 import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 import { NewLayerForm } from 'Client/Component/NewLayerForm/NewLayerForm'
@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
             windowBoxes[sheet.name].flash()
             return
         }
-        const component = Dom.makeComponent(SheetMaker, { imageSrc: sheet.imageSrc })
+        const component = Dom.makeComponent(SheetViewer, { imageSrc: sheet.imageSrc })
 
         openSheets.push(sheet.name)
 

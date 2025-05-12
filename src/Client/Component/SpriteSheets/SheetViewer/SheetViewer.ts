@@ -4,7 +4,7 @@ import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 import { extractImageFromCanvasArea } from 'Client/Service/extract-image-from-canvas-area'
 
-export class SheetMaker extends Component {
+export class SheetViewer extends Component {
     private image: HTMLImageElement | null = null
     private canvas!: HTMLCanvasElement
 
@@ -63,7 +63,7 @@ export class SheetMaker extends Component {
         let startY = 0
         let isDragging = false
 
-        const snap = (value: number) => Math.round(value / 5) * 5
+        const snap = (value: number) => Math.round(value / 16) * 16
 
         const onMouseMove = (event: MouseEvent) => {
             if (!isDragging) return

@@ -672,21 +672,21 @@ exports.SheetImporter = SheetImporter;
 
 /***/ }),
 
-/***/ "./src/Client/Component/SpriteSheets/SheetMaker/SheetMaker.ts":
-/*!********************************************************************!*\
-  !*** ./src/Client/Component/SpriteSheets/SheetMaker/SheetMaker.ts ***!
-  \********************************************************************/
+/***/ "./src/Client/Component/SpriteSheets/SheetViewer/SheetViewer.ts":
+/*!**********************************************************************!*\
+  !*** ./src/Client/Component/SpriteSheets/SheetViewer/SheetViewer.ts ***!
+  \**********************************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.SheetMaker = void 0;
+exports.SheetViewer = void 0;
 const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 const extract_image_from_canvas_area_1 = __webpack_require__(/*! Client/Service/extract-image-from-canvas-area */ "./src/Client/Service/extract-image-from-canvas-area.ts");
-class SheetMaker extends Component_1.Component {
+class SheetViewer extends Component_1.Component {
     image = null;
     canvas;
     css() {
@@ -732,7 +732,7 @@ class SheetMaker extends Component_1.Component {
         let startX = 0;
         let startY = 0;
         let isDragging = false;
-        const snap = (value) => Math.round(value / 5) * 5;
+        const snap = (value) => Math.round(value / 16) * 16;
         const onMouseMove = (event) => {
             if (!isDragging)
                 return;
@@ -769,7 +769,7 @@ class SheetMaker extends Component_1.Component {
         return box;
     }
 }
-exports.SheetMaker = SheetMaker;
+exports.SheetViewer = SheetViewer;
 
 
 /***/ }),
@@ -906,7 +906,7 @@ const LayerListing_1 = __webpack_require__(/*! Client/Component/LayerListing/Lay
 const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
 const FileUploader_1 = __webpack_require__(/*! Client/Component/File/FileUploader/FileUploader */ "./src/Client/Component/File/FileUploader/FileUploader.ts");
 const SheetListing_1 = __webpack_require__(/*! Client/Component/SheetListing/SheetListing */ "./src/Client/Component/SheetListing/SheetListing.ts");
-const SheetMaker_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetMaker/SheetMaker */ "./src/Client/Component/SpriteSheets/SheetMaker/SheetMaker.ts");
+const SheetViewer_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetViewer/SheetViewer */ "./src/Client/Component/SpriteSheets/SheetViewer/SheetViewer.ts");
 const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */ "./src/Client/Component/SideMenu/SideMenu.ts");
 const SheetImporter_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetImporter/SheetImporter */ "./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts");
 const BasicModal_1 = __webpack_require__(/*! Client/Component/Generic/Modal/BasicModal */ "./src/Client/Component/Generic/Modal/BasicModal.ts");
@@ -919,7 +919,7 @@ exports.COMPONENTS = new Map([
     [WindowBox_1.WindowBox, 'window-box'],
     [FileUploader_1.FileUploader, 'file-uploader'],
     [SheetListing_1.FileListing, 'file-listing'],
-    [SheetMaker_1.SheetMaker, 'sheet-maker'],
+    [SheetViewer_1.SheetViewer, 'sheet-maker'],
     [SheetImporter_1.SheetImporter, 'sheet-importer'],
     [BasicModal_1.BasicModal, 'modal-basic'],
     [NewLayerForm_1.NewLayerForm, 'new-layer-form'],
@@ -1619,7 +1619,7 @@ const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Servic
 const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
 const WindowBoxFactory_1 = __webpack_require__(/*! Client/Service/WindowBoxFactory */ "./src/Client/Service/WindowBoxFactory.ts");
 const SheetImporter_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetImporter/SheetImporter */ "./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts");
-const SheetMaker_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetMaker/SheetMaker */ "./src/Client/Component/SpriteSheets/SheetMaker/SheetMaker.ts");
+const SheetViewer_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetViewer/SheetViewer */ "./src/Client/Component/SpriteSheets/SheetViewer/SheetViewer.ts");
 const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
 const BasicModal_1 = __webpack_require__(/*! Client/Component/Generic/Modal/BasicModal */ "./src/Client/Component/Generic/Modal/BasicModal.ts");
 const NewLayerForm_1 = __webpack_require__(/*! Client/Component/NewLayerForm/NewLayerForm */ "./src/Client/Component/NewLayerForm/NewLayerForm.ts");
@@ -1643,7 +1643,7 @@ document.addEventListener('DOMContentLoaded', () => {
             windowBoxes[sheet.name].flash();
             return;
         }
-        const component = Dom_1.Dom.makeComponent(SheetMaker_1.SheetMaker, { imageSrc: sheet.imageSrc });
+        const component = Dom_1.Dom.makeComponent(SheetViewer_1.SheetViewer, { imageSrc: sheet.imageSrc });
         openSheets.push(sheet.name);
         windowBoxes[sheet.name] = WindowBoxFactory_1.WindowBoxFactory.make(component, sheet.name);
     });
