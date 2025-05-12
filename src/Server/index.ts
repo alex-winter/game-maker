@@ -4,6 +4,7 @@ import { Layer } from 'Model/Layer'
 import path from 'path'
 import multer from 'multer'
 import fs from 'fs'
+import { UserData } from 'Model/UserData'
 
 const app = express()
 const PORT = 3000
@@ -119,6 +120,10 @@ app.post('/upload-files', upload.array('files[]'), (req, res) => {
       path: file.path
     }))
   })
+})
+
+app.post('/user-data', (request: Request, response: Response) => {
+  const body = request.body as UserData
 })
 
 app.listen(PORT, () => {

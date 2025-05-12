@@ -13,6 +13,17 @@ interface LoadedPlacement {
     y: number
 }
 
+interface Movement {
+    clientX: number
+
+    clientY: number
+
+    viewCoordinates: Coordinate
+
+    lastMousePosition: Coordinate
+
+}
+
 export class CanvasLayer extends Component {
     private currentImage!: HTMLImageElement
     private layer!: Layer
@@ -80,12 +91,25 @@ export class CanvasLayer extends Component {
         Events.listen(() => this.handleWindowResize(), EVENTS.windowResize)
         Events.listen(this.handleCurrentImageChange.bind(this), EVENTS.sheetSelectionMade)
         Events.listen(this.handleLayerUpdate.bind(this), 'layer-update')
+        Events.listen(this.handleMovement.bind(this), 'moving-in-canvas')
 
-        window.addEventListener('mouseup', () => {
+        this.addEventListener('mouseup', () => {
             this.isMoving = false
         })
 
         this.frame()
+    }
+
+    private handleMovement(event: CustomEvent): void {
+        const movement = event.detail as Movement
+        const dx = movement.clientX - movement.lastMousePosition.x
+        const dy = movement.clientY - movement.lastMousePosition.y
+
+        this.viewCoordinates.x -= dx
+        this.viewCoordinates.y -= dy
+
+        this.lastMousePosition.x = movement.clientX
+        this.lastMousePosition.y = movement.clientY
     }
 
     private handleLayerUpdate(event: CustomEvent): void {
@@ -140,14 +164,14 @@ export class CanvasLayer extends Component {
         }
 
         if (this.isMoving) {
-            const dx = event.clientX - this.lastMousePosition.x
-            const dy = event.clientY - this.lastMousePosition.y
+            const movement: Movement = {
+                clientX: event.clientX,
+                clientY: event.clientY,
+                viewCoordinates: { ...this.viewCoordinates },
+                lastMousePosition: { ...this.lastMousePosition },
+            }
 
-            this.viewCoordinates.x -= dx
-            this.viewCoordinates.y -= dy
-
-            this.lastMousePosition.x = event.clientX
-            this.lastMousePosition.y = event.clientY
+            Events.emit('moving-in-canvas', movement)
         }
     }
 

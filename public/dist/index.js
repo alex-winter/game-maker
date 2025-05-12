@@ -73,10 +73,20 @@ class CanvasLayer extends Component_1.Component {
         Events_1.Events.listen(() => this.handleWindowResize(), events_1.EVENTS.windowResize);
         Events_1.Events.listen(this.handleCurrentImageChange.bind(this), events_1.EVENTS.sheetSelectionMade);
         Events_1.Events.listen(this.handleLayerUpdate.bind(this), 'layer-update');
-        window.addEventListener('mouseup', () => {
+        Events_1.Events.listen(this.handleMovement.bind(this), 'moving-in-canvas');
+        this.addEventListener('mouseup', () => {
             this.isMoving = false;
         });
         this.frame();
+    }
+    handleMovement(event) {
+        const movement = event.detail;
+        const dx = movement.clientX - movement.lastMousePosition.x;
+        const dy = movement.clientY - movement.lastMousePosition.y;
+        this.viewCoordinates.x -= dx;
+        this.viewCoordinates.y -= dy;
+        this.lastMousePosition.x = movement.clientX;
+        this.lastMousePosition.y = movement.clientY;
     }
     handleLayerUpdate(event) {
         const layer = event.detail;
@@ -111,12 +121,13 @@ class CanvasLayer extends Component_1.Component {
             this.currentImage.style.top = snappedY + 'px';
         }
         if (this.isMoving) {
-            const dx = event.clientX - this.lastMousePosition.x;
-            const dy = event.clientY - this.lastMousePosition.y;
-            this.viewCoordinates.x -= dx;
-            this.viewCoordinates.y -= dy;
-            this.lastMousePosition.x = event.clientX;
-            this.lastMousePosition.y = event.clientY;
+            const movement = {
+                clientX: event.clientX,
+                clientY: event.clientY,
+                viewCoordinates: { ...this.viewCoordinates },
+                lastMousePosition: { ...this.lastMousePosition },
+            };
+            Events_1.Events.emit('moving-in-canvas', movement);
         }
     }
     handleMouseDown(event) {
