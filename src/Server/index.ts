@@ -31,6 +31,14 @@ const layers = [
     is_active: true,
     placements: [],
   },
+  {
+    uuid: randomUUID().toString(),
+    name: 'Layer 2',
+    created_at: new Date().toISOString(),
+    is_visible: true,
+    is_active: false,
+    placements: [],
+  },
 ]
 
 app.use(express.static(publicDir))
