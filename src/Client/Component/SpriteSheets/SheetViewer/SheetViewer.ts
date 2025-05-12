@@ -12,9 +12,6 @@ export class SheetViewer extends Component {
         return /*css*/`
             :host {
                 position: relative;
-                max-width: 400px;
-                max-height: 400px;
-                overflow: scroll;
                 display: block;
             }
 

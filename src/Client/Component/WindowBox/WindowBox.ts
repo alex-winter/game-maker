@@ -27,11 +27,15 @@ export class WindowBox extends Component implements DraggableHTMLElement {
         return /*css*/`
             :host {
                 position: fixed;
+                display: flex;
+                flex-direction:column;
                 top: 50%;
                 left: 50%;
                 transform: translateX(-50%) translateY(-50%);
                 cursor: default;
                 z-index: 1001;
+                resize: both;
+                overflow: auto;
             }
 
             .header {
@@ -60,6 +64,9 @@ export class WindowBox extends Component implements DraggableHTMLElement {
                 padding: 10px;
                 background: white;
                 border: 1px solid #ccc;
+                flex-grow: 1;
+                width: 100%;
+                height: 100%;
             }
 
             @keyframes flash {
