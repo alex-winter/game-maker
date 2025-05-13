@@ -59,7 +59,7 @@ export class CanvasLayer extends Component {
     }
 
     private async loadPlacement(placement: Placement): Promise<void> {
-        const image = await placementImageRepository.getByUuid(placement.imageUuid)
+        const image = (await placementImageRepository.getByUuid(placement.imageUuid))!
 
         this.loadedPlacements.push({
             image: await Dom.image(image.src),

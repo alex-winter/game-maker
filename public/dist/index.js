@@ -50,7 +50,7 @@ class CanvasLayer extends Component_1.Component {
         `;
     }
     async loadPlacement(placement) {
-        const image = await PlacementImageRepository_1.placementImageRepository.getByUuid(placement.imageUuid);
+        const image = (await PlacementImageRepository_1.placementImageRepository.getByUuid(placement.imageUuid));
         this.loadedPlacements.push({
             image: await Dom_1.Dom.image(image.src),
             x: placement.coordinate.x,
