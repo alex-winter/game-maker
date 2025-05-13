@@ -5,5 +5,7 @@ public/dist/*
 dist/*
 
 uploads/*
-
 !uploads/.gitkeep
+
+data/*
+!data/.gitkeep

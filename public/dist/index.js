@@ -50,8 +50,9 @@ class CanvasLayer extends Component_1.Component {
         `;
     }
     async loadPlacement(placement) {
+        const image = await PlacementImageRepository_1.placementImageRepository.getByUuid(placement.imageUuid);
         this.loadedPlacements.push({
-            image: await Dom_1.Dom.image(placement.image.src),
+            image: await Dom_1.Dom.image(image.src),
             x: placement.coordinate.x,
             y: placement.coordinate.y,
         });
@@ -131,13 +132,13 @@ class CanvasLayer extends Component_1.Component {
             Events_1.Events.emit('moving-in-canvas', movement);
         }
     }
-    generatePlacement() {
+    async generatePlacement() {
         const placement = {
             coordinate: {
                 x: this.snap(this.mouseCoordinates.x) + this.viewCoordinates.x,
                 y: this.snap(this.mouseCoordinates.y) + this.viewCoordinates.y,
             },
-            image: PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(this.currentImage.src),
+            imageUuid: (await PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(this.currentImage.src)).uuid,
         };
         const lastPlacement = this.layer.placements[this.layer.placements.length - 1];
         if (JSON.stringify(lastPlacement) === JSON.stringify(placement)) {
@@ -1380,27 +1381,37 @@ exports.placementImageRepository = void 0;
 const Repository_1 = __webpack_require__(/*! Client/Service/Repository/Repository */ "./src/Client/Service/Repository/Repository.ts");
 class PlacementImageRepository extends Repository_1.Repository {
     API_PATH = '/placement-images';
-    data = [];
-    async persist(...placementImage) {
-        this.data.push(...placementImage);
-        await this.post(this.API_PATH, placementImage);
+    dataPromise = null;
+    dataCache = [];
+    async persist(...placementImages) {
+        await this.getAll();
+        this.dataCache.push(...placementImages);
+        await this.post(this.API_PATH, placementImages);
     }
     async getAll() {
-        if (this.data === undefined) {
-            this.data = await this.get(this.API_PATH);
+        if (!this.dataPromise) {
+            this.dataPromise = this.get(this.API_PATH).then(data => {
+                this.dataCache = data;
+                return data;
+            });
         }
-        return this.data;
+        return this.dataPromise;
     }
-    findOrCreateBySrc(src) {
-        const found = this.data.find(placementImage => placementImage.src === src);
-        if (found) {
+    async findOrCreateBySrc(src) {
+        const all = await this.getAll();
+        const found = all.find(img => img.src === src);
+        if (found)
             return found;
-        }
         const placementImage = {
+            uuid: crypto.randomUUID(),
             src,
         };
-        this.persist(placementImage);
+        await this.persist(placementImage);
         return placementImage;
+    }
+    async getByUuid(uuid) {
+        const all = await this.getAll();
+        return all.find(img => img.uuid === uuid);
     }
 }
 exports.placementImageRepository = new PlacementImageRepository();

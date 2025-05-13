@@ -59,8 +59,10 @@ export class CanvasLayer extends Component {
     }
 
     private async loadPlacement(placement: Placement): Promise<void> {
+        const image = await placementImageRepository.getByUuid(placement.imageUuid)
+
         this.loadedPlacements.push({
-            image: await Dom.image(placement.image.src),
+            image: await Dom.image(image.src),
             x: placement.coordinate.x,
             y: placement.coordinate.y,
         })
@@ -175,13 +177,13 @@ export class CanvasLayer extends Component {
         }
     }
 
-    private generatePlacement(): void {
+    private async generatePlacement(): Promise<void> {
         const placement: Placement = {
             coordinate: {
                 x: this.snap(this.mouseCoordinates.x) + this.viewCoordinates.x,
                 y: this.snap(this.mouseCoordinates.y) + this.viewCoordinates.y,
             },
-            image: placementImageRepository.findOrCreateBySrc(this.currentImage.src),
+            imageUuid: (await placementImageRepository.findOrCreateBySrc(this.currentImage.src)).uuid,
         }
         const lastPlacement = this.layer.placements[this.layer.placements.length - 1]
 
