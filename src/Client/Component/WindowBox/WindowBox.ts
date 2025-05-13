@@ -134,6 +134,7 @@ export class WindowBox extends Component implements DraggableHTMLElement {
 
         close.addEventListener('click', (event) => {
             event.stopPropagation()
+            Events.emit('window-destroyed', this.dataset.title)
             this.destroy()
         }, true)
 

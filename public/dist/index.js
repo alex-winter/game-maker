@@ -969,6 +969,7 @@ class WindowBox extends Component_1.Component {
         });
         close.addEventListener('click', (event) => {
             event.stopPropagation();
+            Events_1.Events.emit('window-destroyed', this.dataset.title);
             this.destroy();
         }, true);
         options.append(close);
@@ -1796,6 +1797,15 @@ document.addEventListener('DOMContentLoaded', () => {
         openSheets.push(sheet.name);
         windowBoxes[sheet.name] = WindowBoxFactory_1.WindowBoxFactory.make(component, sheet.name);
     });
+    Events_1.Events.listen(event => {
+        const name = event.detail;
+        if (openSheets.includes(name)) {
+            openSheets = openSheets.filter(item => item !== name);
+        }
+        if (windowBoxes[name]) {
+            delete windowBoxes[name];
+        }
+    }, 'window-destroyed');
     Events_1.Events.listenMouseDownOnWindowBox(windowBox => {
         Dom_1.Dom.getAllOfComponent(WindowBox_1.WindowBox).forEach(box => {
             box.zIndexMoveDown();

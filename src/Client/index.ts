@@ -47,6 +47,16 @@ document.addEventListener('DOMContentLoaded', () => {
         windowBoxes[sheet.name] = WindowBoxFactory.make(component, sheet.name)
     })
 
+    Events.listen(event => {
+        const name = event.detail as string
+        if (openSheets.includes(name)) {
+            openSheets = openSheets.filter(item => item !== name)
+        }
+        if (windowBoxes[name]) {
+            delete windowBoxes[name]
+        }
+    }, 'window-destroyed')
+
     Events.listenMouseDownOnWindowBox(windowBox => {
         Dom.getAllOfComponent<WindowBox>(WindowBox).forEach(box => {
             box.zIndexMoveDown()
