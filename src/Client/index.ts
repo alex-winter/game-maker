@@ -17,6 +17,7 @@ import { LayerRepository } from 'Client/Service/Repository/LayerRepository'
 import { Layer } from 'Model/Layer'
 import { CanvasLayer } from 'Client/Component/Canvas/CanvasLayer'
 import { SheetRepository } from 'Client/Service/Repository/SheetRepository'
+import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -124,6 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
     layerRepository.getAll().then(layers => {
         Events.emit(EVENTS.gotLayer, layers)
     })
+
+    placementImageRepository.getAll()
 
     const getSheets = () => {
         sheetRepository.getAll().then(sheets => {

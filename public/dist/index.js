@@ -16,6 +16,7 @@ const mouse_events_1 = __webpack_require__(/*! Client/Constants/mouse-events */ 
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
+const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Repository/PlacementImageRepository */ "./src/Client/Service/Repository/PlacementImageRepository.ts");
 class CanvasLayer extends Component_1.Component {
     currentImage;
     layer;
@@ -50,7 +51,7 @@ class CanvasLayer extends Component_1.Component {
     }
     async loadPlacement(placement) {
         this.loadedPlacements.push({
-            image: await Dom_1.Dom.image(placement.imageSrc),
+            image: await Dom_1.Dom.image(placement.image.src),
             x: placement.coordinate.x,
             y: placement.coordinate.y,
         });
@@ -136,13 +137,12 @@ class CanvasLayer extends Component_1.Component {
                 x: this.snap(this.mouseCoordinates.x) + this.viewCoordinates.x,
                 y: this.snap(this.mouseCoordinates.y) + this.viewCoordinates.y,
             },
-            imageSrc: this.currentImage.src,
+            image: PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(this.currentImage.src),
         };
         const lastPlacement = this.layer.placements[this.layer.placements.length - 1];
         if (JSON.stringify(lastPlacement) === JSON.stringify(placement)) {
             return;
         }
-        console.log('placement made');
         this.layer.placements.push(placement);
         this.loadPlacement(placement);
     }
@@ -1368,6 +1368,46 @@ exports.LayerRepository = LayerRepository;
 
 /***/ }),
 
+/***/ "./src/Client/Service/Repository/PlacementImageRepository.ts":
+/*!*******************************************************************!*\
+  !*** ./src/Client/Service/Repository/PlacementImageRepository.ts ***!
+  \*******************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.placementImageRepository = void 0;
+const Repository_1 = __webpack_require__(/*! Client/Service/Repository/Repository */ "./src/Client/Service/Repository/Repository.ts");
+class PlacementImageRepository extends Repository_1.Repository {
+    API_PATH = '/placement-images';
+    data = [];
+    async persist(...placementImage) {
+        this.data.push(...placementImage);
+        await this.post(this.API_PATH, placementImage);
+    }
+    async getAll() {
+        if (this.data === undefined) {
+            this.data = await this.get(this.API_PATH);
+        }
+        return this.data;
+    }
+    findOrCreateBySrc(src) {
+        const found = this.data.find(placementImage => placementImage.src === src);
+        if (found) {
+            return found;
+        }
+        const placementImage = {
+            src,
+        };
+        this.persist(placementImage);
+        return placementImage;
+    }
+}
+exports.placementImageRepository = new PlacementImageRepository();
+
+
+/***/ }),
+
 /***/ "./src/Client/Service/Repository/Repository.ts":
 /*!*****************************************************!*\
   !*** ./src/Client/Service/Repository/Repository.ts ***!
@@ -1684,6 +1724,7 @@ const LayerFactory_1 = __webpack_require__(/*! Model/Factory/LayerFactory */ "./
 const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
 const CanvasLayer_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasLayer */ "./src/Client/Component/Canvas/CanvasLayer.ts");
 const SheetRepository_1 = __webpack_require__(/*! Client/Service/Repository/SheetRepository */ "./src/Client/Service/Repository/SheetRepository.ts");
+const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Repository/PlacementImageRepository */ "./src/Client/Service/Repository/PlacementImageRepository.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
@@ -1744,6 +1785,7 @@ document.addEventListener('DOMContentLoaded', () => {
     layerRepository.getAll().then(layers => {
         Events_1.Events.emit(events_1.EVENTS.gotLayer, layers);
     });
+    PlacementImageRepository_1.placementImageRepository.getAll();
     const getSheets = () => {
         sheetRepository.getAll().then(sheets => {
             Events_1.Events.emit(events_1.EVENTS.gotSheets, sheets);

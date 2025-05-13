@@ -5,6 +5,7 @@ import path from 'path'
 import multer from 'multer'
 import fs from 'fs'
 import { UserData } from 'Model/UserData'
+import { PlacementImage } from 'Client/Model/Placement'
 
 const app = express()
 const PORT = 3000
@@ -41,6 +42,8 @@ const layers = [
     placements: [],
   },
 ]
+
+const placementImages: PlacementImage[] = []
 
 app.use(express.static(publicDir))
 app.use(express.json())
@@ -124,6 +127,18 @@ app.post('/upload-files', upload.array('files[]'), (req, res) => {
 
 app.post('/user-data', (request: Request, response: Response) => {
   const body = request.body as UserData
+})
+
+app.post('/placement-images', (request: Request, response: Response) => {
+  const newPlacementImages = request.body as PlacementImage[]
+
+  placementImages.push(...newPlacementImages)
+
+  response.json({ ok: true })
+})
+
+app.get('/placement-images', (_, response: Response) => {
+  response.json(placementImages)
 })
 
 app.listen(PORT, () => {

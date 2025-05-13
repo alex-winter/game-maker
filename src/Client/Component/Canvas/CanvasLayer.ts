@@ -5,6 +5,7 @@ import { Placement } from 'Client/Model/Placement'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
+import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { Layer } from 'Model/Layer'
 
 interface LoadedPlacement {
@@ -21,7 +22,6 @@ interface Movement {
     viewCoordinates: Coordinate
 
     lastMousePosition: Coordinate
-
 }
 
 export class CanvasLayer extends Component {
@@ -60,7 +60,7 @@ export class CanvasLayer extends Component {
 
     private async loadPlacement(placement: Placement): Promise<void> {
         this.loadedPlacements.push({
-            image: await Dom.image(placement.imageSrc),
+            image: await Dom.image(placement.image.src),
             x: placement.coordinate.x,
             y: placement.coordinate.y,
         })
@@ -176,20 +176,18 @@ export class CanvasLayer extends Component {
     }
 
     private generatePlacement(): void {
-        const placement = {
+        const placement: Placement = {
             coordinate: {
                 x: this.snap(this.mouseCoordinates.x) + this.viewCoordinates.x,
                 y: this.snap(this.mouseCoordinates.y) + this.viewCoordinates.y,
             },
-            imageSrc: this.currentImage.src,
+            image: placementImageRepository.findOrCreateBySrc(this.currentImage.src),
         }
         const lastPlacement = this.layer.placements[this.layer.placements.length - 1]
 
         if (JSON.stringify(lastPlacement) === JSON.stringify(placement)) {
             return
         }
-
-        console.log('placement made')
 
         this.layer.placements.push(placement)
         this.loadPlacement(placement)
