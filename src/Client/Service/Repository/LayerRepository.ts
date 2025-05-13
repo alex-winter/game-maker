@@ -8,6 +8,9 @@ export class LayerRepository extends Repository {
     private layers!: Layer[]
 
     public async persist(...layers: Layer[]): Promise<void> {
+
+        this.layers.push(...layers)
+
         await this.post(
             this.API_PATH,
             layers,

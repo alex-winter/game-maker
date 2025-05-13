@@ -398,6 +398,14 @@ class LayerItem extends Component_1.Component {
     layer;
     container;
     visibleButton;
+    handleContainerClick = () => {
+        console.log('clicked container');
+        Events_1.Events.emit('layer-active', this.layer);
+    };
+    handleVisibleButtonClick = (e) => {
+        e.stopPropagation();
+        Events_1.Events.emit('layer-visible-toggle', this.layer);
+    };
     css() {
         return /*css*/ `
             .container {
@@ -423,6 +431,7 @@ class LayerItem extends Component_1.Component {
         this.layer = this.parameters.layer;
     }
     build() {
+        console.log('built');
         this.container = Dom_1.Dom.div('container');
         const name = Dom_1.Dom.div();
         const options = Dom_1.Dom.div('options');
@@ -431,26 +440,24 @@ class LayerItem extends Component_1.Component {
         name.innerText = this.layer.name;
         eyeIcon.classList.add('fa-solid', this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash');
         this.container.classList.toggle('active', this.layer.is_active);
+        this.container.addEventListener('click', this.handleContainerClick);
+        this.visibleButton.addEventListener('click', this.handleVisibleButtonClick);
         this.visibleButton.append(eyeIcon);
         options.append(this.visibleButton);
         this.container.append(name, options);
         return this.container;
     }
     afterBuild() {
+        console.log('yeah running');
         Events_1.Events.listen(event => {
+            console.log('saw update');
             const update = event.detail;
             if (update.uuid === this.layer.uuid) {
+                console.log('update the one');
                 this.layer = event.detail;
                 this.patch();
             }
         }, 'layer-update');
-        this.container.addEventListener('click', () => {
-            Events_1.Events.emit('layer-active', this.layer);
-        });
-        this.visibleButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            Events_1.Events.emit('layer-visible-toggle', this.layer);
-        });
     }
 }
 exports.LayerItem = LayerItem;
@@ -1334,6 +1341,7 @@ class LayerRepository extends Repository_1.Repository {
     API_PATH = '/layers';
     layers;
     async persist(...layers) {
+        this.layers.push(...layers);
         await this.post(this.API_PATH, layers);
     }
     async update(layer) {
@@ -1785,12 +1793,14 @@ document.addEventListener('DOMContentLoaded', () => {
         layerRepository.update(event.detail);
     }, events_1.EVENTS.layerPlacementMade);
     Events_1.Events.listen(event => {
+        console.log('heard event for layer active');
         layerRepository.setActive(event.detail.uuid);
     }, 'layer-active');
     Events_1.Events.listen(event => {
         layerRepository.toggleVisible(event.detail.uuid);
     }, 'layer-visible-toggle');
     Events_1.Events.listen(event => {
+        console.log('index heard update');
         layerRepository.update(event.detail);
     }, 'layer-update');
     layerRepository.getAll().then(layers => {

@@ -8,6 +8,16 @@ export class LayerItem extends Component {
     private container!: HTMLDivElement
     private visibleButton!: HTMLButtonElement
 
+    private handleContainerClick = () => {
+        console.log('clicked container')
+        Events.emit('layer-active', this.layer)
+    }
+
+    private handleVisibleButtonClick = (e: Event) => {
+        e.stopPropagation()
+        Events.emit('layer-visible-toggle', this.layer)
+    }
+
     protected css(): string {
         return /*css*/`
             .container {
@@ -35,6 +45,8 @@ export class LayerItem extends Component {
     }
 
     protected build(): HTMLElement {
+        console.log('built')
+
         this.container = Dom.div('container')
         const name = Dom.div()
         const options = Dom.div('options')
@@ -46,6 +58,11 @@ export class LayerItem extends Component {
         eyeIcon.classList.add('fa-solid', this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash')
 
         this.container.classList.toggle('active', this.layer.is_active)
+
+
+        this.container.addEventListener('click', this.handleContainerClick)
+        this.visibleButton.addEventListener('click', this.handleVisibleButtonClick)
+
 
         this.visibleButton.append(eyeIcon)
 
@@ -62,21 +79,16 @@ export class LayerItem extends Component {
     }
 
     protected afterBuild(): void {
+        console.log('yeah running')
+
         Events.listen(event => {
+            console.log('saw update')
             const update = event.detail as Layer
             if (update.uuid === this.layer.uuid) {
+                console.log('update the one')
                 this.layer = event.detail as Layer
                 this.patch()
             }
         }, 'layer-update')
-
-        this.container.addEventListener('click', () => {
-            Events.emit('layer-active', this.layer)
-        })
-
-        this.visibleButton.addEventListener('click', (e: Event) => {
-            e.stopPropagation()
-            Events.emit('layer-visible-toggle', this.layer)
-        })
     }
 }
