@@ -1,18 +1,18 @@
-import { randomUUID } from 'crypto'
 import express, { Request, Response } from 'express'
-import { Layer } from 'Model/Layer'
 import path from 'path'
 import multer from 'multer'
 import fs from 'fs'
 import { UserData } from 'Model/UserData'
 import { PlacementImage } from 'Client/Model/Placement'
+import { Layer } from 'Model/Layer'
 
 const app = express()
 const PORT = 3000
 
 const publicDir = path.join(__dirname, '/../public')
-
 const uploadsDir = __dirname + '/../uploads/'
+const layersJsonFileDir = __dirname + '/../data/layers.json'
+const placementImagesJsonFileDir = __dirname + '/../data/placement-images.json'
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -24,26 +24,22 @@ const storage = multer.diskStorage({
 })
 const upload = multer({ storage })
 
-const layers = [
-  {
-    uuid: randomUUID().toString(),
-    name: 'Layer 1',
-    created_at: new Date().toISOString(),
-    is_visible: true,
-    is_active: true,
-    placements: [],
-  },
-  {
-    uuid: randomUUID().toString(),
-    name: 'Layer 2',
-    created_at: new Date().toISOString(),
-    is_visible: true,
-    is_active: false,
-    placements: [],
-  },
-]
+function readJson<T>(filePath: string): T {
+  const content = fs.readFileSync(filePath, 'utf-8')
 
-const placementImages: PlacementImage[] = []
+  return JSON.parse(content)
+}
+
+function writeJson<T>(filePath: string, data: T) {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2))
+}
+
+if (!fs.existsSync(layersJsonFileDir)) {
+  writeJson(layersJsonFileDir, [])
+}
+if (!fs.existsSync(placementImagesJsonFileDir)) {
+  writeJson(placementImagesJsonFileDir, [])
+}
 
 app.use(express.static(publicDir))
 app.use(express.json({ limit: '50mb' }))
@@ -81,37 +77,37 @@ app.get('/sheets', (_, response) => {
 })
 
 app.get('/layers', (_, response) => {
-  response.json(layers)
+  response.json(readJson(layersJsonFileDir))
 })
 
 // @ts-ignore
-app.post('/layers', (request: Request, response: Response) => {
-  if (!Array.isArray(request.body)) {
-    return response.status(400).json({ error: 'bad' })
-  }
+app.post('/layers', (req: Request, res: Response) => {
+  if (!Array.isArray(req.body)) return res.status(400).json({ error: 'Invalid data format' })
 
-  layers.push(...request.body)
+  const existing = readJson<Layer[]>(layersJsonFileDir)
+  const updated = [...existing, ...req.body]
+  writeJson(layersJsonFileDir, updated)
 
-  response.json({ ok: true })
+  res.json({ ok: true })
 })
 
 // @ts-ignore
-app.patch('/layers', (request: Request, response: Response) => {
-  const { uuid, ...updates } = request.body
-
-  if (!uuid) {
-    return response.status(400).json({ ok: false, error: 'Missing uuid' })
-  }
-
-  const layer = layers.find(l => l.uuid === uuid)
+app.patch('/layers', (req: Request, res: Response) => {
+  const updatedLayer = req.body as Layer
+  console.log(updatedLayer)
+  const layers = readJson<Layer[]>(layersJsonFileDir)
+  console.log(layers)
+  const layer = layers.find(l => l.uuid === updatedLayer.uuid)
+  console.log(layer)
 
   if (!layer) {
-    return response.status(404).json({ ok: false, error: 'Layer not found' })
+    return res.status(404).json({ error: 'Layer not found' })
   }
 
-  Object.assign(layer, updates)
+  Object.assign(layer, updatedLayer)
+  writeJson(layersJsonFileDir, layers)
 
-  response.json({ ok: true, updatedLayer: layer })
+  res.json({ ok: true, updatedLayer: layer })
 })
 
 app.post('/upload-files', upload.array('files[]'), (req, res) => {
@@ -131,14 +127,16 @@ app.post('/user-data', (request: Request, response: Response) => {
 
 app.post('/placement-images', (request: Request, response: Response) => {
   const newPlacementImages = request.body as PlacementImage[]
+  const existing = readJson<PlacementImage[]>(placementImagesJsonFileDir)
+  const updated = [...existing, ...newPlacementImages]
 
-  placementImages.push(...newPlacementImages)
+  writeJson(placementImagesJsonFileDir, updated)
 
   response.json({ ok: true })
 })
 
 app.get('/placement-images', (_, response: Response) => {
-  response.json(placementImages)
+  response.json(readJson(placementImagesJsonFileDir))
 })
 
 app.listen(PORT, () => {
