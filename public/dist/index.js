@@ -750,6 +750,7 @@ exports.SheetImporter = SheetImporter;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SheetViewer = void 0;
 const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
+const mouse_events_1 = __webpack_require__(/*! Client/Constants/mouse-events */ "./src/Client/Constants/mouse-events.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
@@ -812,24 +813,28 @@ class SheetViewer extends Component_1.Component {
             box.style.width = width + 'px';
             box.style.height = height + 'px';
         };
-        const onMouseUp = async () => {
-            isDragging = false;
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-            const boxX = parseInt(box.style.left || '0', 10);
-            const boxY = parseInt(box.style.top || '0', 10);
-            const boxWidth = parseInt(box.style.width || '0', 10);
-            const boxHeight = parseInt(box.style.height || '0', 10);
-            Events_1.Events.emit(events_1.EVENTS.sheetSelectionMade, await (0, extract_image_from_canvas_area_1.extractImageFromCanvasArea)(this.canvas, boxX, boxY, boxWidth, boxHeight));
+        const onMouseUp = async (event) => {
+            if (event.button === mouse_events_1.LEFT_BUTTON) {
+                isDragging = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                const boxX = parseInt(box.style.left || '0', 10);
+                const boxY = parseInt(box.style.top || '0', 10);
+                const boxWidth = parseInt(box.style.width || '0', 10);
+                const boxHeight = parseInt(box.style.height || '0', 10);
+                Events_1.Events.emit(events_1.EVENTS.sheetSelectionMade, await (0, extract_image_from_canvas_area_1.extractImageFromCanvasArea)(this.canvas, boxX, boxY, boxWidth, boxHeight));
+            }
         };
         this.addEventListener('mousedown', (event) => {
-            const rect = this.getBoundingClientRect();
-            isDragging = true;
-            startX = event.clientX - rect.left + this.scrollLeft;
-            startY = event.clientY - rect.top + this.scrollTop;
-            box.style.display = 'none';
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
+            if (event.button === mouse_events_1.LEFT_BUTTON) {
+                const rect = this.getBoundingClientRect();
+                isDragging = true;
+                startX = event.clientX - rect.left + this.scrollLeft;
+                startY = event.clientY - rect.top + this.scrollTop;
+                box.style.display = 'none';
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            }
         });
         return box;
     }

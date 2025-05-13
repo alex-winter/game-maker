@@ -1,4 +1,5 @@
 import { EVENTS } from 'Client/Constants/events'
+import { LEFT_BUTTON } from 'Client/Constants/mouse-events'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
@@ -79,38 +80,42 @@ export class SheetViewer extends Component {
             box.style.height = height + 'px'
         }
 
-        const onMouseUp = async () => {
-            isDragging = false
-            document.removeEventListener('mousemove', onMouseMove)
-            document.removeEventListener('mouseup', onMouseUp)
+        const onMouseUp = async (event: MouseEvent) => {
+            if (event.button === LEFT_BUTTON) {
+                isDragging = false
+                document.removeEventListener('mousemove', onMouseMove)
+                document.removeEventListener('mouseup', onMouseUp)
 
-            const boxX = parseInt(box.style.left || '0', 10)
-            const boxY = parseInt(box.style.top || '0', 10)
-            const boxWidth = parseInt(box.style.width || '0', 10)
-            const boxHeight = parseInt(box.style.height || '0', 10)
+                const boxX = parseInt(box.style.left || '0', 10)
+                const boxY = parseInt(box.style.top || '0', 10)
+                const boxWidth = parseInt(box.style.width || '0', 10)
+                const boxHeight = parseInt(box.style.height || '0', 10)
 
-            Events.emit(
-                EVENTS.sheetSelectionMade,
-                await extractImageFromCanvasArea(
-                    this.canvas,
-                    boxX,
-                    boxY,
-                    boxWidth,
-                    boxHeight
+                Events.emit(
+                    EVENTS.sheetSelectionMade,
+                    await extractImageFromCanvasArea(
+                        this.canvas,
+                        boxX,
+                        boxY,
+                        boxWidth,
+                        boxHeight
+                    )
                 )
-            )
+            }
         }
 
         this.addEventListener('mousedown', (event: MouseEvent) => {
-            const rect = this.getBoundingClientRect()
-            isDragging = true
-            startX = event.clientX - rect.left + this.scrollLeft
-            startY = event.clientY - rect.top + this.scrollTop
+            if (event.button === LEFT_BUTTON) {
+                const rect = this.getBoundingClientRect()
+                isDragging = true
+                startX = event.clientX - rect.left + this.scrollLeft
+                startY = event.clientY - rect.top + this.scrollTop
 
-            box.style.display = 'none'
+                box.style.display = 'none'
 
-            document.addEventListener('mousemove', onMouseMove)
-            document.addEventListener('mouseup', onMouseUp)
+                document.addEventListener('mousemove', onMouseMove)
+                document.addEventListener('mouseup', onMouseUp)
+            }
         })
 
         return box
