@@ -18,6 +18,11 @@ export class LayerItem extends Component {
         Events.emit('layer-visible-toggle', this.layer)
     }
 
+    private handleClickDelete = (e: Event) => {
+        e.stopPropagation()
+        Events.emit('layer-delete', this.layer.uuid)
+    }
+
     protected css(): string {
         return /*css*/`
             .container {
@@ -52,21 +57,28 @@ export class LayerItem extends Component {
         const options = Dom.div('options')
         this.visibleButton = Dom.button()
         const eyeIcon = document.createElement('i')
+        const deleteButton = Dom.button()
+        const trashIcon = document.createElement('i')
 
         name.innerText = this.layer.name
 
         eyeIcon.classList.add('fa-solid', this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash')
+
+        trashIcon.classList.add('fa-solid', 'fa-trash')
 
         this.container.classList.toggle('active', this.layer.is_active)
 
 
         this.container.addEventListener('click', this.handleContainerClick)
         this.visibleButton.addEventListener('click', this.handleVisibleButtonClick)
+        deleteButton.addEventListener('click', this.handleClickDelete)
 
 
+        deleteButton.append(trashIcon)
         this.visibleButton.append(eyeIcon)
 
         options.append(
+            deleteButton,
             this.visibleButton,
         )
 
@@ -79,16 +91,19 @@ export class LayerItem extends Component {
     }
 
     protected afterBuild(): void {
-        console.log('yeah running')
-
         Events.listen(event => {
-            console.log('saw update')
             const update = event.detail as Layer
             if (update.uuid === this.layer.uuid) {
-                console.log('update the one')
                 this.layer = event.detail as Layer
                 this.patch()
             }
         }, 'layer-update')
+
+        Events.listen(event => {
+            const uuid = event.detail as string
+            if (this.layer.uuid === uuid) {
+                this.destroy()
+            }
+        }, 'layer-deleted')
     }
 }

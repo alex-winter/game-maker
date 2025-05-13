@@ -32,4 +32,10 @@ export abstract class Repository {
 
         return response.json()
     }
+
+    protected async delete(path: string): Promise<Response> {
+        return fetch(path, {
+            method: 'DELETE',
+        })
+    }
 }

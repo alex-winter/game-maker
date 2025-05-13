@@ -124,6 +124,18 @@ document.addEventListener('DOMContentLoaded', () => {
         'layer-update',
     )
 
+    Events.listen(
+        event => {
+            const uuid = event.detail as string
+
+            layerRepository.remove(uuid)
+                .then(() => {
+                    Events.emit('layer-deleted', uuid)
+                })
+        },
+        'layer-delete'
+    )
+
     layerRepository.getAll().then(layers => {
         Events.emit(EVENTS.gotLayer, layers)
     })

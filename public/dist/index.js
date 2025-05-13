@@ -406,6 +406,10 @@ class LayerItem extends Component_1.Component {
         e.stopPropagation();
         Events_1.Events.emit('layer-visible-toggle', this.layer);
     };
+    handleClickDelete = (e) => {
+        e.stopPropagation();
+        Events_1.Events.emit('layer-delete', this.layer.uuid);
+    };
     css() {
         return /*css*/ `
             .container {
@@ -437,27 +441,35 @@ class LayerItem extends Component_1.Component {
         const options = Dom_1.Dom.div('options');
         this.visibleButton = Dom_1.Dom.button();
         const eyeIcon = document.createElement('i');
+        const deleteButton = Dom_1.Dom.button();
+        const trashIcon = document.createElement('i');
         name.innerText = this.layer.name;
         eyeIcon.classList.add('fa-solid', this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash');
+        trashIcon.classList.add('fa-solid', 'fa-trash');
         this.container.classList.toggle('active', this.layer.is_active);
         this.container.addEventListener('click', this.handleContainerClick);
         this.visibleButton.addEventListener('click', this.handleVisibleButtonClick);
+        deleteButton.addEventListener('click', this.handleClickDelete);
+        deleteButton.append(trashIcon);
         this.visibleButton.append(eyeIcon);
-        options.append(this.visibleButton);
+        options.append(deleteButton, this.visibleButton);
         this.container.append(name, options);
         return this.container;
     }
     afterBuild() {
-        console.log('yeah running');
         Events_1.Events.listen(event => {
-            console.log('saw update');
             const update = event.detail;
             if (update.uuid === this.layer.uuid) {
-                console.log('update the one');
                 this.layer = event.detail;
                 this.patch();
             }
         }, 'layer-update');
+        Events_1.Events.listen(event => {
+            const uuid = event.detail;
+            if (this.layer.uuid === uuid) {
+                this.destroy();
+            }
+        }, 'layer-deleted');
     }
 }
 exports.LayerItem = LayerItem;
@@ -1357,6 +1369,9 @@ class LayerRepository extends Repository_1.Repository {
         }
         return this.layers = await this.get(this.API_PATH);
     }
+    async remove(uuid) {
+        await this.delete(this.API_PATH + '/' + uuid);
+    }
     setActive(uuid) {
         for (const layer of this.layers) {
             layer.is_active = layer.uuid === uuid;
@@ -1458,6 +1473,11 @@ class Repository {
     async get(path) {
         const response = await fetch(path);
         return response.json();
+    }
+    async delete(path) {
+        return fetch(path, {
+            method: 'DELETE',
+        });
     }
 }
 exports.Repository = Repository;
@@ -1803,6 +1823,13 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('index heard update');
         layerRepository.update(event.detail);
     }, 'layer-update');
+    Events_1.Events.listen(event => {
+        const uuid = event.detail;
+        layerRepository.remove(uuid)
+            .then(() => {
+            Events_1.Events.emit('layer-deleted', uuid);
+        });
+    }, 'layer-delete');
     layerRepository.getAll().then(layers => {
         Events_1.Events.emit(events_1.EVENTS.gotLayer, layers);
     });

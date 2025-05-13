@@ -41,6 +41,10 @@ export class LayerRepository extends Repository {
         return this.layers = await this.get(this.API_PATH)
     }
 
+    public async remove(uuid: string): Promise<void> {
+        await this.delete(this.API_PATH + '/' + uuid)
+    }
+
     public setActive(uuid: string) {
         for (const layer of this.layers) {
             layer.is_active = layer.uuid === uuid

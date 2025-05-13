@@ -139,6 +139,10 @@ app.get('/placement-images', (_, response: Response) => {
   response.json(readJson(placementImagesJsonFileDir))
 })
 
+app.delete('/layers/:uuid', (_, response: Response) => {
+  response.json({ ok: true })
+})
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
