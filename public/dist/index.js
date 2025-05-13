@@ -872,17 +872,23 @@ class WindowBox extends Component_1.Component {
         return /*css*/ `
             :host {
                 position: fixed;
-                display: flex;
-                flex-direction:column;
+                display: block;
                 top: 50%;
                 left: 50%;
                 transform: translateX(-50%) translateY(-50%);
                 cursor: default;
                 z-index: 1001;
                 resize: both;
-                overflow: auto;
+                overflow: hidden;
                 max-height: 90vh;
                 max-width: 90vw;
+            }
+
+            .window-box {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
             }
 
             .header {
@@ -911,9 +917,10 @@ class WindowBox extends Component_1.Component {
                 padding: 10px;
                 background: white;
                 border: 1px solid #ccc;
-                flex-grow: 1;
                 width: 100%;
                 height: 100%;
+                overflow: scroll;
+                box-sizing: border-box;
             }
 
             @keyframes flash {
