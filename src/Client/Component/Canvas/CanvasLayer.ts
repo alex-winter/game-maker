@@ -51,6 +51,8 @@ export class CanvasLayer extends Component {
             .current-image {
                 position: fixed;
                 pointer-events: none;
+                transform-origin: top left;
+                z-index: 510;
             }
 
             .hide {
@@ -121,6 +123,8 @@ export class CanvasLayer extends Component {
 
             this.viewCoordinates.x = worldX - mouseX / this.scale
             this.viewCoordinates.y = worldY - mouseY / this.scale
+
+            this.currentImage.style.transform = `scale(${this.scale})`
         }, 'canvas-layer-zoom')
 
         this.addEventListener('mouseup', () => {
@@ -183,8 +187,8 @@ export class CanvasLayer extends Component {
         const rawX = event.clientX
         const rawY = event.clientY
 
-        const snappedX = this.snap(rawX)
-        const snappedY = this.snap(rawY)
+        const snappedX = this.snap(rawX / this.scale) * this.scale
+        const snappedY = this.snap(rawY / this.scale) * this.scale
 
         this.mouseCoordinates.x = snappedX
         this.mouseCoordinates.y = snappedY
