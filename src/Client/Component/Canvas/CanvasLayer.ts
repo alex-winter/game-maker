@@ -174,11 +174,25 @@ export class CanvasLayer extends Component {
         )
     }
 
+    private isPlacementVisible(p: LoadedPlacement): boolean {
+        const viewLeft = this.viewCoordinates.x
+        const viewTop = this.viewCoordinates.y
+        const viewRight = viewLeft + this.getCanvas().width / this.scale
+        const viewBottom = viewTop + this.getCanvas().height / this.scale
+
+        return !(p.x + p.image.width < viewLeft ||
+            p.x > viewRight ||
+            p.y + p.image.height < viewTop ||
+            p.y > viewBottom)
+    }
+
     private frame(): void {
         setTimeout(() => {
-            this.getCtx().clearRect(0, 0, this.getCanvas().width, this.getCanvas().height)
+            const ctx = this.getCtx()
+            ctx.clearRect(0, 0, this.getCanvas().width, this.getCanvas().height)
 
-            this.loadedPlacements.forEach(this.drawPlacement.bind(this))
+            const visible = this.loadedPlacements.filter(this.isPlacementVisible.bind(this))
+            visible.forEach(this.drawPlacement.bind(this))
 
             window.requestAnimationFrame(this.frame.bind(this))
         }, 100)

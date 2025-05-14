@@ -131,10 +131,22 @@ class CanvasLayer extends Component_1.Component {
     drawPlacement(loadedPlacement) {
         this.getCtx().drawImage(loadedPlacement.image, (loadedPlacement.x - this.viewCoordinates.x) * this.scale, (loadedPlacement.y - this.viewCoordinates.y) * this.scale, loadedPlacement.image.width * this.scale, loadedPlacement.image.height * this.scale);
     }
+    isPlacementVisible(p) {
+        const viewLeft = this.viewCoordinates.x;
+        const viewTop = this.viewCoordinates.y;
+        const viewRight = viewLeft + this.getCanvas().width / this.scale;
+        const viewBottom = viewTop + this.getCanvas().height / this.scale;
+        return !(p.x + p.image.width < viewLeft ||
+            p.x > viewRight ||
+            p.y + p.image.height < viewTop ||
+            p.y > viewBottom);
+    }
     frame() {
         setTimeout(() => {
-            this.getCtx().clearRect(0, 0, this.getCanvas().width, this.getCanvas().height);
-            this.loadedPlacements.forEach(this.drawPlacement.bind(this));
+            const ctx = this.getCtx();
+            ctx.clearRect(0, 0, this.getCanvas().width, this.getCanvas().height);
+            const visible = this.loadedPlacements.filter(this.isPlacementVisible.bind(this));
+            visible.forEach(this.drawPlacement.bind(this));
             window.requestAnimationFrame(this.frame.bind(this));
         }, 100);
     }
