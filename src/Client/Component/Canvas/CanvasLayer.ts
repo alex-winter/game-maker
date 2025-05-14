@@ -139,8 +139,8 @@ export class CanvasLayer extends Component {
         const dx = movement.clientX - movement.lastMousePosition.x
         const dy = movement.clientY - movement.lastMousePosition.y
 
-        this.viewCoordinates.x -= dx
-        this.viewCoordinates.y -= dy
+        this.viewCoordinates.x -= dx / this.scale
+        this.viewCoordinates.y -= dy / this.scale
 
         this.lastMousePosition.x = movement.clientX
         this.lastMousePosition.y = movement.clientY
