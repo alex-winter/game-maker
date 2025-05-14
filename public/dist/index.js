@@ -25,6 +25,7 @@ class CanvasLayer extends Component_1.Component {
     isMoving = false;
     lastMousePosition = { x: 0, y: 0 };
     viewCoordinates = { x: 0, y: 0 };
+    scale = 1;
     css() {
         return /*css*/ `
             :host {
@@ -66,16 +67,38 @@ class CanvasLayer extends Component_1.Component {
         canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
         canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
         canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
+        canvas.addEventListener('wheel', this.handleWheelZoom.bind(this));
         canvas.classList.toggle('hide', !this.layer.is_visible);
         this.classList.toggle('active', this.layer.is_active);
         this.handleWindowResize(canvas);
         return canvas;
+    }
+    handleWheelZoom(event) {
+        event.preventDefault();
+        Events_1.Events.emit('canvas-layer-zoom', event);
     }
     afterBuild() {
         Events_1.Events.listen(() => this.handleWindowResize(), events_1.EVENTS.windowResize);
         Events_1.Events.listen(this.handleCurrentImageChange.bind(this), events_1.EVENTS.sheetSelectionMade);
         Events_1.Events.listen(this.handleLayerUpdate.bind(this), 'layer-update');
         Events_1.Events.listen(this.handleMovement.bind(this), 'moving-in-canvas');
+        Events_1.Events.listen((event) => {
+            const wheelEvent = event.detail;
+            const zoomIntensity = 0.1;
+            const mouseX = wheelEvent.clientX;
+            const mouseY = wheelEvent.clientY;
+            const worldX = this.viewCoordinates.x + mouseX / this.scale;
+            const worldY = this.viewCoordinates.y + mouseY / this.scale;
+            if (wheelEvent.deltaY < 0) {
+                this.scale *= (1 + zoomIntensity);
+            }
+            else {
+                this.scale *= (1 - zoomIntensity);
+            }
+            this.scale = Math.max(0.1, Math.min(this.scale, 5));
+            this.viewCoordinates.x = worldX - mouseX / this.scale;
+            this.viewCoordinates.y = worldY - mouseY / this.scale;
+        }, 'canvas-layer-zoom');
         this.addEventListener('mouseup', () => {
             this.isMoving = false;
         });
@@ -98,7 +121,7 @@ class CanvasLayer extends Component_1.Component {
         }
     }
     drawPlacement(loadedPlacement) {
-        this.getCtx().drawImage(loadedPlacement.image, loadedPlacement.x - this.viewCoordinates.x, loadedPlacement.y - this.viewCoordinates.y);
+        this.getCtx().drawImage(loadedPlacement.image, (loadedPlacement.x - this.viewCoordinates.x) * this.scale, (loadedPlacement.y - this.viewCoordinates.y) * this.scale, loadedPlacement.image.width * this.scale, loadedPlacement.image.height * this.scale);
     }
     frame() {
         setTimeout(() => {
@@ -135,8 +158,8 @@ class CanvasLayer extends Component_1.Component {
     async generatePlacement() {
         const placement = {
             coordinate: {
-                x: this.snap(this.mouseCoordinates.x) + this.viewCoordinates.x,
-                y: this.snap(this.mouseCoordinates.y) + this.viewCoordinates.y,
+                x: this.snap(this.mouseCoordinates.x / this.scale) + this.viewCoordinates.x,
+                y: this.snap(this.mouseCoordinates.y / this.scale) + this.viewCoordinates.y,
             },
             imageUuid: (await PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(this.currentImage.src)).uuid,
         };

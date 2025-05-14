@@ -32,6 +32,7 @@ export class CanvasLayer extends Component {
     private isMoving: boolean = false
     private lastMousePosition: Coordinate = { x: 0, y: 0 }
     private viewCoordinates: Coordinate = { x: 0, y: 0 }
+    private scale: number = 1
 
     protected css(): string {
         return /*css*/`
@@ -80,6 +81,7 @@ export class CanvasLayer extends Component {
         canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this))
         canvas.addEventListener('mousedown', this.handleMouseDown.bind(this))
         canvas.addEventListener('mousemove', this.handleMouseMove.bind(this))
+        canvas.addEventListener('wheel', this.handleWheelZoom.bind(this))
 
         canvas.classList.toggle('hide', !this.layer.is_visible)
         this.classList.toggle('active', this.layer.is_active)
@@ -89,11 +91,37 @@ export class CanvasLayer extends Component {
         return canvas
     }
 
+    private handleWheelZoom(event: WheelEvent): void {
+        event.preventDefault()
+
+        Events.emit('canvas-layer-zoom', event)
+    }
+
     protected afterBuild(): void {
         Events.listen(() => this.handleWindowResize(), EVENTS.windowResize)
         Events.listen(this.handleCurrentImageChange.bind(this), EVENTS.sheetSelectionMade)
         Events.listen(this.handleLayerUpdate.bind(this), 'layer-update')
         Events.listen(this.handleMovement.bind(this), 'moving-in-canvas')
+        Events.listen((event: CustomEvent) => {
+            const wheelEvent = event.detail as WheelEvent
+            const zoomIntensity = 0.1
+            const mouseX = wheelEvent.clientX
+            const mouseY = wheelEvent.clientY
+
+            const worldX = this.viewCoordinates.x + mouseX / this.scale
+            const worldY = this.viewCoordinates.y + mouseY / this.scale
+
+            if (wheelEvent.deltaY < 0) {
+                this.scale *= (1 + zoomIntensity)
+            } else {
+                this.scale *= (1 - zoomIntensity)
+            }
+
+            this.scale = Math.max(0.1, Math.min(this.scale, 5))
+
+            this.viewCoordinates.x = worldX - mouseX / this.scale
+            this.viewCoordinates.y = worldY - mouseY / this.scale
+        }, 'canvas-layer-zoom')
 
         this.addEventListener('mouseup', () => {
             this.isMoving = false
@@ -130,8 +158,10 @@ export class CanvasLayer extends Component {
     private drawPlacement(loadedPlacement: LoadedPlacement): void {
         this.getCtx().drawImage(
             loadedPlacement.image,
-            loadedPlacement.x - this.viewCoordinates.x,
-            loadedPlacement.y - this.viewCoordinates.y,
+            (loadedPlacement.x - this.viewCoordinates.x) * this.scale,
+            (loadedPlacement.y - this.viewCoordinates.y) * this.scale,
+            loadedPlacement.image.width * this.scale,
+            loadedPlacement.image.height * this.scale,
         )
     }
 
@@ -180,8 +210,8 @@ export class CanvasLayer extends Component {
     private async generatePlacement(): Promise<void> {
         const placement: Placement = {
             coordinate: {
-                x: this.snap(this.mouseCoordinates.x) + this.viewCoordinates.x,
-                y: this.snap(this.mouseCoordinates.y) + this.viewCoordinates.y,
+                x: this.snap(this.mouseCoordinates.x / this.scale) + this.viewCoordinates.x,
+                y: this.snap(this.mouseCoordinates.y / this.scale) + this.viewCoordinates.y,
             },
             imageUuid: (await placementImageRepository.findOrCreateBySrc(this.currentImage.src)).uuid,
         }
