@@ -126,6 +126,11 @@ export class CanvasLayer extends Component {
 
             this.currentImage.style.transform = `scale(${this.scale})`
         }, 'canvas-layer-zoom')
+        Events.listen((event: CustomEvent) => {
+            if (this.layer.uuid === event.detail as string) {
+                this.destroy()
+            }
+        }, 'layer-deleted')
 
         this.addEventListener('mouseup', () => {
             this.isMoving = false

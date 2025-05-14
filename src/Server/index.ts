@@ -88,17 +88,14 @@ app.post('/layers', (req: Request, res: Response) => {
   const updated = [...existing, ...req.body]
   writeJson(layersJsonFileDir, updated)
 
-  res.json({ ok: true })
+  res.json({ ok: true, message: 'posted ok' })
 })
 
 // @ts-ignore
 app.patch('/layers', (req: Request, res: Response) => {
   const updatedLayer = req.body as Layer
-  console.log(updatedLayer)
   const layers = readJson<Layer[]>(layersJsonFileDir)
-  console.log(layers)
   const layer = layers.find(l => l.uuid === updatedLayer.uuid)
-  console.log(layer)
 
   if (!layer) {
     return res.status(404).json({ error: 'Layer not found' })
@@ -139,8 +136,20 @@ app.get('/placement-images', (_, response: Response) => {
   response.json(readJson(placementImagesJsonFileDir))
 })
 
-app.delete('/layers/:uuid', (_, response: Response) => {
-  response.json({ ok: true })
+// @ts-ignore
+app.delete('/layers/:uuid', (request: Request, response: Response) => {
+  const { uuid } = request.params
+  const layers = readJson<Layer[]>(layersJsonFileDir)
+  const index = layers.findIndex(layer => layer.uuid === uuid)
+
+  if (index === -1) {
+    return response.status(404).json({ error: 'Layer not found' })
+  }
+
+  layers.splice(index, 1)
+  writeJson(layersJsonFileDir, layers)
+
+  response.json({ ok: true, deletedUuid: uuid })
 })
 
 app.listen(PORT, () => {

@@ -102,6 +102,11 @@ class CanvasLayer extends Component_1.Component {
             this.viewCoordinates.y = worldY - mouseY / this.scale;
             this.currentImage.style.transform = `scale(${this.scale})`;
         }, 'canvas-layer-zoom');
+        Events_1.Events.listen((event) => {
+            if (this.layer.uuid === event.detail) {
+                this.destroy();
+            }
+        }, 'layer-deleted');
         this.addEventListener('mouseup', () => {
             this.isMoving = false;
         });
