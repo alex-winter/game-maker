@@ -206,16 +206,22 @@ export class CanvasLayer extends Component {
         const rawX = event.clientX
         const rawY = event.clientY
 
-        const snappedX = this.snap(rawX / this.scale) * this.scale
-        const snappedY = this.snap(rawY / this.scale) * this.scale
+        const worldX = this.viewCoordinates.x + rawX / this.scale
+        const worldY = this.viewCoordinates.y + rawY / this.scale
 
-        this.mouseCoordinates.x = snappedX
-        this.mouseCoordinates.y = snappedY
+        const snappedWorldX = this.snap(worldX)
+        const snappedWorldY = this.snap(worldY)
+
+        const screenX = (snappedWorldX - this.viewCoordinates.x) * this.scale
+        const screenY = (snappedWorldY - this.viewCoordinates.y) * this.scale
+
+        this.mouseCoordinates.x = snappedWorldX
+        this.mouseCoordinates.y = snappedWorldY
 
         if (this.currentImage) {
             this.currentImage.classList.remove('hide')
-            this.currentImage.style.left = snappedX + 'px'
-            this.currentImage.style.top = snappedY + 'px'
+            this.currentImage.style.left = screenX + 'px'
+            this.currentImage.style.top = screenY + 'px'
         }
 
         if (this.isMoving) {
@@ -230,19 +236,18 @@ export class CanvasLayer extends Component {
         }
     }
 
+
     private async generatePlacement(): Promise<void> {
         const placement: Placement = {
             coordinate: {
-                x: this.snap(this.mouseCoordinates.x / this.scale) + this.viewCoordinates.x,
-                y: this.snap(this.mouseCoordinates.y / this.scale) + this.viewCoordinates.y,
+                x: this.mouseCoordinates.x,
+                y: this.mouseCoordinates.y,
             },
             imageUuid: (await placementImageRepository.findOrCreateBySrc(this.currentImage.src)).uuid,
         }
-        const lastPlacement = this.layer.placements[this.layer.placements.length - 1]
 
-        if (JSON.stringify(lastPlacement) === JSON.stringify(placement)) {
-            return
-        }
+        const lastPlacement = this.layer.placements[this.layer.placements.length - 1]
+        if (JSON.stringify(lastPlacement) === JSON.stringify(placement)) return
 
         this.layer.placements.push(placement)
         this.loadPlacement(placement)
