@@ -79,6 +79,14 @@ export class Dom {
         })
     }
 
+    public static i(...classList: string[]): HTMLElement {
+        const element = document.createElement('i')
+
+        element.classList.add(...classList)
+
+        return element
+    }
+
     public static makeComponent(
         component: CustomElementConstructor,
         dataset: { [key: string]: string | any[] | Object } = {},

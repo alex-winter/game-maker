@@ -58,25 +58,28 @@ export class LayerItem extends Component {
         const name = Dom.div()
         const options = Dom.div('options')
         this.visibleButton = Dom.button()
-        const eyeIcon = document.createElement('i')
+        const eyeIcon = Dom.i('fa-solid')
         const deleteButton = Dom.button()
-        const trashIcon = document.createElement('i')
+        const trashIcon = Dom.i('fa-solid', 'fa-trash')
+        const collisionIcon = Dom.i('fa-solid', 'fa-road-barrier')
 
-        name.innerText = this.layer.name
+        if (this.layer.type === 'collision') {
+            name.append(collisionIcon)
+        }
 
-        eyeIcon.classList.add('fa-solid', this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash')
+        name.append(
+            document.createTextNode(this.layer.name)
+        )
 
-        trashIcon.classList.add('fa-solid', 'fa-trash')
+        eyeIcon.classList.add(this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash')
 
         this.container.classList.toggle('active', this.layer.is_active)
 
         this.container.classList.toggle('collision-layer', this.layer.type === 'collision')
 
-
         this.container.addEventListener('click', this.handleContainerClick)
         this.visibleButton.addEventListener('click', this.handleVisibleButtonClick)
         deleteButton.addEventListener('click', this.handleClickDelete)
-
 
         deleteButton.append(trashIcon)
         this.visibleButton.append(eyeIcon)

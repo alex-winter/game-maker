@@ -489,12 +489,15 @@ class LayerItem extends Component_1.Component {
         const name = Dom_1.Dom.div();
         const options = Dom_1.Dom.div('options');
         this.visibleButton = Dom_1.Dom.button();
-        const eyeIcon = document.createElement('i');
+        const eyeIcon = Dom_1.Dom.i('fa-solid');
         const deleteButton = Dom_1.Dom.button();
-        const trashIcon = document.createElement('i');
-        name.innerText = this.layer.name;
-        eyeIcon.classList.add('fa-solid', this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash');
-        trashIcon.classList.add('fa-solid', 'fa-trash');
+        const trashIcon = Dom_1.Dom.i('fa-solid', 'fa-trash');
+        const collisionIcon = Dom_1.Dom.i('fa-solid', 'fa-road-barrier');
+        if (this.layer.type === 'collision') {
+            name.append(collisionIcon);
+        }
+        name.append(document.createTextNode(this.layer.name));
+        eyeIcon.classList.add(this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash');
         this.container.classList.toggle('active', this.layer.is_active);
         this.container.classList.toggle('collision-layer', this.layer.type === 'collision');
         this.container.addEventListener('click', this.handleContainerClick);
@@ -1287,6 +1290,11 @@ class Dom {
             image.addEventListener('load', () => resolve(image));
             image.addEventListener('abort', () => reject());
         });
+    }
+    static i(...classList) {
+        const element = document.createElement('i');
+        element.classList.add(...classList);
+        return element;
     }
     static makeComponent(component, dataset = {}) {
         const tag = this.findComponentTag(component);
