@@ -467,6 +467,10 @@ class LayerItem extends Component_1.Component {
                 flex: 1;
             }
 
+            .container.collision-layer {
+                background: #eb4d4b;
+            }
+
             .options {
                 display: flex;
                 justify-content: end;
@@ -481,7 +485,6 @@ class LayerItem extends Component_1.Component {
         this.layer = this.parameters.layer;
     }
     build() {
-        console.log('built');
         this.container = Dom_1.Dom.div('container');
         const name = Dom_1.Dom.div();
         const options = Dom_1.Dom.div('options');
@@ -493,6 +496,7 @@ class LayerItem extends Component_1.Component {
         eyeIcon.classList.add('fa-solid', this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash');
         trashIcon.classList.add('fa-solid', 'fa-trash');
         this.container.classList.toggle('active', this.layer.is_active);
+        this.container.classList.toggle('collision-layer', this.layer.type === 'collision');
         this.container.addEventListener('click', this.handleContainerClick);
         this.visibleButton.addEventListener('click', this.handleVisibleButtonClick);
         deleteButton.addEventListener('click', this.handleClickDelete);

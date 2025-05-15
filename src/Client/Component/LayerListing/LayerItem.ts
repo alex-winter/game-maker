@@ -34,6 +34,10 @@ export class LayerItem extends Component {
                 flex: 1;
             }
 
+            .container.collision-layer {
+                background: #eb4d4b;
+            }
+
             .options {
                 display: flex;
                 justify-content: end;
@@ -50,8 +54,6 @@ export class LayerItem extends Component {
     }
 
     protected build(): HTMLElement {
-        console.log('built')
-
         this.container = Dom.div('container')
         const name = Dom.div()
         const options = Dom.div('options')
@@ -67,6 +69,8 @@ export class LayerItem extends Component {
         trashIcon.classList.add('fa-solid', 'fa-trash')
 
         this.container.classList.toggle('active', this.layer.is_active)
+
+        this.container.classList.toggle('collision-layer', this.layer.type === 'collision')
 
 
         this.container.addEventListener('click', this.handleContainerClick)
