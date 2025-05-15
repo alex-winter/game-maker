@@ -8,7 +8,13 @@ export interface PlacementImage {
 
 }
 
-export interface Placement {
+export interface CollisionPlacement {
+
+    coordinate: Coordinate
+
+}
+
+export interface ImagePlacement {
 
     coordinate: Coordinate
 

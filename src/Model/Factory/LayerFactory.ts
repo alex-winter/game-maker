@@ -5,6 +5,8 @@ export class LayerFactory {
         return {
             uuid: crypto.randomUUID(),
 
+            type: 'image',
+
             name: '',
 
             created_at: new Date().toISOString(),

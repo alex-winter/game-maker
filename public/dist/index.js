@@ -572,11 +572,13 @@ exports.LayerListing = LayerListing;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NewLayerForm = void 0;
 const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
+const layers_1 = __webpack_require__(/*! Client/Constants/layers */ "./src/Client/Constants/layers.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class NewLayerForm extends Component_1.Component {
     name = '';
+    type = layers_1.LAYERS.defaultType;
     css() {
         return /*css*/ `
             .form-container {
@@ -621,13 +623,24 @@ class NewLayerForm extends Component_1.Component {
         submitButton.addEventListener('click', this.handleSubmit.bind(this));
         formGroup.appendChild(label);
         formGroup.appendChild(input);
-        container.append(formGroup, submitButton);
+        const layerTypeOptions = document.createElement('select');
+        layers_1.LAYERS.types.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type;
+            option.innerText = type.toUpperCase();
+            layerTypeOptions.append(option);
+        });
+        layerTypeOptions.addEventListener('change', () => {
+            this.type = layerTypeOptions.value;
+        });
+        container.append(formGroup, layerTypeOptions, submitButton);
         return container;
     }
     handleSubmit() {
         Events_1.Events.emit(events_1.EVENTS.closeModal, this);
         Events_1.Events.emit(events_1.EVENTS.newLayerSubmit, {
             name: this.name,
+            type: this.type,
         });
     }
 }
@@ -1089,6 +1102,26 @@ exports.EVENTS = {
     sheetSelectionMade: 'sheet-selection-made',
     windowResize: 'window-resize',
     layerPlacementMade: 'layer-placement-made',
+};
+
+
+/***/ }),
+
+/***/ "./src/Client/Constants/layers.ts":
+/*!****************************************!*\
+  !*** ./src/Client/Constants/layers.ts ***!
+  \****************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.LAYERS = void 0;
+exports.LAYERS = {
+    defaultType: 'image',
+    types: [
+        'image',
+        'collision',
+    ]
 };
 
 
@@ -1745,6 +1778,7 @@ class LayerFactory {
     static make() {
         return {
             uuid: crypto.randomUUID(),
+            type: 'image',
             name: '',
             created_at: new Date().toISOString(),
             is_visible: true,

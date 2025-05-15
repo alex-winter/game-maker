@@ -1,4 +1,5 @@
 import { EVENTS } from 'Client/Constants/events'
+import { LAYERS } from 'Client/Constants/layers'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
@@ -6,6 +7,7 @@ import { Events } from 'Client/Service/Events'
 export class NewLayerForm extends Component {
 
     private name: string = ''
+    private type: string = LAYERS.defaultType
 
     protected css(): string {
         return /*css*/`
@@ -56,8 +58,22 @@ export class NewLayerForm extends Component {
         formGroup.appendChild(label)
         formGroup.appendChild(input)
 
+        const layerTypeOptions = document.createElement('select')
+
+        LAYERS.types.forEach(type => {
+            const option = document.createElement('option')
+            option.value = type
+            option.innerText = type.toUpperCase()
+            layerTypeOptions.append(option)
+        })
+
+        layerTypeOptions.addEventListener('change', () => {
+            this.type = layerTypeOptions.value
+        })
+
         container.append(
             formGroup,
+            layerTypeOptions,
             submitButton,
         )
 
@@ -73,6 +89,7 @@ export class NewLayerForm extends Component {
             EVENTS.newLayerSubmit,
             {
                 name: this.name,
+                type: this.type,
             }
         )
     }

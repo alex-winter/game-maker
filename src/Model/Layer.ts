@@ -1,7 +1,9 @@
-import { Placement } from 'Client/Model/Placement'
+import { CollisionPlacement, ImagePlacement } from 'Client/Model/Placement'
 
-export interface Layer {
+interface BaseLayer {
     uuid: string
+
+    type: string
 
     name: string
 
@@ -10,6 +12,16 @@ export interface Layer {
     is_visible: boolean
 
     is_active: boolean
+}
 
-    placements: Placement[]
+export interface Layer extends BaseLayer {
+
+    placements: ImagePlacement[]
+
+}
+
+export interface CollisionsLayer extends BaseLayer {
+
+    placements: CollisionPlacement[]
+
 }

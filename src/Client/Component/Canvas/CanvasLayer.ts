@@ -1,7 +1,7 @@
 import { EVENTS } from 'Client/Constants/events'
 import { LEFT_BUTTON, MIDDLE_BUTTON } from 'Client/Constants/mouse-events'
 import { Coordinate } from 'Client/Model/Coordinate'
-import { Placement } from 'Client/Model/Placement'
+import { ImagePlacement } from 'Client/Model/Placement'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
@@ -61,7 +61,7 @@ export class CanvasLayer extends Component {
         `
     }
 
-    private async loadPlacement(placement: Placement): Promise<void> {
+    private async loadPlacement(placement: ImagePlacement): Promise<void> {
         const image = (await placementImageRepository.getByUuid(placement.imageUuid))!
 
         this.loadedPlacements.push({
@@ -238,7 +238,7 @@ export class CanvasLayer extends Component {
 
 
     private async generatePlacement(): Promise<void> {
-        const placement: Placement = {
+        const placement: ImagePlacement = {
             coordinate: {
                 x: this.mouseCoordinates.x,
                 y: this.mouseCoordinates.y,
