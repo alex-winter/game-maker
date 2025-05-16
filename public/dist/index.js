@@ -1635,6 +1635,30 @@ exports.SheetRepository = SheetRepository;
 
 /***/ }),
 
+/***/ "./src/Client/Service/Repository/UserDataRepository.ts":
+/*!*************************************************************!*\
+  !*** ./src/Client/Service/Repository/UserDataRepository.ts ***!
+  \*************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.UserDataRepsitory = void 0;
+const Repository_1 = __webpack_require__(/*! Client/Service/Repository/Repository */ "./src/Client/Service/Repository/Repository.ts");
+class UserDataRepsitory extends Repository_1.Repository {
+    API_PATH = '/user-data';
+    async persist(userData) {
+        await this.patch(this.API_PATH, userData);
+    }
+    async getAll() {
+        return await this.get(this.API_PATH);
+    }
+}
+exports.UserDataRepsitory = UserDataRepsitory;
+
+
+/***/ }),
+
 /***/ "./src/Client/Service/WindowBoxFactory.ts":
 /*!************************************************!*\
   !*** ./src/Client/Service/WindowBoxFactory.ts ***!
@@ -1920,6 +1944,7 @@ const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/Laye
 const CanvasLayer_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasLayer */ "./src/Client/Component/Canvas/CanvasLayer.ts");
 const SheetRepository_1 = __webpack_require__(/*! Client/Service/Repository/SheetRepository */ "./src/Client/Service/Repository/SheetRepository.ts");
 const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Repository/PlacementImageRepository */ "./src/Client/Service/Repository/PlacementImageRepository.ts");
+const UserDataRepository_1 = __webpack_require__(/*! Client/Service/Repository/UserDataRepository */ "./src/Client/Service/Repository/UserDataRepository.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
@@ -1927,6 +1952,7 @@ let openSheets = [];
 let windowBoxes = {};
 const layerRepository = new LayerRepository_1.LayerRepository();
 const sheetRepository = new SheetRepository_1.SheetRepository();
+const userDataRepository = new UserDataRepository_1.UserDataRepsitory();
 document.addEventListener('DOMContentLoaded', () => {
     Events_1.Events.listenToFilesUploadSubmitted(files => {
         FileUpload_1.FileUpload.uploadMultiple(files);

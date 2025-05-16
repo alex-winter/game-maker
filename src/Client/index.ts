@@ -18,6 +18,7 @@ import { Layer } from 'Model/Layer'
 import { CanvasLayer } from 'Client/Component/Canvas/CanvasLayer'
 import { SheetRepository } from 'Client/Service/Repository/SheetRepository'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
+import { UserDataRepsitory } from 'Client/Service/Repository/UserDataRepository'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -29,6 +30,7 @@ let windowBoxes: { [key: string]: WindowBox } = {}
 
 const layerRepository = new LayerRepository()
 const sheetRepository = new SheetRepository()
+const userDataRepository = new UserDataRepsitory()
 
 document.addEventListener('DOMContentLoaded', () => {
     Events.listenToFilesUploadSubmitted(files => {

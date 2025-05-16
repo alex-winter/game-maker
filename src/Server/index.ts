@@ -127,10 +127,16 @@ app.post('/upload-files', upload.array('files[]'), (req, res) => {
   })
 })
 
-app.post('/user-data', (request: Request, response: Response) => {
+app.get('/user-data', (_, response: Response) => {
+  response.json(readJson(userDataFileDir))
+})
+
+app.patch('/user-data', (request: Request, response: Response) => {
   const body = request.body as UserData
 
   writeJson(userDataFileDir, body)
+
+  response.json({ ok: true })
 })
 
 app.post('/placement-images', (request: Request, response: Response) => {
