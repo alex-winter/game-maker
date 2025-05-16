@@ -167,6 +167,8 @@ document.addEventListener('DOMContentLoaded', () => {
         EVENTS.getSheets
     )
 
+    userDataRepository.getAll()
+
     window.addEventListener('resize', () => Events.emit(EVENTS.windowResize))
 })
 

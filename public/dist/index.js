@@ -2038,6 +2038,7 @@ document.addEventListener('DOMContentLoaded', () => {
     Events_1.Events.listen(event => {
         getSheets();
     }, events_1.EVENTS.getSheets);
+    userDataRepository.getAll();
     window.addEventListener('resize', () => Events_1.Events.emit(events_1.EVENTS.windowResize));
 });
 
