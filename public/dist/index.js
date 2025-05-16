@@ -1647,11 +1647,16 @@ exports.UserDataRepsitory = void 0;
 const Repository_1 = __webpack_require__(/*! Client/Service/Repository/Repository */ "./src/Client/Service/Repository/Repository.ts");
 class UserDataRepsitory extends Repository_1.Repository {
     API_PATH = '/user-data';
+    data;
     async persist(userData) {
+        this.data = userData;
         await this.patch(this.API_PATH, userData);
     }
     async getAll() {
-        return await this.get(this.API_PATH);
+        if (!this.data) {
+            this.data = await this.get(this.API_PATH);
+        }
+        return this.data;
     }
 }
 exports.UserDataRepsitory = UserDataRepsitory;
