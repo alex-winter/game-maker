@@ -4,6 +4,11 @@ import { Dom } from 'Client/Service/Dom'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { Coordinate } from 'Client/Model/Coordinate'
+import { LAYERS } from 'Client/Constants/layers'
+
+interface GamePlacement extends LoadedPlacement {
+    type: string
+}
 
 const layerRepository = new LayerRepository()
 
@@ -23,19 +28,24 @@ const keys = {
 
 function renderLayers(
     ctx: CanvasRenderingContext2D,
-    loadedPlacements: LoadedPlacement[],
+    loadedPlacements: GamePlacement[],
     width: number,
     height: number,
 ): void {
     ctx.clearRect(0, 0, width, height)
 
     loadedPlacements.forEach(loadedPlacement => {
+        const dx: number = loadedPlacement.type === LAYERS.typePlayerControlled ? loadedPlacement.x : loadedPlacement.x - viewCoordinates.x
+        const dy: number = loadedPlacement.type === LAYERS.typePlayerControlled ? loadedPlacement.y : loadedPlacement.y - viewCoordinates.y
+        const dWidth: number = loadedPlacement.image.width
+        const dHeight: number = loadedPlacement.image.height
+
         ctx.drawImage(
             loadedPlacement.image,
-            (loadedPlacement.x - viewCoordinates.x),
-            (loadedPlacement.y - viewCoordinates.y),
-            loadedPlacement.image.width,
-            loadedPlacement.image.height,
+            dx,
+            dy,
+            dWidth,
+            dHeight,
         )
     })
 
@@ -44,7 +54,7 @@ function renderLayers(
 
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const loadedPlacements: LoadedPlacement[] = []
+    const loadedPlacements: GamePlacement[] = []
 
     const canvas = document.querySelector('canvas')!
     const ctx = canvas.getContext('2d')!
@@ -71,6 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ),
                 x: placement.coordinate.x,
                 y: placement.coordinate.y,
+                type: layer.type,
             })
         })
     })
