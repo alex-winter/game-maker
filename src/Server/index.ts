@@ -5,6 +5,7 @@ import fs from 'fs'
 import { UserData } from 'Model/UserData'
 import { PlacementImage } from 'Client/Model/Placement'
 import { Layer } from 'Model/Layer'
+import { UserDataFactory } from 'Model/Factory/UserDataFactory'
 
 const app = express()
 const PORT = 3000
@@ -13,6 +14,7 @@ const publicDir = path.join(__dirname, '/../public')
 const uploadsDir = __dirname + '/../uploads/'
 const layersJsonFileDir = __dirname + '/../data/layers.json'
 const placementImagesJsonFileDir = __dirname + '/../data/placement-images.json'
+const userDataFileDir = __dirname + '/../data/user-data.json'
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -39,6 +41,9 @@ if (!fs.existsSync(layersJsonFileDir)) {
 }
 if (!fs.existsSync(placementImagesJsonFileDir)) {
   writeJson(placementImagesJsonFileDir, [])
+}
+if (!fs.existsSync(userDataFileDir)) {
+  writeJson(userDataFileDir, UserDataFactory.make())
 }
 
 app.use(express.static(publicDir))
@@ -124,6 +129,8 @@ app.post('/upload-files', upload.array('files[]'), (req, res) => {
 
 app.post('/user-data', (request: Request, response: Response) => {
   const body = request.body as UserData
+
+  writeJson(userDataFileDir, body)
 })
 
 app.post('/placement-images', (request: Request, response: Response) => {

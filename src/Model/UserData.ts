@@ -1,11 +1,11 @@
-import { Coordinate } from 'Client/Model/Coordinate'
+import { Coordinate as Coordinates } from 'Client/Model/Coordinate'
 import { Component } from 'Client/Service/Component'
 
 interface UserDataWindow {
 
     name: string
 
-    position: Coordinate
+    position: Coordinates
 
     width: number
 
@@ -17,6 +17,6 @@ interface UserDataWindow {
 
 export interface UserData {
 
-    windows: UserDataWindow[]
+    lastViewPosition: Coordinates
 
 }
