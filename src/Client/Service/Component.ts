@@ -82,4 +82,8 @@ export abstract class Component extends HTMLElement {
                 this.afterBuild()
             })
     }
+
+    protected findOne(query: string): HTMLElement | null {
+        return this.shadow.querySelector(query)
+    }
 }

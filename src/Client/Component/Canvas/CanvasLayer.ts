@@ -1,10 +1,12 @@
 import { EVENTS } from 'Client/Constants/events'
+import { LAYERS } from 'Client/Constants/layers'
 import { LEFT_BUTTON, MIDDLE_BUTTON } from 'Client/Constants/mouse-events'
 import { Coordinate } from 'Client/Model/Coordinate'
 import { ImagePlacement } from 'Client/Model/Placement'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
+import { generateImageDataURL } from 'Client/Service/generate-image'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { Layer } from 'Model/Layer'
 
@@ -33,6 +35,7 @@ export class CanvasLayer extends Component {
     private lastMousePosition: Coordinate = { x: 0, y: 0 }
     private viewCoordinates: Coordinate = { x: 0, y: 0 }
     private scale: number = 1
+    private isCollisionLayer: boolean = false
 
     protected css(): string {
         return /*css*/`
@@ -51,7 +54,6 @@ export class CanvasLayer extends Component {
             .current-image {
                 position: fixed;
                 pointer-events: none;
-                transform-origin: top left;
                 z-index: 510;
             }
 
@@ -73,11 +75,18 @@ export class CanvasLayer extends Component {
 
     protected async setup(): Promise<void> {
         this.layer = this.parameters.layer
+        this.isCollisionLayer = this.layer.type === LAYERS.typeCollision
+
+        if (this.isCollisionLayer) {
+            console.log('loading collection layer image')
+            this.currentImage = await Dom.image(generateImageDataURL(16, 16, { r: 255, g: 0, b: 0, a: 0.3 }))
+        }
 
         this.layer.placements.forEach(this.loadPlacement.bind(this))
     }
 
     protected build(): HTMLElement {
+        const container = Dom.div('container')
         const canvas = Dom.canvas()
 
         canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this))
@@ -88,9 +97,17 @@ export class CanvasLayer extends Component {
         canvas.classList.toggle('hide', !this.layer.is_visible)
         this.classList.toggle('active', this.layer.is_active)
 
+        if (this.isCollisionLayer) {
+            console.log('appending image to container')
+            container.append(this.currentImage)
+            this.currentImage.classList.add('current-image')
+        }
+
         this.handleWindowResize(canvas)
 
-        return canvas
+        container.append(canvas)
+
+        return container
     }
 
     private handleWheelZoom(event: WheelEvent): void {
@@ -219,6 +236,7 @@ export class CanvasLayer extends Component {
         this.mouseCoordinates.y = snappedWorldY
 
         if (this.currentImage) {
+            console.log('moving')
             this.currentImage.classList.remove('hide')
             this.currentImage.style.left = screenX + 'px'
             this.currentImage.style.top = screenY + 'px'
@@ -288,7 +306,7 @@ export class CanvasLayer extends Component {
             this.currentImage.src = newImage.src
         } else {
             this.currentImage = newImage.cloneNode() as HTMLImageElement
-            this.shadowRoot!.append(this.currentImage)
+            this.findOne('.container')?.append(this.currentImage)
             this.currentImage.classList.add('current-image')
         }
     }

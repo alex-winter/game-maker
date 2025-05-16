@@ -12,10 +12,12 @@
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CanvasLayer = void 0;
 const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
+const layers_1 = __webpack_require__(/*! Client/Constants/layers */ "./src/Client/Constants/layers.ts");
 const mouse_events_1 = __webpack_require__(/*! Client/Constants/mouse-events */ "./src/Client/Constants/mouse-events.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
+const generate_image_1 = __webpack_require__(/*! Client/Service/generate-image */ "./src/Client/Service/generate-image.ts");
 const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Repository/PlacementImageRepository */ "./src/Client/Service/Repository/PlacementImageRepository.ts");
 class CanvasLayer extends Component_1.Component {
     currentImage;
@@ -26,6 +28,7 @@ class CanvasLayer extends Component_1.Component {
     lastMousePosition = { x: 0, y: 0 };
     viewCoordinates = { x: 0, y: 0 };
     scale = 1;
+    isCollisionLayer = false;
     css() {
         return /*css*/ `
             :host {
@@ -43,7 +46,6 @@ class CanvasLayer extends Component_1.Component {
             .current-image {
                 position: fixed;
                 pointer-events: none;
-                transform-origin: top left;
                 z-index: 510;
             }
 
@@ -62,9 +64,15 @@ class CanvasLayer extends Component_1.Component {
     }
     async setup() {
         this.layer = this.parameters.layer;
+        this.isCollisionLayer = this.layer.type === layers_1.LAYERS.typeCollision;
+        if (this.isCollisionLayer) {
+            console.log('loading collection layer image');
+            this.currentImage = await Dom_1.Dom.image((0, generate_image_1.generateImageDataURL)(16, 16, { r: 255, g: 0, b: 0, a: 0.3 }));
+        }
         this.layer.placements.forEach(this.loadPlacement.bind(this));
     }
     build() {
+        const container = Dom_1.Dom.div('container');
         const canvas = Dom_1.Dom.canvas();
         canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
         canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
@@ -72,8 +80,14 @@ class CanvasLayer extends Component_1.Component {
         canvas.addEventListener('wheel', this.handleWheelZoom.bind(this));
         canvas.classList.toggle('hide', !this.layer.is_visible);
         this.classList.toggle('active', this.layer.is_active);
+        if (this.isCollisionLayer) {
+            console.log('appending image to container');
+            container.append(this.currentImage);
+            this.currentImage.classList.add('current-image');
+        }
         this.handleWindowResize(canvas);
-        return canvas;
+        container.append(canvas);
+        return container;
     }
     handleWheelZoom(event) {
         event.preventDefault();
@@ -165,6 +179,7 @@ class CanvasLayer extends Component_1.Component {
         this.mouseCoordinates.x = snappedWorldX;
         this.mouseCoordinates.y = snappedWorldY;
         if (this.currentImage) {
+            console.log('moving');
             this.currentImage.classList.remove('hide');
             this.currentImage.style.left = screenX + 'px';
             this.currentImage.style.top = screenY + 'px';
@@ -222,7 +237,7 @@ class CanvasLayer extends Component_1.Component {
         }
         else {
             this.currentImage = newImage.cloneNode();
-            this.shadowRoot.append(this.currentImage);
+            this.findOne('.container')?.append(this.currentImage);
             this.currentImage.classList.add('current-image');
         }
     }
@@ -1123,11 +1138,14 @@ exports.EVENTS = {
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.LAYERS = void 0;
+const TYPE_IMAGE = 'image';
+const TYPE_COLLISION = 'collision';
 exports.LAYERS = {
-    defaultType: 'image',
+    defaultType: TYPE_IMAGE,
+    typeCollision: TYPE_COLLISION,
     types: [
-        'image',
-        'collision',
+        TYPE_IMAGE,
+        TYPE_COLLISION,
     ]
 };
 
@@ -1219,6 +1237,9 @@ class Component extends HTMLElement {
             .then(() => {
             this.afterBuild();
         });
+    }
+    findOne(query) {
+        return this.shadow.querySelector(query);
     }
 }
 exports.Component = Component;
@@ -1662,6 +1683,32 @@ async function extractImageFromCanvasArea(sourceCanvas, x, y, width, height) {
     return await Dom_1.Dom.image(tempCanvas.toDataURL());
 }
 exports.extractImageFromCanvasArea = extractImageFromCanvasArea;
+
+
+/***/ }),
+
+/***/ "./src/Client/Service/generate-image.ts":
+/*!**********************************************!*\
+  !*** ./src/Client/Service/generate-image.ts ***!
+  \**********************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generateImageDataURL = void 0;
+function generateImageDataURL(width, height, color) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx)
+        throw new Error('Unable to get canvas context');
+    ctx.fillStyle = `rgba(${color.r},${color.g},${color.b},${color.a})`;
+    ctx.fillRect(0, 0, width, height);
+    const dataURL = canvas.toDataURL('image/png');
+    return dataURL;
+}
+exports.generateImageDataURL = generateImageDataURL;
 
 
 /***/ }),

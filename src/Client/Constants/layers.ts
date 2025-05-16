@@ -1,11 +1,16 @@
+const TYPE_IMAGE = 'image'
+const TYPE_COLLISION = 'collision'
+
 export const LAYERS = {
 
-    defaultType: 'image',
+    defaultType: TYPE_IMAGE,
+
+    typeCollision: TYPE_COLLISION,
 
     types: [
-        'image',
+        TYPE_IMAGE,
 
-        'collision',
+        TYPE_COLLISION,
     ]
 
 }
