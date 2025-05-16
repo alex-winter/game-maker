@@ -1,9 +1,9 @@
 import 'Client/styles.css'
+
 import { COMPONENTS } from 'Client/Constants/components'
 import { Events } from 'Client/Service/Events'
 import { FileUpload } from 'Client/Service/FileUpload'
 import { Dom } from 'Client/Service/Dom'
-import { fileToBase64 } from 'Client/Service/fileToBase64'
 import { WindowBox } from 'Client/Component/WindowBox/WindowBox'
 import { WindowBoxFactory } from 'Client/Service/WindowBoxFactory'
 import { SheetImporter } from 'Client/Component/SpriteSheets/SheetImporter/SheetImporter'
@@ -164,7 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         EVENTS.getSheets
     )
-
 
     window.addEventListener('resize', () => Events.emit(EVENTS.windowResize))
 })

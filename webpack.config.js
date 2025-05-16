@@ -4,7 +4,10 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 module.exports = {
     mode: 'development',
 
-    entry: './src/Client/index.ts',
+    entry: {
+        index: './src/Client/index.ts',
+        play: './src/Client/play.ts',
+    },
 
     module: {
         rules: [
@@ -39,8 +42,8 @@ module.exports = {
     },
 
     output: {
-        filename: 'index.js',
-        chunkFilename: 'index.js',
+        filename: '[name].js',
+        chunkFilename: '[name].js',
         path: path.resolve(__dirname, 'public', 'dist'),
         clean: true,
     },
@@ -49,7 +52,7 @@ module.exports = {
 
     plugins: [
         new MiniCssExtractPlugin({
-            filename: 'styles.css',
+            filename: '[name].css',
         }),
     ],
 };

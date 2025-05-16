@@ -2,6 +2,7 @@ import { EVENTS } from 'Client/Constants/events'
 import { LAYERS } from 'Client/Constants/layers'
 import { LEFT_BUTTON, MIDDLE_BUTTON } from 'Client/Constants/mouse-events'
 import { Coordinate } from 'Client/Model/Coordinate'
+import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { ImagePlacement } from 'Client/Model/Placement'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
@@ -9,12 +10,6 @@ import { Events } from 'Client/Service/Events'
 import { generateImageDataURL } from 'Client/Service/generate-image'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { Layer } from 'Model/Layer'
-
-interface LoadedPlacement {
-    image: HTMLImageElement
-    x: number
-    y: number
-}
 
 interface Movement {
     clientX: number

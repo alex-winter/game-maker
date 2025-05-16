@@ -44,8 +44,12 @@ if (!fs.existsSync(placementImagesJsonFileDir)) {
 app.use(express.static(publicDir))
 app.use(express.json({ limit: '50mb' }))
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(publicDir, 'index.html'))
+app.get('/', (_, response: Response) => {
+  response.sendFile(path.join(publicDir, 'index.html'))
+})
+
+app.get('/play', (_, response: Response) => {
+  response.sendFile(path.join(publicDir, 'play.html'))
 })
 
 const allowedExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.svg']

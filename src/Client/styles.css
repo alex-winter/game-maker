@@ -13,3 +13,19 @@ body {
 canvas {
     display: block;
 }
+
+#play {
+    position: fixed;
+    top: 0;
+    right: 0;
+    background-color: white;
+    color: green;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px;
+    z-index: 2000;
+}
+
+#play:hover {
+    cursor: pointer;
+}
