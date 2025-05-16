@@ -12,6 +12,8 @@ const viewCoordinates: Coordinate = {
     y: 0,
 }
 
+const viewMoveSpeed: number = 4
+
 const keys = {
     up: false,
     down: false,
@@ -25,24 +27,19 @@ function renderLayers(
     width: number,
     height: number,
 ): void {
-    setTimeout(
-        () => {
-            ctx.clearRect(0, 0, width, height)
+    ctx.clearRect(0, 0, width, height)
 
-            loadedPlacements.forEach(loadedPlacement => {
-                ctx.drawImage(
-                    loadedPlacement.image,
-                    (loadedPlacement.x - viewCoordinates.x),
-                    (loadedPlacement.y - viewCoordinates.y),
-                    loadedPlacement.image.width,
-                    loadedPlacement.image.height,
-                )
-            })
+    loadedPlacements.forEach(loadedPlacement => {
+        ctx.drawImage(
+            loadedPlacement.image,
+            (loadedPlacement.x - viewCoordinates.x),
+            (loadedPlacement.y - viewCoordinates.y),
+            loadedPlacement.image.width,
+            loadedPlacement.image.height,
+        )
+    })
 
-            window.requestAnimationFrame(() => renderLayers(ctx, loadedPlacements, width, height))
-        },
-        80,
-    )
+    window.requestAnimationFrame(() => renderLayers(ctx, loadedPlacements, width, height))
 }
 
 
@@ -86,18 +83,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 window.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.code === 'ArrowUp') {
-        viewCoordinates.y -= 1
+        viewCoordinates.y -= viewMoveSpeed
     }
 
     if (e.code === 'ArrowDown') {
-        viewCoordinates.y += 1
+        viewCoordinates.y += viewMoveSpeed
     }
 
     if (e.code === 'ArrowLeft') {
-        viewCoordinates.x -= 1
+        viewCoordinates.x -= viewMoveSpeed
     }
 
     if (e.code === 'ArrowRight') {
-        viewCoordinates.x += 1
+        viewCoordinates.x += viewMoveSpeed
     }
 })
