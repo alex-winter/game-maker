@@ -1223,7 +1223,7 @@ class Component extends HTMLElement {
             const css = this.css().trim();
             const link = document.createElement('link');
             link.rel = 'stylesheet';
-            link.href = '/dist/styles.css';
+            link.href = '/dist/index.css';
             this.shadow.append(link);
             if (css.length) {
                 const sheet = new CSSStyleSheet();

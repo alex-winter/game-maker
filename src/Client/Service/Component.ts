@@ -55,7 +55,7 @@ export abstract class Component extends HTMLElement {
                 const link = document.createElement('link')
 
                 link.rel = 'stylesheet'
-                link.href = '/dist/styles.css'
+                link.href = '/dist/index.css'
 
                 this.shadow.append(link)
 
