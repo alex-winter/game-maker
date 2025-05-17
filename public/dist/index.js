@@ -92,17 +92,20 @@ class CanvasLayer extends Component_1.Component {
             this.currentImage.classList.add('current-image');
         }
         container.append(canvas);
+        if (this.animationTimeout) {
+            clearTimeout(this.animationTimeout);
+        }
+        this.frame();
+        this.setCanvasDimensions(canvas);
         return container;
     }
     afterBuild() {
-        this.handleWindowResize();
         Events_1.Events.emit('built-canvas-layer');
         this.addEventListener('mouseup', (event) => {
             if (event.button === mouse_events_1.MIDDLE_BUTTON) {
                 this.isMoving = false;
             }
         });
-        this.frame();
     }
     handleGotUserData(event) {
         const userData = event.detail;
@@ -152,7 +155,7 @@ class CanvasLayer extends Component_1.Component {
             const visible = this.loadedPlacements.filter(this.isPlacementVisible.bind(this));
             visible.forEach(this.drawPlacement.bind(this));
             window.requestAnimationFrame(this.frame.bind(this));
-        }, 2000);
+        }, 100);
     }
     snap(value) {
         return Math.floor(value / 16) * 16;
@@ -236,10 +239,13 @@ class CanvasLayer extends Component_1.Component {
     getCtx() {
         return this.getCanvas().getContext('2d');
     }
+    setCanvasDimensions(canvas) {
+        canvas.width = window.outerWidth;
+        canvas.height = window.outerHeight;
+    }
     handleWindowResize() {
         const currentCanvas = this.getCanvas();
-        currentCanvas.width = window.outerWidth;
-        currentCanvas.height = window.outerHeight;
+        this.setCanvasDimensions(currentCanvas);
     }
 }
 exports.CanvasLayer = CanvasLayer;
@@ -1175,7 +1181,6 @@ const patch_dom_1 = __webpack_require__(/*! Client/Service/patch-dom */ "./src/C
 class Component extends HTMLElement {
     shadow;
     isSingleton = false;
-    content;
     parameters = {};
     listeners;
     constructor() {
@@ -1190,27 +1195,7 @@ class Component extends HTMLElement {
     destroy() {
         this.shadow.host.remove();
     }
-    reload() {
-        this.render(true);
-    }
     connectedCallback() {
-        this.render();
-    }
-    patch() {
-        const firstChild = Array.from(this.shadow.children)
-            .filter(child => child.tagName !== 'LINK')[0];
-        if (firstChild) {
-            (0, patch_dom_1.patchDOM)(firstChild, this.build());
-        }
-    }
-    setListners() {
-        if (this.listeners) {
-            Object.entries(this.listeners).forEach(([key, listener]) => {
-                Events_1.Events.listen(listener.bind(this), key);
-            });
-        }
-    }
-    render(isReload = false) {
         Object.entries(this.dataset).forEach(([key, value]) => {
             this.parameters[key] = (0, is_json_1.isJSON)(value)
                 ? JSON.parse(value)
@@ -1229,17 +1214,26 @@ class Component extends HTMLElement {
                 sheet.replaceSync(css);
                 this.shadow.adoptedStyleSheets = [sheet];
             }
-            this.content = this.build();
-            if (isReload) {
-                this.shadow.replaceChild(this.build(), this.content);
-            }
-            else {
-                this.shadow.appendChild(this.content);
-            }
+            this.shadow.appendChild(this.build());
         })
             .then(() => {
             this.afterBuild();
         });
+    }
+    patch() {
+        const firstChild = Array.from(this.shadow.children)
+            .filter(child => child.tagName !== 'LINK');
+        if (firstChild.length > 1) {
+            throw new Error('there should only be one root child of the shadow dom');
+        }
+        (0, patch_dom_1.patchDOM)(firstChild[0], this.build());
+    }
+    setListners() {
+        if (this.listeners) {
+            Object.entries(this.listeners).forEach(([key, listener]) => {
+                Events_1.Events.listen(listener.bind(this), key);
+            });
+        }
     }
     findOne(query) {
         return this.shadow.querySelector(query);

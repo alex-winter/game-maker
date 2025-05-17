@@ -109,12 +109,16 @@ export class CanvasLayer extends Component {
 
         container.append(canvas)
 
+        if (this.animationTimeout) {
+            clearTimeout(this.animationTimeout)
+        }
+        this.frame()
+        this.setCanvasDimensions(canvas)
+
         return container
     }
 
     protected afterBuild(): void {
-        this.handleWindowResize()
-
         Events.emit('built-canvas-layer')
 
         this.addEventListener('mouseup', (event: MouseEvent) => {
@@ -122,8 +126,6 @@ export class CanvasLayer extends Component {
                 this.isMoving = false
             }
         })
-
-        this.frame()
     }
 
     private handleGotUserData(event: CustomEvent) {
@@ -201,7 +203,7 @@ export class CanvasLayer extends Component {
             visible.forEach(this.drawPlacement.bind(this))
 
             window.requestAnimationFrame(this.frame.bind(this))
-        }, 2000) as unknown as number
+        }, 100) as unknown as number
     }
 
     private snap(value: number): number {
@@ -307,9 +309,13 @@ export class CanvasLayer extends Component {
         return this.getCanvas().getContext('2d')!
     }
 
+    private setCanvasDimensions(canvas: HTMLCanvasElement): void {
+        canvas.width = window.outerWidth
+        canvas.height = window.outerHeight
+    }
+
     private handleWindowResize(): void {
         const currentCanvas = this.getCanvas()
-        currentCanvas.width = window.outerWidth
-        currentCanvas.height = window.outerHeight
+        this.setCanvasDimensions(currentCanvas)
     }
 }

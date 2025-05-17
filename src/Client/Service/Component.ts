@@ -10,7 +10,6 @@ export type Listeners = {
 export abstract class Component extends HTMLElement {
     private readonly shadow: ShadowRoot
     public isSingleton: boolean = false
-    private content!: HTMLElement
     protected readonly parameters: { [key: string]: any } = {}
     protected readonly listeners!: Listeners
 
@@ -31,36 +30,7 @@ export abstract class Component extends HTMLElement {
         this.shadow.host.remove()
     }
 
-    public reload() {
-        this.render(true)
-    }
-
     protected connectedCallback(): void {
-        this.render()
-    }
-
-    protected patch(): void {
-        const firstChild = Array.from(this.shadow.children)
-            .filter(child => child.tagName !== 'LINK')[0]
-
-        if (firstChild) {
-            patchDOM(firstChild, this.build())
-        }
-    }
-
-    protected setListners(): void {
-        if (this.listeners) {
-            Object.entries(this.listeners).forEach(([key, listener]) => {
-                Events.listen(
-                    listener.bind(this),
-                    key,
-                )
-            })
-        }
-
-    }
-
-    private render(isReload: boolean = false) {
         Object.entries(this.dataset).forEach(([key, value]) => {
             this.parameters[key] = isJSON(value)
                 ? JSON.parse(value)
@@ -86,22 +56,37 @@ export abstract class Component extends HTMLElement {
                     this.shadow.adoptedStyleSheets = [sheet]
                 }
 
-                this.content = this.build()
+                this.shadow.appendChild(
+                    this.build()
+                )
 
-                if (isReload) {
-                    this.shadow.replaceChild(
-                        this.build(),
-                        this.content,
-                    )
-                } else {
-                    this.shadow.appendChild(
-                        this.content
-                    )
-                }
             })
             .then(() => {
                 this.afterBuild()
             })
+    }
+
+    protected patch(): void {
+        const firstChild = Array.from(this.shadow.children)
+            .filter(child => child.tagName !== 'LINK')
+
+        if (firstChild.length > 1) {
+            throw new Error('there should only be one root child of the shadow dom')
+        }
+
+        patchDOM(firstChild[0], this.build())
+    }
+
+    protected setListners(): void {
+        if (this.listeners) {
+            Object.entries(this.listeners).forEach(([key, listener]) => {
+                Events.listen(
+                    listener.bind(this),
+                    key,
+                )
+            })
+        }
+
     }
 
     protected findOne<T = HTMLElement>(query: string): T | null {
