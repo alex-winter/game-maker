@@ -85,7 +85,6 @@ class CanvasLayer extends Component_1.Component {
             container.append(this.currentImage);
             this.currentImage.classList.add('current-image');
         }
-        this.handleWindowResize(canvas);
         container.append(canvas);
         return container;
     }
@@ -94,7 +93,8 @@ class CanvasLayer extends Component_1.Component {
         Events_1.Events.emit('canvas-layer-zoom', event);
     }
     afterBuild() {
-        Events_1.Events.listen(() => this.handleWindowResize(), events_1.EVENTS.windowResize);
+        this.handleWindowResize();
+        Events_1.Events.listen(this.handleWindowResize.bind(this)), events_1.EVENTS.windowResize;
         Events_1.Events.listen(this.handleCurrentImageChange.bind(this), events_1.EVENTS.sheetSelectionMade);
         Events_1.Events.listen(this.handleLayerUpdate.bind(this), 'layer-update');
         Events_1.Events.listen(this.handleMovement.bind(this), 'moving-in-canvas');
@@ -248,13 +248,13 @@ class CanvasLayer extends Component_1.Component {
         }
     }
     getCanvas() {
-        return this.shadowRoot.querySelector('canvas');
+        return this.findOne('canvas');
     }
     getCtx() {
         return this.getCanvas().getContext('2d');
     }
-    handleWindowResize(canvas = undefined) {
-        const currentCanvas = canvas || this.getCanvas();
+    handleWindowResize() {
+        const currentCanvas = this.getCanvas();
         currentCanvas.width = window.outerWidth;
         currentCanvas.height = window.outerHeight;
     }

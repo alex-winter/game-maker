@@ -99,8 +99,6 @@ export class CanvasLayer extends Component {
             this.currentImage.classList.add('current-image')
         }
 
-        this.handleWindowResize(canvas)
-
         container.append(canvas)
 
         return container
@@ -113,7 +111,9 @@ export class CanvasLayer extends Component {
     }
 
     protected afterBuild(): void {
-        Events.listen(() => this.handleWindowResize(), EVENTS.windowResize)
+        this.handleWindowResize()
+
+        Events.listen(this.handleWindowResize.bind(this)), EVENTS.windowResize)
         Events.listen(this.handleCurrentImageChange.bind(this), EVENTS.sheetSelectionMade)
         Events.listen(this.handleLayerUpdate.bind(this), 'layer-update')
         Events.listen(this.handleMovement.bind(this), 'moving-in-canvas')
@@ -318,15 +318,15 @@ export class CanvasLayer extends Component {
     }
 
     private getCanvas(): HTMLCanvasElement {
-        return this.shadowRoot!.querySelector('canvas')!
+        return this.findOne('canvas')!
     }
 
     private getCtx(): CanvasRenderingContext2D {
         return this.getCanvas().getContext('2d')!
     }
 
-    private handleWindowResize(canvas: HTMLCanvasElement | undefined = undefined): void {
-        const currentCanvas = canvas || this.getCanvas()
+    private handleWindowResize(): void {
+        const currentCanvas = this.getCanvas()
         currentCanvas.width = window.outerWidth
         currentCanvas.height = window.outerHeight
     }
