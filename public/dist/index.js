@@ -29,6 +29,7 @@ class CanvasLayer extends Component_1.Component {
     viewCoordinates = { x: 0, y: 0 };
     scale = 1;
     isCollisionLayer = false;
+    animationTimeout;
     listeners = {
         'window-resize': this.handleWindowResize,
         'layer-update': this.handleLayerUpdate,
@@ -110,6 +111,7 @@ class CanvasLayer extends Component_1.Component {
     }
     handleDelete(event) {
         if (this.layer.uuid === event.detail) {
+            clearTimeout(this.animationTimeout);
             this.destroy();
         }
     }
@@ -133,24 +135,24 @@ class CanvasLayer extends Component_1.Component {
     drawPlacement(loadedPlacement) {
         this.getCtx().drawImage(loadedPlacement.image, (loadedPlacement.x - this.viewCoordinates.x) * this.scale, (loadedPlacement.y - this.viewCoordinates.y) * this.scale, loadedPlacement.image.width * this.scale, loadedPlacement.image.height * this.scale);
     }
-    isPlacementVisible(p) {
+    isPlacementVisible(loadedPlacement) {
         const viewLeft = this.viewCoordinates.x;
         const viewTop = this.viewCoordinates.y;
         const viewRight = viewLeft + this.getCanvas().width / this.scale;
         const viewBottom = viewTop + this.getCanvas().height / this.scale;
-        return !(p.x + p.image.width < viewLeft ||
-            p.x > viewRight ||
-            p.y + p.image.height < viewTop ||
-            p.y > viewBottom);
+        return !(loadedPlacement.x + loadedPlacement.image.width < viewLeft ||
+            loadedPlacement.x > viewRight ||
+            loadedPlacement.y + loadedPlacement.image.height < viewTop ||
+            loadedPlacement.y > viewBottom);
     }
     frame() {
-        setTimeout(() => {
+        this.animationTimeout = setTimeout(() => {
             const ctx = this.getCtx();
             ctx.clearRect(0, 0, this.getCanvas().width, this.getCanvas().height);
             const visible = this.loadedPlacements.filter(this.isPlacementVisible.bind(this));
             visible.forEach(this.drawPlacement.bind(this));
             window.requestAnimationFrame(this.frame.bind(this));
-        }, 100);
+        }, 2000);
     }
     snap(value) {
         return Math.floor(value / 16) * 16;

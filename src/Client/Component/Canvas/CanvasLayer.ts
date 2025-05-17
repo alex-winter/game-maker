@@ -33,6 +33,8 @@ export class CanvasLayer extends Component {
     private scale: number = 1
     private isCollisionLayer: boolean = false
 
+    private animationTimeout!: number
+
     protected readonly listeners: Listeners = {
         'window-resize': this.handleWindowResize,
         'layer-update': this.handleLayerUpdate,
@@ -133,6 +135,7 @@ export class CanvasLayer extends Component {
 
     private handleDelete(event: CustomEvent) {
         if (this.layer.uuid === event.detail as string) {
+            clearTimeout(this.animationTimeout)
             this.destroy()
         }
     }
@@ -175,20 +178,22 @@ export class CanvasLayer extends Component {
         )
     }
 
-    private isPlacementVisible(p: LoadedPlacement): boolean {
+    private isPlacementVisible(loadedPlacement: LoadedPlacement): boolean {
         const viewLeft = this.viewCoordinates.x
         const viewTop = this.viewCoordinates.y
         const viewRight = viewLeft + this.getCanvas().width / this.scale
         const viewBottom = viewTop + this.getCanvas().height / this.scale
 
-        return !(p.x + p.image.width < viewLeft ||
-            p.x > viewRight ||
-            p.y + p.image.height < viewTop ||
-            p.y > viewBottom)
+        return !(
+            loadedPlacement.x + loadedPlacement.image.width < viewLeft ||
+            loadedPlacement.x > viewRight ||
+            loadedPlacement.y + loadedPlacement.image.height < viewTop ||
+            loadedPlacement.y > viewBottom
+        )
     }
 
     private frame(): void {
-        setTimeout(() => {
+        this.animationTimeout = setTimeout(() => {
             const ctx = this.getCtx()
             ctx.clearRect(0, 0, this.getCanvas().width, this.getCanvas().height)
 
@@ -196,7 +201,7 @@ export class CanvasLayer extends Component {
             visible.forEach(this.drawPlacement.bind(this))
 
             window.requestAnimationFrame(this.frame.bind(this))
-        }, 100)
+        }, 2000) as unknown as number
     }
 
     private snap(value: number): number {
