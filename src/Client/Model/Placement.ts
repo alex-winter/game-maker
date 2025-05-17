@@ -1,4 +1,4 @@
-import { Coordinate } from 'Client/Model/Coordinate'
+import { Coordinates } from 'Model/Coordinates'
 
 export interface PlacementImage {
 
@@ -10,13 +10,13 @@ export interface PlacementImage {
 
 export interface CollisionPlacement {
 
-    coordinate: Coordinate
+    coordinate: Coordinates
 
 }
 
 export interface ImagePlacement {
 
-    coordinate: Coordinate
+    coordinate: Coordinates
 
     imageUuid: string
 

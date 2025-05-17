@@ -3,7 +3,7 @@ import './play.css'
 import { Dom } from 'Client/Service/Dom'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
-import { Coordinate } from 'Client/Model/Coordinate'
+import { Coordinates } from 'Model/Coordinates'
 import { LAYERS } from 'Client/Constants/layers'
 
 interface GamePlacement extends LoadedPlacement {
@@ -12,7 +12,7 @@ interface GamePlacement extends LoadedPlacement {
 
 const layerRepository = new LayerRepository()
 
-const viewCoordinates: Coordinate = {
+const viewCoordinates: Coordinates = {
     x: 0,
     y: 0,
 }

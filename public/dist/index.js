@@ -1959,6 +1959,16 @@ const layerRepository = new LayerRepository_1.LayerRepository();
 const sheetRepository = new SheetRepository_1.SheetRepository();
 const userDataRepository = new UserDataRepository_1.UserDataRepsitory();
 document.addEventListener('DOMContentLoaded', () => {
+    layerRepository.getAll().then(layers => {
+        Events_1.Events.emit(events_1.EVENTS.gotLayer, layers);
+    });
+    PlacementImageRepository_1.placementImageRepository.getAll();
+    const getSheets = () => {
+        sheetRepository.getAll().then(sheets => {
+            Events_1.Events.emit(events_1.EVENTS.gotSheets, sheets);
+        });
+    };
+    userDataRepository.getAll();
     Events_1.Events.listenToFilesUploadSubmitted(files => {
         FileUpload_1.FileUpload.uploadMultiple(files);
     });
@@ -2026,19 +2036,13 @@ document.addEventListener('DOMContentLoaded', () => {
             Events_1.Events.emit('layer-deleted', uuid);
         });
     }, 'layer-delete');
-    layerRepository.getAll().then(layers => {
-        Events_1.Events.emit(events_1.EVENTS.gotLayer, layers);
-    });
-    PlacementImageRepository_1.placementImageRepository.getAll();
-    const getSheets = () => {
-        sheetRepository.getAll().then(sheets => {
-            Events_1.Events.emit(events_1.EVENTS.gotSheets, sheets);
-        });
-    };
     Events_1.Events.listen(event => {
         getSheets();
     }, events_1.EVENTS.getSheets);
-    userDataRepository.getAll();
+    Events_1.Events.listen(event => {
+        const userData = event.detail;
+        userDataRepository.persist(userData);
+    }, 'user-data-update');
     window.addEventListener('resize', () => Events_1.Events.emit(events_1.EVENTS.windowResize));
 });
 

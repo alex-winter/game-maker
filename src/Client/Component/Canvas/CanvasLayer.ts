@@ -1,7 +1,7 @@
 import { EVENTS } from 'Client/Constants/events'
 import { LAYERS } from 'Client/Constants/layers'
 import { LEFT_BUTTON, MIDDLE_BUTTON } from 'Client/Constants/mouse-events'
-import { Coordinate } from 'Client/Model/Coordinate'
+import { Coordinates } from 'Model/Coordinates'
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { ImagePlacement } from 'Client/Model/Placement'
 import { Component } from 'Client/Service/Component'
@@ -16,19 +16,19 @@ interface Movement {
 
     clientY: number
 
-    viewCoordinates: Coordinate
+    viewCoordinates: Coordinates
 
-    lastMousePosition: Coordinate
+    lastMousePosition: Coordinates
 }
 
 export class CanvasLayer extends Component {
     private currentImage!: HTMLImageElement
     private layer!: Layer
-    private readonly mouseCoordinates: Coordinate = { x: 0, y: 0 }
+    private readonly mouseCoordinates: Coordinates = { x: 0, y: 0 }
     private readonly loadedPlacements: LoadedPlacement[] = []
     private isMoving: boolean = false
-    private lastMousePosition: Coordinate = { x: 0, y: 0 }
-    private viewCoordinates: Coordinate = { x: 0, y: 0 }
+    private lastMousePosition: Coordinates = { x: 0, y: 0 }
+    private viewCoordinates: Coordinates = { x: 0, y: 0 }
     private scale: number = 1
     private isCollisionLayer: boolean = false
 

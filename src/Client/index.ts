@@ -19,6 +19,7 @@ import { CanvasLayer } from 'Client/Component/Canvas/CanvasLayer'
 import { SheetRepository } from 'Client/Service/Repository/SheetRepository'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { UserDataRepsitory } from 'Client/Service/Repository/UserDataRepository'
+import { UserData } from 'Model/UserData'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -33,6 +34,20 @@ const sheetRepository = new SheetRepository()
 const userDataRepository = new UserDataRepsitory()
 
 document.addEventListener('DOMContentLoaded', () => {
+    layerRepository.getAll().then(layers => {
+        Events.emit(EVENTS.gotLayer, layers)
+    })
+
+    placementImageRepository.getAll()
+
+    const getSheets = () => {
+        sheetRepository.getAll().then(sheets => {
+            Events.emit(EVENTS.gotSheets, sheets)
+        })
+    }
+
+    userDataRepository.getAll()
+
     Events.listenToFilesUploadSubmitted(files => {
         FileUpload.uploadMultiple(files)
     })
@@ -148,18 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
         'layer-delete'
     )
 
-    layerRepository.getAll().then(layers => {
-        Events.emit(EVENTS.gotLayer, layers)
-    })
-
-    placementImageRepository.getAll()
-
-    const getSheets = () => {
-        sheetRepository.getAll().then(sheets => {
-            Events.emit(EVENTS.gotSheets, sheets)
-        })
-    }
-
     Events.listen(
         event => {
             getSheets()
@@ -167,7 +170,15 @@ document.addEventListener('DOMContentLoaded', () => {
         EVENTS.getSheets
     )
 
-    userDataRepository.getAll()
+    Events.listen(
+        event => {
+            const userData = event.detail as UserData
+
+            userDataRepository.persist(userData)
+        },
+        'user-data-update',
+    )
+
 
     window.addEventListener('resize', () => Events.emit(EVENTS.windowResize))
 })
