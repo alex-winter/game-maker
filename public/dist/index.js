@@ -121,6 +121,12 @@ class CanvasLayer extends Component_1.Component {
                 this.destroy();
             }
         }, 'layer-deleted');
+        Events_1.Events.emit('built-canvas-layer');
+        Events_1.Events.listen(event => {
+            const userData = event.detail;
+            this.viewCoordinates.x = userData.lastViewPosition.x;
+            this.viewCoordinates.y = userData.lastViewPosition.y;
+        }, 'got-user-data');
         this.addEventListener('mouseup', () => {
             this.isMoving = false;
         });
@@ -134,6 +140,7 @@ class CanvasLayer extends Component_1.Component {
         this.viewCoordinates.y -= dy / this.scale;
         this.lastMousePosition.x = movement.clientX;
         this.lastMousePosition.y = movement.clientY;
+        Events_1.Events.emit('updated-view-coordinates', this.viewCoordinates);
     }
     handleLayerUpdate(event) {
         const layer = event.detail;
@@ -179,7 +186,6 @@ class CanvasLayer extends Component_1.Component {
         this.mouseCoordinates.x = snappedWorldX;
         this.mouseCoordinates.y = snappedWorldY;
         if (this.currentImage) {
-            console.log('moving');
             this.currentImage.classList.remove('hide');
             this.currentImage.style.left = screenX + 'px';
             this.currentImage.style.top = screenY + 'px';
@@ -1969,6 +1975,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
     userDataRepository.getAll();
+    Events_1.Events.listen(async (event) => {
+        Events_1.Events.emit('got-user-data', await userDataRepository.getAll());
+    }, 'built-canvas-layer');
     Events_1.Events.listenToFilesUploadSubmitted(files => {
         FileUpload_1.FileUpload.uploadMultiple(files);
     });
@@ -2039,10 +2048,13 @@ document.addEventListener('DOMContentLoaded', () => {
     Events_1.Events.listen(event => {
         getSheets();
     }, events_1.EVENTS.getSheets);
-    Events_1.Events.listen(event => {
-        const userData = event.detail;
+    Events_1.Events.listen(async (event) => {
+        const corrdinates = event.detail;
+        const userData = await userDataRepository.getAll();
+        userData.lastViewPosition.x = corrdinates.x;
+        userData.lastViewPosition.y = corrdinates.y;
         userDataRepository.persist(userData);
-    }, 'user-data-update');
+    }, 'updated-view-coordinates');
     window.addEventListener('resize', () => Events_1.Events.emit(events_1.EVENTS.windowResize));
 });
 

@@ -10,6 +10,7 @@ import { Events } from 'Client/Service/Events'
 import { generateImageDataURL } from 'Client/Service/generate-image'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { Layer } from 'Model/Layer'
+import { UserData } from 'Model/UserData'
 
 interface Movement {
     clientX: number
@@ -144,6 +145,14 @@ export class CanvasLayer extends Component {
             }
         }, 'layer-deleted')
 
+        Events.emit('built-canvas-layer')
+
+        Events.listen(event => {
+            const userData = event.detail as UserData
+            this.viewCoordinates.x = userData.lastViewPosition.x
+            this.viewCoordinates.y = userData.lastViewPosition.y
+        }, 'got-user-data')
+
         this.addEventListener('mouseup', () => {
             this.isMoving = false
         })
@@ -153,6 +162,7 @@ export class CanvasLayer extends Component {
 
     private handleMovement(event: CustomEvent): void {
         const movement = event.detail as Movement
+
         const dx = movement.clientX - movement.lastMousePosition.x
         const dy = movement.clientY - movement.lastMousePosition.y
 
@@ -161,6 +171,8 @@ export class CanvasLayer extends Component {
 
         this.lastMousePosition.x = movement.clientX
         this.lastMousePosition.y = movement.clientY
+
+        Events.emit('updated-view-coordinates', this.viewCoordinates)
     }
 
     private handleLayerUpdate(event: CustomEvent): void {
@@ -231,7 +243,6 @@ export class CanvasLayer extends Component {
         this.mouseCoordinates.y = snappedWorldY
 
         if (this.currentImage) {
-            console.log('moving')
             this.currentImage.classList.remove('hide')
             this.currentImage.style.left = screenX + 'px'
             this.currentImage.style.top = screenY + 'px'

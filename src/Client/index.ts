@@ -20,6 +20,7 @@ import { SheetRepository } from 'Client/Service/Repository/SheetRepository'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { UserDataRepsitory } from 'Client/Service/Repository/UserDataRepository'
 import { UserData } from 'Model/UserData'
+import { Coordinates } from 'Model/Coordinates'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -47,6 +48,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     userDataRepository.getAll()
+
+    Events.listen(async event => {
+        Events.emit('got-user-data', await userDataRepository.getAll())
+    }, 'built-canvas-layer')
 
     Events.listenToFilesUploadSubmitted(files => {
         FileUpload.uploadMultiple(files)
@@ -171,12 +176,16 @@ document.addEventListener('DOMContentLoaded', () => {
     )
 
     Events.listen(
-        event => {
-            const userData = event.detail as UserData
+        async event => {
+            const corrdinates = event.detail as Coordinates
+            const userData = await userDataRepository.getAll()
+
+            userData.lastViewPosition.x = corrdinates.x
+            userData.lastViewPosition.y = corrdinates.y
 
             userDataRepository.persist(userData)
         },
-        'user-data-update',
+        'updated-view-coordinates',
     )
 
 
