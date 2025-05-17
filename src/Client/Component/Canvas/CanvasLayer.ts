@@ -4,7 +4,7 @@ import { LEFT_BUTTON, MIDDLE_BUTTON } from 'Client/Constants/mouse-events'
 import { Coordinates } from 'Model/Coordinates'
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { ImagePlacement } from 'Client/Model/Placement'
-import { Component } from 'Client/Service/Component'
+import { Component, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 import { generateImageDataURL } from 'Client/Service/generate-image'
@@ -32,6 +32,15 @@ export class CanvasLayer extends Component {
     private viewCoordinates: Coordinates = { x: 0, y: 0 }
     private scale: number = 1
     private isCollisionLayer: boolean = false
+
+    protected readonly listeners: Listeners = {
+        'window-resize': this.handleWindowResize,
+        'layer-update': this.handleLayerUpdate,
+        'sheet-selection-made': this.handleCurrentImageChange,
+        'moving-in-canvas': this.handleMovement,
+        'layer-deleted': this.handleDelete,
+        'got-user-data': this.handleGotUserData,
+    }
 
     protected css(): string {
         return /*css*/`
@@ -74,7 +83,6 @@ export class CanvasLayer extends Component {
         this.isCollisionLayer = this.layer.type === LAYERS.typeCollision
 
         if (this.isCollisionLayer) {
-            console.log('loading collection layer image')
             this.currentImage = await Dom.image(generateImageDataURL(16, 16, { r: 255, g: 0, b: 0, a: 0.3 }))
         }
 
@@ -88,13 +96,11 @@ export class CanvasLayer extends Component {
         canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this))
         canvas.addEventListener('mousedown', this.handleMouseDown.bind(this))
         canvas.addEventListener('mousemove', this.handleMouseMove.bind(this))
-        canvas.addEventListener('wheel', this.handleWheelZoom.bind(this))
 
         canvas.classList.toggle('hide', !this.layer.is_visible)
         this.classList.toggle('active', this.layer.is_active)
 
         if (this.isCollisionLayer) {
-            console.log('appending image to container')
             container.append(this.currentImage)
             this.currentImage.classList.add('current-image')
         }
@@ -104,60 +110,31 @@ export class CanvasLayer extends Component {
         return container
     }
 
-    private handleWheelZoom(event: WheelEvent): void {
-        event.preventDefault()
-
-        Events.emit('canvas-layer-zoom', event)
-    }
-
     protected afterBuild(): void {
         this.handleWindowResize()
 
-        Events.listen(this.handleWindowResize.bind(this)), EVENTS.windowResize)
-        Events.listen(this.handleCurrentImageChange.bind(this), EVENTS.sheetSelectionMade)
-        Events.listen(this.handleLayerUpdate.bind(this), 'layer-update')
-        Events.listen(this.handleMovement.bind(this), 'moving-in-canvas')
-        Events.listen((event: CustomEvent) => {
-            const wheelEvent = event.detail as WheelEvent
-            const zoomIntensity = 0.1
-            const mouseX = wheelEvent.clientX
-            const mouseY = wheelEvent.clientY
-
-            const worldX = this.viewCoordinates.x + mouseX / this.scale
-            const worldY = this.viewCoordinates.y + mouseY / this.scale
-
-            if (wheelEvent.deltaY < 0) {
-                this.scale *= (1 + zoomIntensity)
-            } else {
-                this.scale *= (1 - zoomIntensity)
-            }
-
-            this.scale = Math.max(0.1, Math.min(this.scale, 5))
-
-            this.viewCoordinates.x = worldX - mouseX / this.scale
-            this.viewCoordinates.y = worldY - mouseY / this.scale
-
-            this.currentImage.style.transform = `scale(${this.scale})`
-        }, 'canvas-layer-zoom')
-        Events.listen((event: CustomEvent) => {
-            if (this.layer.uuid === event.detail as string) {
-                this.destroy()
-            }
-        }, 'layer-deleted')
-
         Events.emit('built-canvas-layer')
 
-        Events.listen(event => {
-            const userData = event.detail as UserData
-            this.viewCoordinates.x = userData.lastViewPosition.x
-            this.viewCoordinates.y = userData.lastViewPosition.y
-        }, 'got-user-data')
-
-        this.addEventListener('mouseup', () => {
-            this.isMoving = false
+        this.addEventListener('mouseup', (event: MouseEvent) => {
+            if (event.button === MIDDLE_BUTTON) {
+                this.isMoving = false
+            }
         })
 
         this.frame()
+    }
+
+    private handleGotUserData(event: CustomEvent) {
+        const userData = event.detail as UserData
+
+        this.viewCoordinates.x = userData.lastViewPosition.x
+        this.viewCoordinates.y = userData.lastViewPosition.y
+    }
+
+    private handleDelete(event: CustomEvent) {
+        if (this.layer.uuid === event.detail as string) {
+            this.destroy()
+        }
     }
 
     private handleMovement(event: CustomEvent): void {

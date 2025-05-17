@@ -29,6 +29,14 @@ class CanvasLayer extends Component_1.Component {
     viewCoordinates = { x: 0, y: 0 };
     scale = 1;
     isCollisionLayer = false;
+    listeners = {
+        'window-resize': this.handleWindowResize,
+        'layer-update': this.handleLayerUpdate,
+        'sheet-selection-made': this.handleCurrentImageChange,
+        'moving-in-canvas': this.handleMovement,
+        'layer-deleted': this.handleDelete,
+        'got-user-data': this.handleGotUserData,
+    };
     css() {
         return /*css*/ `
             :host {
@@ -66,7 +74,6 @@ class CanvasLayer extends Component_1.Component {
         this.layer = this.parameters.layer;
         this.isCollisionLayer = this.layer.type === layers_1.LAYERS.typeCollision;
         if (this.isCollisionLayer) {
-            console.log('loading collection layer image');
             this.currentImage = await Dom_1.Dom.image((0, generate_image_1.generateImageDataURL)(16, 16, { r: 255, g: 0, b: 0, a: 0.3 }));
         }
         this.layer.placements.forEach(this.loadPlacement.bind(this));
@@ -77,60 +84,34 @@ class CanvasLayer extends Component_1.Component {
         canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
         canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
         canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
-        canvas.addEventListener('wheel', this.handleWheelZoom.bind(this));
         canvas.classList.toggle('hide', !this.layer.is_visible);
         this.classList.toggle('active', this.layer.is_active);
         if (this.isCollisionLayer) {
-            console.log('appending image to container');
             container.append(this.currentImage);
             this.currentImage.classList.add('current-image');
         }
         container.append(canvas);
         return container;
     }
-    handleWheelZoom(event) {
-        event.preventDefault();
-        Events_1.Events.emit('canvas-layer-zoom', event);
-    }
     afterBuild() {
         this.handleWindowResize();
-        Events_1.Events.listen(this.handleWindowResize.bind(this)), events_1.EVENTS.windowResize;
-        Events_1.Events.listen(this.handleCurrentImageChange.bind(this), events_1.EVENTS.sheetSelectionMade);
-        Events_1.Events.listen(this.handleLayerUpdate.bind(this), 'layer-update');
-        Events_1.Events.listen(this.handleMovement.bind(this), 'moving-in-canvas');
-        Events_1.Events.listen((event) => {
-            const wheelEvent = event.detail;
-            const zoomIntensity = 0.1;
-            const mouseX = wheelEvent.clientX;
-            const mouseY = wheelEvent.clientY;
-            const worldX = this.viewCoordinates.x + mouseX / this.scale;
-            const worldY = this.viewCoordinates.y + mouseY / this.scale;
-            if (wheelEvent.deltaY < 0) {
-                this.scale *= (1 + zoomIntensity);
-            }
-            else {
-                this.scale *= (1 - zoomIntensity);
-            }
-            this.scale = Math.max(0.1, Math.min(this.scale, 5));
-            this.viewCoordinates.x = worldX - mouseX / this.scale;
-            this.viewCoordinates.y = worldY - mouseY / this.scale;
-            this.currentImage.style.transform = `scale(${this.scale})`;
-        }, 'canvas-layer-zoom');
-        Events_1.Events.listen((event) => {
-            if (this.layer.uuid === event.detail) {
-                this.destroy();
-            }
-        }, 'layer-deleted');
         Events_1.Events.emit('built-canvas-layer');
-        Events_1.Events.listen(event => {
-            const userData = event.detail;
-            this.viewCoordinates.x = userData.lastViewPosition.x;
-            this.viewCoordinates.y = userData.lastViewPosition.y;
-        }, 'got-user-data');
-        this.addEventListener('mouseup', () => {
-            this.isMoving = false;
+        this.addEventListener('mouseup', (event) => {
+            if (event.button === mouse_events_1.MIDDLE_BUTTON) {
+                this.isMoving = false;
+            }
         });
         this.frame();
+    }
+    handleGotUserData(event) {
+        const userData = event.detail;
+        this.viewCoordinates.x = userData.lastViewPosition.x;
+        this.viewCoordinates.y = userData.lastViewPosition.y;
+    }
+    handleDelete(event) {
+        if (this.layer.uuid === event.detail) {
+            this.destroy();
+        }
     }
     handleMovement(event) {
         const movement = event.detail;
@@ -1186,6 +1167,7 @@ exports.MIDDLE_BUTTON = 1;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Component = void 0;
+const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 const is_json_1 = __webpack_require__(/*! Client/Service/is-json */ "./src/Client/Service/is-json.ts");
 const patch_dom_1 = __webpack_require__(/*! Client/Service/patch-dom */ "./src/Client/Service/patch-dom.ts");
 class Component extends HTMLElement {
@@ -1193,6 +1175,7 @@ class Component extends HTMLElement {
     isSingleton = false;
     content;
     parameters = {};
+    listeners;
     constructor() {
         super();
         this.shadow = this.attachShadow({ mode: 'open' });
@@ -1218,12 +1201,20 @@ class Component extends HTMLElement {
             (0, patch_dom_1.patchDOM)(firstChild, this.build());
         }
     }
+    setListners() {
+        if (this.listeners) {
+            Object.entries(this.listeners).forEach(([key, listener]) => {
+                Events_1.Events.listen(listener.bind(this), key);
+            });
+        }
+    }
     render(isReload = false) {
         Object.entries(this.dataset).forEach(([key, value]) => {
             this.parameters[key] = (0, is_json_1.isJSON)(value)
                 ? JSON.parse(value)
                 : value;
         });
+        this.setListners();
         this.setup()
             .then(() => {
             const css = this.css().trim();

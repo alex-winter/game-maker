@@ -1,11 +1,18 @@
+import { Events } from 'Client/Service/Events'
 import { isJSON } from 'Client/Service/is-json'
 import { patchDOM } from 'Client/Service/patch-dom'
+
+export type EventFn<T = any> = (event: CustomEvent<T>) => void
+export type Listeners = {
+    [key: string]: EventFn
+}
 
 export abstract class Component extends HTMLElement {
     private readonly shadow: ShadowRoot
     public isSingleton: boolean = false
     private content!: HTMLElement
     protected readonly parameters: { [key: string]: any } = {}
+    protected readonly listeners!: Listeners
 
     constructor() {
         super()
@@ -41,12 +48,26 @@ export abstract class Component extends HTMLElement {
         }
     }
 
+    protected setListners(): void {
+        if (this.listeners) {
+            Object.entries(this.listeners).forEach(([key, listener]) => {
+                Events.listen(
+                    listener.bind(this),
+                    key,
+                )
+            })
+        }
+
+    }
+
     private render(isReload: boolean = false) {
         Object.entries(this.dataset).forEach(([key, value]) => {
             this.parameters[key] = isJSON(value)
                 ? JSON.parse(value)
                 : value
         })
+
+        this.setListners()
 
         this.setup()
             .then(() => {
