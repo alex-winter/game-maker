@@ -11,8 +11,9 @@ import { placementImageRepository } from 'Client/Service/Repository/PlacementIma
 import { Layer } from 'Model/Layer'
 import { UserData } from 'Model/UserData'
 import { Canvas2D } from 'Client/Component/Canvas/Canvas'
+import { RGBA } from 'Client/Model/RGB'
 
-interface Movement {
+type Movement = {
     clientX: number
 
     clientY: number
@@ -23,6 +24,13 @@ interface Movement {
 }
 
 export class CanvasLayer extends Component {
+    private static readonly TILE_SIZE: number = 16
+    private static readonly COLLISION_IMAGE: string = generateImageDataURL(
+        CanvasLayer.TILE_SIZE,
+        CanvasLayer.TILE_SIZE,
+        { r: 255, g: 0, b: 0, a: 0.3 },
+    )
+
     private currentImage!: HTMLImageElement
     private layer!: Layer
     private readonly mouseCoordinates: Coordinates = { x: 0, y: 0 }
@@ -32,15 +40,15 @@ export class CanvasLayer extends Component {
     private viewCoordinates: Coordinates = { x: 0, y: 0 }
     private isCollisionLayer: boolean = false
 
-    private readonly canvas: Canvas2D = Dom.makeComponent(Canvas2D) as Canvas2D
+    private readonly canvas: Canvas2D = Dom.makeComponent(Canvas2D, { fps: 30 }) as Canvas2D
 
     protected readonly listeners: Listeners = {
-        'window-resize': this.handleWindowResize,
-        'layer-update': this.handleLayerUpdate,
-        'sheet-selection-made': this.handleCurrentImageChange,
-        'moving-in-canvas': this.handleMovement,
-        'layer-deleted': this.handleDelete,
         'got-user-data': this.handleGotUserData,
+        'layer-deleted': this.handleDelete,
+        'layer-update': this.handleLayerUpdate,
+        'moving-in-canvas': this.handleMovement,
+        'sheet-selection-made': this.handleCurrentImageChange,
+        'window-resize': this.handleWindowResize,
     }
 
     protected css(): string {
@@ -84,7 +92,7 @@ export class CanvasLayer extends Component {
         this.isCollisionLayer = this.layer.type === LAYERS.typeCollision
 
         if (this.isCollisionLayer) {
-            this.currentImage = await Dom.image(generateImageDataURL(16, 16, { r: 255, g: 0, b: 0, a: 0.3 }))
+            this.currentImage = await Dom.image(CanvasLayer.COLLISION_IMAGE)
         }
 
         this.layer.placements.forEach(this.loadPlacement.bind(this))
@@ -108,13 +116,14 @@ export class CanvasLayer extends Component {
 
         container.append(canvas)
 
-        this.canvas.startAnimation(this.frame.bind(this))
-        this.handleWindowResize()
-
         return container
     }
 
     protected afterBuild(): void {
+        this.handleWindowResize()
+
+        this.canvas.startAnimation(this.frame.bind(this))
+
         Events.emit('built-canvas-layer')
 
         this.addEventListener('mouseup', (event: MouseEvent) => {
@@ -187,7 +196,7 @@ export class CanvasLayer extends Component {
     }
 
     private snap(value: number): number {
-        return Math.floor(value / 16) * 16
+        return Math.floor(value / CanvasLayer.TILE_SIZE) * CanvasLayer.TILE_SIZE
     }
 
     private handleMouseMove(event: MouseEvent): void {

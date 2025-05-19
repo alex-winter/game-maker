@@ -5,6 +5,7 @@ import { Coordinates, Dimensions, Rect } from 'Model/Coordinates'
 export class Canvas2D extends Component {
     private animationTimeout!: number
     private frameFunction!: Function
+    private msPerFrame: number = 100
 
     public drawImage(
         image: CanvasImageSource,
@@ -68,6 +69,10 @@ export class Canvas2D extends Component {
         canvas.height = dimensions.height
     }
 
+    protected async setup(): Promise<void> {
+        this.msPerFrame = 1000 / this.parameters.fps | 30
+    }
+
     protected build(): HTMLElement {
         return Dom.canvas()
     }
@@ -79,9 +84,10 @@ export class Canvas2D extends Component {
 
         this.frameFunction(ctx)
 
-        this.animationTimeout = setTimeout(() => {
-            window.requestAnimationFrame(this.frame)
-        }, 100) as unknown as number
+        this.animationTimeout = setTimeout(
+            () => window.requestAnimationFrame(this.frame),
+            this.msPerFrame,
+        ) as unknown as number
     }
 
     private clear(): void {

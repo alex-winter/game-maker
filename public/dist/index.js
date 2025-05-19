@@ -16,6 +16,7 @@ const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Servic
 class Canvas2D extends Component_1.Component {
     animationTimeout;
     frameFunction;
+    msPerFrame = 100;
     drawImage(image, dx, dy, dw, dh, sx, sy, sw, sh) {
         const ctx = this.getCtx();
         if (sx !== undefined &&
@@ -55,6 +56,9 @@ class Canvas2D extends Component_1.Component {
         canvas.width = dimensions.width;
         canvas.height = dimensions.height;
     }
+    async setup() {
+        this.msPerFrame = 1000 / this.parameters.fps | 30;
+    }
     build() {
         return Dom_1.Dom.canvas();
     }
@@ -62,9 +66,7 @@ class Canvas2D extends Component_1.Component {
         const ctx = this.getCtx();
         this.clear();
         this.frameFunction(ctx);
-        this.animationTimeout = setTimeout(() => {
-            window.requestAnimationFrame(this.frame);
-        }, 100);
+        this.animationTimeout = setTimeout(() => window.requestAnimationFrame(this.frame), this.msPerFrame);
     };
     clear() {
         this.getCtx().clearRect(0, 0, this.getCanvas().width, this.getCanvas().height);
@@ -99,6 +101,8 @@ const generate_image_1 = __webpack_require__(/*! Client/Service/generate-image *
 const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Repository/PlacementImageRepository */ "./src/Client/Service/Repository/PlacementImageRepository.ts");
 const Canvas_1 = __webpack_require__(/*! Client/Component/Canvas/Canvas */ "./src/Client/Component/Canvas/Canvas.ts");
 class CanvasLayer extends Component_1.Component {
+    static TILE_SIZE = 16;
+    static COLLISION_IMAGE = (0, generate_image_1.generateImageDataURL)(CanvasLayer.TILE_SIZE, CanvasLayer.TILE_SIZE, { r: 255, g: 0, b: 0, a: 0.3 });
     currentImage;
     layer;
     mouseCoordinates = { x: 0, y: 0 };
@@ -107,14 +111,14 @@ class CanvasLayer extends Component_1.Component {
     lastMousePosition = { x: 0, y: 0 };
     viewCoordinates = { x: 0, y: 0 };
     isCollisionLayer = false;
-    canvas = Dom_1.Dom.makeComponent(Canvas_1.Canvas2D);
+    canvas = Dom_1.Dom.makeComponent(Canvas_1.Canvas2D, { fps: 30 });
     listeners = {
-        'window-resize': this.handleWindowResize,
-        'layer-update': this.handleLayerUpdate,
-        'sheet-selection-made': this.handleCurrentImageChange,
-        'moving-in-canvas': this.handleMovement,
-        'layer-deleted': this.handleDelete,
         'got-user-data': this.handleGotUserData,
+        'layer-deleted': this.handleDelete,
+        'layer-update': this.handleLayerUpdate,
+        'moving-in-canvas': this.handleMovement,
+        'sheet-selection-made': this.handleCurrentImageChange,
+        'window-resize': this.handleWindowResize,
     };
     css() {
         return /*css*/ `
@@ -153,7 +157,7 @@ class CanvasLayer extends Component_1.Component {
         this.layer = this.parameters.layer;
         this.isCollisionLayer = this.layer.type === layers_1.LAYERS.typeCollision;
         if (this.isCollisionLayer) {
-            this.currentImage = await Dom_1.Dom.image((0, generate_image_1.generateImageDataURL)(16, 16, { r: 255, g: 0, b: 0, a: 0.3 }));
+            this.currentImage = await Dom_1.Dom.image(CanvasLayer.COLLISION_IMAGE);
         }
         this.layer.placements.forEach(this.loadPlacement.bind(this));
     }
@@ -170,11 +174,11 @@ class CanvasLayer extends Component_1.Component {
             this.currentImage.classList.add('current-image');
         }
         container.append(canvas);
-        this.canvas.startAnimation(this.frame.bind(this));
-        this.handleWindowResize();
         return container;
     }
     afterBuild() {
+        this.handleWindowResize();
+        this.canvas.startAnimation(this.frame.bind(this));
         Events_1.Events.emit('built-canvas-layer');
         this.addEventListener('mouseup', (event) => {
             if (event.button === mouse_events_1.MIDDLE_BUTTON) {
@@ -220,7 +224,7 @@ class CanvasLayer extends Component_1.Component {
         });
     }
     snap(value) {
-        return Math.floor(value / 16) * 16;
+        return Math.floor(value / CanvasLayer.TILE_SIZE) * CanvasLayer.TILE_SIZE;
     }
     handleMouseMove(event) {
         const rawX = event.clientX;
