@@ -1,4 +1,4 @@
-export interface Sheet {
+export type Sheet = {
     name: string
 
     imageSrc: string

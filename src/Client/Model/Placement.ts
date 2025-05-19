@@ -1,6 +1,6 @@
 import { Coordinates } from 'Model/Coordinates'
 
-export interface PlacementImage {
+export type PlacementImage = {
 
     uuid: string
 
@@ -8,13 +8,13 @@ export interface PlacementImage {
 
 }
 
-export interface CollisionPlacement {
+export type CollisionPlacement = {
 
     coordinate: Coordinates
 
 }
 
-export interface ImagePlacement {
+export type ImagePlacement = {
 
     coordinate: Coordinates
 

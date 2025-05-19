@@ -1,5 +1,5 @@
-export interface LoadedPlacement {
+import { Coordinates } from 'Model/Coordinates'
+
+export type LoadedPlacement = Coordinates & {
     image: HTMLImageElement
-    x: number
-    y: number
-}
+} 

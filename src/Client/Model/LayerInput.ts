@@ -1,4 +1,4 @@
-export interface LayerInput {
+export type LayerInput = {
 
     name: string
 

@@ -1,4 +1,3 @@
-import { EVENTS } from 'Client/Constants/events'
 import { LAYERS } from 'Client/Constants/layers'
 import { LEFT_BUTTON, MIDDLE_BUTTON } from 'Client/Constants/mouse-events'
 import { Coordinates } from 'Model/Coordinates'
@@ -11,6 +10,7 @@ import { generateImageDataURL } from 'Client/Service/generate-image'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { Layer } from 'Model/Layer'
 import { UserData } from 'Model/UserData'
+import { Canvas2D } from 'Client/Component/Canvas/Canvas'
 
 interface Movement {
     clientX: number
@@ -30,10 +30,9 @@ export class CanvasLayer extends Component {
     private isMoving: boolean = false
     private lastMousePosition: Coordinates = { x: 0, y: 0 }
     private viewCoordinates: Coordinates = { x: 0, y: 0 }
-    private scale: number = 1
     private isCollisionLayer: boolean = false
 
-    private animationTimeout!: number
+    private readonly canvas: Canvas2D = Dom.makeComponent(Canvas2D) as Canvas2D
 
     protected readonly listeners: Listeners = {
         'window-resize': this.handleWindowResize,
@@ -93,7 +92,7 @@ export class CanvasLayer extends Component {
 
     protected build(): HTMLElement {
         const container = Dom.div('container')
-        const canvas = Dom.canvas()
+        const canvas = this.canvas
 
         canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this))
         canvas.addEventListener('mousedown', this.handleMouseDown.bind(this))
@@ -109,11 +108,8 @@ export class CanvasLayer extends Component {
 
         container.append(canvas)
 
-        if (this.animationTimeout) {
-            clearTimeout(this.animationTimeout)
-        }
-        this.frame()
-        this.setCanvasDimensions(canvas)
+        this.canvas.startAnimation(this.frame.bind(this))
+        this.handleWindowResize()
 
         return container
     }
@@ -137,7 +133,8 @@ export class CanvasLayer extends Component {
 
     private handleDelete(event: CustomEvent) {
         if (this.layer.uuid === event.detail as string) {
-            clearTimeout(this.animationTimeout)
+            this.canvas.stopAnimation()
+            this.canvas.destroy()
             this.destroy()
         }
     }
@@ -148,8 +145,8 @@ export class CanvasLayer extends Component {
         const dx = movement.clientX - movement.lastMousePosition.x
         const dy = movement.clientY - movement.lastMousePosition.y
 
-        this.viewCoordinates.x -= dx / this.scale
-        this.viewCoordinates.y -= dy / this.scale
+        this.viewCoordinates.x -= dx
+        this.viewCoordinates.y -= dy
 
         this.lastMousePosition.x = movement.clientX
         this.lastMousePosition.y = movement.clientY
@@ -170,40 +167,23 @@ export class CanvasLayer extends Component {
         }
     }
 
-    private drawPlacement(loadedPlacement: LoadedPlacement): void {
-        this.getCtx().drawImage(
-            loadedPlacement.image,
-            (loadedPlacement.x - this.viewCoordinates.x) * this.scale,
-            (loadedPlacement.y - this.viewCoordinates.y) * this.scale,
-            loadedPlacement.image.width * this.scale,
-            loadedPlacement.image.height * this.scale,
-        )
-    }
+    private frame(ctx: CanvasRenderingContext2D): void {
+        const visible = this.loadedPlacements.filter(loadedPlacement => {
+            return this.canvas.isRectVisible(
+                this.viewCoordinates,
+                loadedPlacement.image,
+            )
+        })
 
-    private isPlacementVisible(loadedPlacement: LoadedPlacement): boolean {
-        const viewLeft = this.viewCoordinates.x
-        const viewTop = this.viewCoordinates.y
-        const viewRight = viewLeft + this.getCanvas().width / this.scale
-        const viewBottom = viewTop + this.getCanvas().height / this.scale
-
-        return !(
-            loadedPlacement.x + loadedPlacement.image.width < viewLeft ||
-            loadedPlacement.x > viewRight ||
-            loadedPlacement.y + loadedPlacement.image.height < viewTop ||
-            loadedPlacement.y > viewBottom
-        )
-    }
-
-    private frame(): void {
-        this.animationTimeout = setTimeout(() => {
-            const ctx = this.getCtx()
-            ctx.clearRect(0, 0, this.getCanvas().width, this.getCanvas().height)
-
-            const visible = this.loadedPlacements.filter(this.isPlacementVisible.bind(this))
-            visible.forEach(this.drawPlacement.bind(this))
-
-            window.requestAnimationFrame(this.frame.bind(this))
-        }, 100) as unknown as number
+        visible.forEach(loadedPlacement => {
+            this.canvas.drawImage(
+                loadedPlacement.image,
+                (loadedPlacement.x - this.viewCoordinates.x),
+                (loadedPlacement.y - this.viewCoordinates.y),
+                loadedPlacement.image.width,
+                loadedPlacement.image.height,
+            )
+        })
     }
 
     private snap(value: number): number {
@@ -214,14 +194,14 @@ export class CanvasLayer extends Component {
         const rawX = event.clientX
         const rawY = event.clientY
 
-        const worldX = this.viewCoordinates.x + rawX / this.scale
-        const worldY = this.viewCoordinates.y + rawY / this.scale
+        const worldX = this.viewCoordinates.x + rawX
+        const worldY = this.viewCoordinates.y + rawY
 
         const snappedWorldX = this.snap(worldX)
         const snappedWorldY = this.snap(worldY)
 
-        const screenX = (snappedWorldX - this.viewCoordinates.x) * this.scale
-        const screenY = (snappedWorldY - this.viewCoordinates.y) * this.scale
+        const screenX = (snappedWorldX - this.viewCoordinates.x)
+        const screenY = (snappedWorldY - this.viewCoordinates.y)
 
         this.mouseCoordinates.x = snappedWorldX
         this.mouseCoordinates.y = snappedWorldY
@@ -270,7 +250,7 @@ export class CanvasLayer extends Component {
             }
 
             const mouseUp = (event: MouseEvent) => {
-                Events.emit(EVENTS.layerPlacementMade, this.layer)
+                Events.emit('layer-placement-made', this.layer)
                 document.removeEventListener('mouseup', mouseUp)
                 document.removeEventListener('mousemove', mouseMove)
             }
@@ -301,21 +281,10 @@ export class CanvasLayer extends Component {
         }
     }
 
-    private getCanvas(): HTMLCanvasElement {
-        return this.findOne('canvas')!
-    }
-
-    private getCtx(): CanvasRenderingContext2D {
-        return this.getCanvas().getContext('2d')!
-    }
-
-    private setCanvasDimensions(canvas: HTMLCanvasElement): void {
-        canvas.width = window.outerWidth
-        canvas.height = window.outerHeight
-    }
-
     private handleWindowResize(): void {
-        const currentCanvas = this.getCanvas()
-        this.setCanvasDimensions(currentCanvas)
+        this.canvas.setDimensions({
+            width: window.innerWidth,
+            height: window.innerHeight,
+        })
     }
 }

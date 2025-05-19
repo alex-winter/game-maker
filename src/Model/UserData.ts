@@ -1,6 +1,6 @@
 import { Coordinates } from 'Model/Coordinates'
 
-export interface UserData {
+export type UserData = {
 
     lastViewPosition: Coordinates
 

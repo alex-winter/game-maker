@@ -1,6 +1,6 @@
 import { CollisionPlacement, ImagePlacement } from 'Client/Model/Placement'
 
-interface BaseLayer {
+type BaseLayer = {
     uuid: string
 
     type: string
@@ -14,7 +14,7 @@ interface BaseLayer {
     is_active: boolean
 }
 
-export interface Layer extends BaseLayer {
+export type Layer = BaseLayer & {
 
     placements: ImagePlacement[]
 

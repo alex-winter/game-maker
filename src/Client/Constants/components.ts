@@ -9,6 +9,7 @@ import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 import { NewLayerForm } from 'Client/Component/NewLayerForm/NewLayerForm'
 import { CanvasLayer } from 'Client/Component/Canvas/CanvasLayer'
 import { LayerItem } from 'Client/Component/LayerListing/LayerItem'
+import { Canvas2D } from 'Client/Component/Canvas/Canvas'
 
 export const COMPONENTS = new Map<CustomElementConstructor, string>([
 
@@ -33,5 +34,7 @@ export const COMPONENTS = new Map<CustomElementConstructor, string>([
   [CanvasLayer, 'canvas-layer'],
 
   [LayerItem, 'layer-item'],
+
+  [Canvas2D, 'canvas-2d']
 
 ])

@@ -2,6 +2,85 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
+/***/ "./src/Client/Component/Canvas/Canvas.ts":
+/*!***********************************************!*\
+  !*** ./src/Client/Component/Canvas/Canvas.ts ***!
+  \***********************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Canvas2D = void 0;
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+class Canvas2D extends Component_1.Component {
+    animationTimeout;
+    frameFunction;
+    drawImage(image, dx, dy, dw, dh, sx, sy, sw, sh) {
+        const ctx = this.getCtx();
+        if (sx !== undefined &&
+            sy !== undefined &&
+            sw !== undefined &&
+            sh !== undefined &&
+            dw !== undefined &&
+            dh !== undefined) {
+            ctx.drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh);
+        }
+        else if (dw !== undefined && dh !== undefined) {
+            ctx.drawImage(image, dx, dy, dw, dh);
+        }
+        else {
+            ctx.drawImage(image, dx, dy);
+        }
+    }
+    startAnimation(frameFunction) {
+        this.frameFunction = frameFunction;
+        this.frame();
+    }
+    stopAnimation() {
+        clearTimeout(this.animationTimeout);
+    }
+    isRectVisible(cameraCoordinates, rect) {
+        const viewLeft = cameraCoordinates.x;
+        const viewTop = cameraCoordinates.y;
+        const viewRight = viewLeft + this.getCanvas().width;
+        const viewBottom = viewTop + this.getCanvas().height;
+        return !(rect.x + rect.width < viewLeft ||
+            rect.x > viewRight ||
+            rect.y + rect.height < viewTop ||
+            rect.y > viewBottom);
+    }
+    setDimensions(dimensions) {
+        const canvas = this.getCanvas();
+        canvas.width = dimensions.width;
+        canvas.height = dimensions.height;
+    }
+    build() {
+        return Dom_1.Dom.canvas();
+    }
+    frame = () => {
+        const ctx = this.getCtx();
+        this.clear();
+        this.frameFunction(ctx);
+        this.animationTimeout = setTimeout(() => {
+            window.requestAnimationFrame(this.frame);
+        }, 100);
+    };
+    clear() {
+        this.getCtx().clearRect(0, 0, this.getCanvas().width, this.getCanvas().height);
+    }
+    getCanvas() {
+        return this.findOne('canvas');
+    }
+    getCtx() {
+        return this.getCanvas().getContext('2d');
+    }
+}
+exports.Canvas2D = Canvas2D;
+
+
+/***/ }),
+
 /***/ "./src/Client/Component/Canvas/CanvasLayer.ts":
 /*!****************************************************!*\
   !*** ./src/Client/Component/Canvas/CanvasLayer.ts ***!
@@ -11,7 +90,6 @@
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CanvasLayer = void 0;
-const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
 const layers_1 = __webpack_require__(/*! Client/Constants/layers */ "./src/Client/Constants/layers.ts");
 const mouse_events_1 = __webpack_require__(/*! Client/Constants/mouse-events */ "./src/Client/Constants/mouse-events.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
@@ -19,6 +97,7 @@ const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Servic
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 const generate_image_1 = __webpack_require__(/*! Client/Service/generate-image */ "./src/Client/Service/generate-image.ts");
 const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Repository/PlacementImageRepository */ "./src/Client/Service/Repository/PlacementImageRepository.ts");
+const Canvas_1 = __webpack_require__(/*! Client/Component/Canvas/Canvas */ "./src/Client/Component/Canvas/Canvas.ts");
 class CanvasLayer extends Component_1.Component {
     currentImage;
     layer;
@@ -27,9 +106,8 @@ class CanvasLayer extends Component_1.Component {
     isMoving = false;
     lastMousePosition = { x: 0, y: 0 };
     viewCoordinates = { x: 0, y: 0 };
-    scale = 1;
     isCollisionLayer = false;
-    animationTimeout;
+    canvas = Dom_1.Dom.makeComponent(Canvas_1.Canvas2D);
     listeners = {
         'window-resize': this.handleWindowResize,
         'layer-update': this.handleLayerUpdate,
@@ -81,7 +159,7 @@ class CanvasLayer extends Component_1.Component {
     }
     build() {
         const container = Dom_1.Dom.div('container');
-        const canvas = Dom_1.Dom.canvas();
+        const canvas = this.canvas;
         canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
         canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
         canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
@@ -92,11 +170,8 @@ class CanvasLayer extends Component_1.Component {
             this.currentImage.classList.add('current-image');
         }
         container.append(canvas);
-        if (this.animationTimeout) {
-            clearTimeout(this.animationTimeout);
-        }
-        this.frame();
-        this.setCanvasDimensions(canvas);
+        this.canvas.startAnimation(this.frame.bind(this));
+        this.handleWindowResize();
         return container;
     }
     afterBuild() {
@@ -114,7 +189,8 @@ class CanvasLayer extends Component_1.Component {
     }
     handleDelete(event) {
         if (this.layer.uuid === event.detail) {
-            clearTimeout(this.animationTimeout);
+            this.canvas.stopAnimation();
+            this.canvas.destroy();
             this.destroy();
         }
     }
@@ -122,8 +198,8 @@ class CanvasLayer extends Component_1.Component {
         const movement = event.detail;
         const dx = movement.clientX - movement.lastMousePosition.x;
         const dy = movement.clientY - movement.lastMousePosition.y;
-        this.viewCoordinates.x -= dx / this.scale;
-        this.viewCoordinates.y -= dy / this.scale;
+        this.viewCoordinates.x -= dx;
+        this.viewCoordinates.y -= dy;
         this.lastMousePosition.x = movement.clientX;
         this.lastMousePosition.y = movement.clientY;
         Events_1.Events.emit('updated-view-coordinates', this.viewCoordinates);
@@ -135,27 +211,13 @@ class CanvasLayer extends Component_1.Component {
             this.patch();
         }
     }
-    drawPlacement(loadedPlacement) {
-        this.getCtx().drawImage(loadedPlacement.image, (loadedPlacement.x - this.viewCoordinates.x) * this.scale, (loadedPlacement.y - this.viewCoordinates.y) * this.scale, loadedPlacement.image.width * this.scale, loadedPlacement.image.height * this.scale);
-    }
-    isPlacementVisible(loadedPlacement) {
-        const viewLeft = this.viewCoordinates.x;
-        const viewTop = this.viewCoordinates.y;
-        const viewRight = viewLeft + this.getCanvas().width / this.scale;
-        const viewBottom = viewTop + this.getCanvas().height / this.scale;
-        return !(loadedPlacement.x + loadedPlacement.image.width < viewLeft ||
-            loadedPlacement.x > viewRight ||
-            loadedPlacement.y + loadedPlacement.image.height < viewTop ||
-            loadedPlacement.y > viewBottom);
-    }
-    frame() {
-        this.animationTimeout = setTimeout(() => {
-            const ctx = this.getCtx();
-            ctx.clearRect(0, 0, this.getCanvas().width, this.getCanvas().height);
-            const visible = this.loadedPlacements.filter(this.isPlacementVisible.bind(this));
-            visible.forEach(this.drawPlacement.bind(this));
-            window.requestAnimationFrame(this.frame.bind(this));
-        }, 100);
+    frame(ctx) {
+        const visible = this.loadedPlacements.filter(loadedPlacement => {
+            return this.canvas.isRectVisible(this.viewCoordinates, loadedPlacement.image);
+        });
+        visible.forEach(loadedPlacement => {
+            this.canvas.drawImage(loadedPlacement.image, (loadedPlacement.x - this.viewCoordinates.x), (loadedPlacement.y - this.viewCoordinates.y), loadedPlacement.image.width, loadedPlacement.image.height);
+        });
     }
     snap(value) {
         return Math.floor(value / 16) * 16;
@@ -163,12 +225,12 @@ class CanvasLayer extends Component_1.Component {
     handleMouseMove(event) {
         const rawX = event.clientX;
         const rawY = event.clientY;
-        const worldX = this.viewCoordinates.x + rawX / this.scale;
-        const worldY = this.viewCoordinates.y + rawY / this.scale;
+        const worldX = this.viewCoordinates.x + rawX;
+        const worldY = this.viewCoordinates.y + rawY;
         const snappedWorldX = this.snap(worldX);
         const snappedWorldY = this.snap(worldY);
-        const screenX = (snappedWorldX - this.viewCoordinates.x) * this.scale;
-        const screenY = (snappedWorldY - this.viewCoordinates.y) * this.scale;
+        const screenX = (snappedWorldX - this.viewCoordinates.x);
+        const screenY = (snappedWorldY - this.viewCoordinates.y);
         this.mouseCoordinates.x = snappedWorldX;
         this.mouseCoordinates.y = snappedWorldY;
         if (this.currentImage) {
@@ -207,7 +269,7 @@ class CanvasLayer extends Component_1.Component {
                 this.generatePlacement();
             };
             const mouseUp = (event) => {
-                Events_1.Events.emit(events_1.EVENTS.layerPlacementMade, this.layer);
+                Events_1.Events.emit('layer-placement-made', this.layer);
                 document.removeEventListener('mouseup', mouseUp);
                 document.removeEventListener('mousemove', mouseMove);
             };
@@ -233,19 +295,11 @@ class CanvasLayer extends Component_1.Component {
             this.currentImage.classList.add('current-image');
         }
     }
-    getCanvas() {
-        return this.findOne('canvas');
-    }
-    getCtx() {
-        return this.getCanvas().getContext('2d');
-    }
-    setCanvasDimensions(canvas) {
-        canvas.width = window.outerWidth;
-        canvas.height = window.outerHeight;
-    }
     handleWindowResize() {
-        const currentCanvas = this.getCanvas();
-        this.setCanvasDimensions(currentCanvas);
+        this.canvas.setDimensions({
+            width: window.innerWidth,
+            height: window.innerHeight,
+        });
     }
 }
 exports.CanvasLayer = CanvasLayer;
@@ -1078,6 +1132,7 @@ const BasicModal_1 = __webpack_require__(/*! Client/Component/Generic/Modal/Basi
 const NewLayerForm_1 = __webpack_require__(/*! Client/Component/NewLayerForm/NewLayerForm */ "./src/Client/Component/NewLayerForm/NewLayerForm.ts");
 const CanvasLayer_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasLayer */ "./src/Client/Component/Canvas/CanvasLayer.ts");
 const LayerItem_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerItem */ "./src/Client/Component/LayerListing/LayerItem.ts");
+const Canvas_1 = __webpack_require__(/*! Client/Component/Canvas/Canvas */ "./src/Client/Component/Canvas/Canvas.ts");
 exports.COMPONENTS = new Map([
     [SideMenu_1.SideMenu, 'side-menu'],
     [LayerListing_1.LayerListing, 'layer-listing'],
@@ -1090,6 +1145,7 @@ exports.COMPONENTS = new Map([
     [NewLayerForm_1.NewLayerForm, 'new-layer-form'],
     [CanvasLayer_1.CanvasLayer, 'canvas-layer'],
     [LayerItem_1.LayerItem, 'layer-item'],
+    [Canvas_1.Canvas2D, 'canvas-2d']
 ]);
 
 
