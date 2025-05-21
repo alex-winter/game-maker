@@ -80,10 +80,14 @@ export class CanvasLayer extends Component {
     private async loadPlacement(placement: ImagePlacement): Promise<void> {
         const image = (await placementImageRepository.getByUuid(placement.imageUuid))!
 
+        const loadedImage = await Dom.image(image.src)
+
         this.loadedPlacements.push({
-            image: await Dom.image(image.src),
+            image: loadedImage,
             x: placement.coordinate.x,
             y: placement.coordinate.y,
+            width: loadedImage.width,
+            height: loadedImage.height,
         })
     }
 
@@ -176,19 +180,18 @@ export class CanvasLayer extends Component {
         }
     }
 
-    private frame(ctx: CanvasRenderingContext2D): void {
+    private frame(): void {
         const visible = this.loadedPlacements.filter(loadedPlacement => {
             return this.canvas.isRectVisible(
-                this.viewCoordinates,
-                loadedPlacement.image,
+                loadedPlacement,
             )
         })
 
         visible.forEach(loadedPlacement => {
             this.canvas.drawImage(
                 loadedPlacement.image,
-                (loadedPlacement.x - this.viewCoordinates.x),
-                (loadedPlacement.y - this.viewCoordinates.y),
+                loadedPlacement.x - this.viewCoordinates.x,
+                loadedPlacement.y - this.viewCoordinates.y,
                 loadedPlacement.image.width,
                 loadedPlacement.image.height,
             )
@@ -209,8 +212,8 @@ export class CanvasLayer extends Component {
         const snappedWorldX = this.snap(worldX)
         const snappedWorldY = this.snap(worldY)
 
-        const screenX = (snappedWorldX - this.viewCoordinates.x)
-        const screenY = (snappedWorldY - this.viewCoordinates.y)
+        const screenX = snappedWorldX - this.viewCoordinates.x
+        const screenY = snappedWorldY - this.viewCoordinates.y
 
         this.mouseCoordinates.x = snappedWorldX
         this.mouseCoordinates.y = snappedWorldY

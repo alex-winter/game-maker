@@ -1,5 +1,5 @@
-import { Coordinates } from 'Model/Coordinates'
+import { Rect } from 'Model/Coordinates'
 
-export type LoadedPlacement = Coordinates & {
+export type LoadedPlacement = Rect & {
     image: HTMLImageElement
 } 

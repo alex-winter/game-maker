@@ -75,12 +75,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 throw new Error('could not find placement image')
             }
 
+            const image = await Dom.image(
+                placementImage.src
+            )
+
             loadedPlacements.push({
-                image: await Dom.image(
-                    placementImage.src
-                ),
+                image,
                 x: placement.coordinate.x,
                 y: placement.coordinate.y,
+                width: image.width,
+                height: image.height,
                 type: layer.type,
             })
         })

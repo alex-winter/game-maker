@@ -1,6 +1,6 @@
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
-import { Coordinates, Dimensions, Rect } from 'Model/Coordinates'
+import { Dimensions, Rect } from 'Model/Coordinates'
 
 export class Canvas2D extends Component {
     private animationTimeout!: number
@@ -36,6 +36,19 @@ export class Canvas2D extends Component {
         }
     }
 
+    public drawDebugRect(rect: Rect): void {
+        const ctx = this.getCtx()
+
+        ctx.strokeStyle = 'red'
+        ctx.lineWidth = 1
+        ctx.strokeRect(
+            rect.x,
+            rect.y,
+            rect.width,
+            rect.height,
+        )
+    }
+
     public startAnimation(frameFunction: Function): void {
         this.frameFunction = frameFunction
         this.frame()
@@ -46,13 +59,17 @@ export class Canvas2D extends Component {
     }
 
     public isRectVisible(
-        cameraCoordinates: Coordinates,
         rect: Rect,
     ): boolean {
-        const viewLeft = cameraCoordinates.x
-        const viewTop = cameraCoordinates.y
-        const viewRight = viewLeft + this.getCanvas().width
-        const viewBottom = viewTop + this.getCanvas().height
+        const viewLeft = 0
+        const viewTop = 0
+        const viewRight = this.getCanvas().width
+        const viewBottom = this.getCanvas().height
+
+        console.log(
+            rect.x,
+            rect.y
+        )
 
         return !(
             rect.x + rect.width < viewLeft ||

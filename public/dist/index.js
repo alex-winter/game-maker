@@ -34,6 +34,12 @@ class Canvas2D extends Component_1.Component {
             ctx.drawImage(image, dx, dy);
         }
     }
+    drawDebugRect(rect) {
+        const ctx = this.getCtx();
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+    }
     startAnimation(frameFunction) {
         this.frameFunction = frameFunction;
         this.frame();
@@ -41,11 +47,12 @@ class Canvas2D extends Component_1.Component {
     stopAnimation() {
         clearTimeout(this.animationTimeout);
     }
-    isRectVisible(cameraCoordinates, rect) {
-        const viewLeft = cameraCoordinates.x;
-        const viewTop = cameraCoordinates.y;
-        const viewRight = viewLeft + this.getCanvas().width;
-        const viewBottom = viewTop + this.getCanvas().height;
+    isRectVisible(rect) {
+        const viewLeft = 0;
+        const viewTop = 0;
+        const viewRight = this.getCanvas().width;
+        const viewBottom = this.getCanvas().height;
+        console.log(rect.x, rect.y);
         return !(rect.x + rect.width < viewLeft ||
             rect.x > viewRight ||
             rect.y + rect.height < viewTop ||
@@ -147,10 +154,13 @@ class CanvasLayer extends Component_1.Component {
     }
     async loadPlacement(placement) {
         const image = (await PlacementImageRepository_1.placementImageRepository.getByUuid(placement.imageUuid));
+        const loadedImage = await Dom_1.Dom.image(image.src);
         this.loadedPlacements.push({
-            image: await Dom_1.Dom.image(image.src),
+            image: loadedImage,
             x: placement.coordinate.x,
             y: placement.coordinate.y,
+            width: loadedImage.width,
+            height: loadedImage.height,
         });
     }
     async setup() {
@@ -215,12 +225,12 @@ class CanvasLayer extends Component_1.Component {
             this.patch();
         }
     }
-    frame(ctx) {
+    frame() {
         const visible = this.loadedPlacements.filter(loadedPlacement => {
-            return this.canvas.isRectVisible(this.viewCoordinates, loadedPlacement.image);
+            return this.canvas.isRectVisible(loadedPlacement);
         });
         visible.forEach(loadedPlacement => {
-            this.canvas.drawImage(loadedPlacement.image, (loadedPlacement.x - this.viewCoordinates.x), (loadedPlacement.y - this.viewCoordinates.y), loadedPlacement.image.width, loadedPlacement.image.height);
+            this.canvas.drawImage(loadedPlacement.image, loadedPlacement.x - this.viewCoordinates.x, loadedPlacement.y - this.viewCoordinates.y, loadedPlacement.image.width, loadedPlacement.image.height);
         });
     }
     snap(value) {
@@ -233,8 +243,8 @@ class CanvasLayer extends Component_1.Component {
         const worldY = this.viewCoordinates.y + rawY;
         const snappedWorldX = this.snap(worldX);
         const snappedWorldY = this.snap(worldY);
-        const screenX = (snappedWorldX - this.viewCoordinates.x);
-        const screenY = (snappedWorldY - this.viewCoordinates.y);
+        const screenX = snappedWorldX - this.viewCoordinates.x;
+        const screenY = snappedWorldY - this.viewCoordinates.y;
         this.mouseCoordinates.x = snappedWorldX;
         this.mouseCoordinates.y = snappedWorldY;
         if (this.currentImage) {
