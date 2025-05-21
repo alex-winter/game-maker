@@ -17,6 +17,15 @@ class Canvas2D extends Component_1.Component {
     animationTimeout;
     frameFunction;
     msPerFrame = 100;
+    css() {
+        return /*css*/ `
+            :host {
+                display: block;
+                width: 100%;
+                height: 100%;
+            }
+        `;
+    }
     drawImage(image, dx, dy, dw, dh, sx, sy, sw, sh) {
         const ctx = this.getCtx();
         if (sx !== undefined &&
@@ -57,16 +66,14 @@ class Canvas2D extends Component_1.Component {
             rect.y + rect.height < viewTop ||
             rect.y > viewBottom);
     }
-    setDimensions(dimensions) {
-        const canvas = this.getCanvas();
-        canvas.width = dimensions.width;
-        canvas.height = dimensions.height;
-    }
     async setup() {
         this.msPerFrame = 1000 / this.parameters.fps | 30;
     }
     build() {
-        return Dom_1.Dom.canvas();
+        const canvas = Dom_1.Dom.canvas();
+        canvas.width = this.offsetWidth;
+        canvas.height = this.offsetHeight;
+        return canvas;
     }
     frame = () => {
         const ctx = this.getCtx();
@@ -124,7 +131,6 @@ class CanvasLayer extends Component_1.Component {
         'layer-update': this.handleLayerUpdate,
         'moving-in-canvas': this.handleMovement,
         'sheet-selection-made': this.handleCurrentImageChange,
-        'window-resize': this.handleWindowResize,
     };
     css() {
         return /*css*/ `
@@ -134,6 +140,8 @@ class CanvasLayer extends Component_1.Component {
                 position: absolute;
                 top: 0;
                 left: 0;
+                width: 100%;
+                height: 100%;
             }
             
             :host(.active) {
@@ -148,6 +156,11 @@ class CanvasLayer extends Component_1.Component {
 
             .hide {
                 display: none;
+            }
+
+            .container {
+                width: 100%;
+                height: 100%;
             }
         `;
     }
@@ -186,7 +199,6 @@ class CanvasLayer extends Component_1.Component {
         return container;
     }
     afterBuild() {
-        this.handleWindowResize();
         this.canvas.startAnimation(this.frame.bind(this));
         Events_1.Events.emit('built-canvas-layer');
         this.addEventListener('mouseup', (event) => {
@@ -308,12 +320,6 @@ class CanvasLayer extends Component_1.Component {
             this.findOne('.container')?.append(this.currentImage);
             this.currentImage.classList.add('current-image');
         }
-    }
-    handleWindowResize() {
-        this.canvas.setDimensions({
-            width: window.innerWidth,
-            height: window.innerHeight,
-        });
     }
 }
 exports.CanvasLayer = CanvasLayer;

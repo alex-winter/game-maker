@@ -7,6 +7,16 @@ export class Canvas2D extends Component {
     private frameFunction!: Function
     private msPerFrame: number = 100
 
+    protected css(): string {
+        return /*css*/`
+            :host {
+                display: block;
+                width: 100%;
+                height: 100%;
+            }
+        `
+    }
+
     public drawImage(
         image: CanvasImageSource,
         dx: number,
@@ -75,19 +85,17 @@ export class Canvas2D extends Component {
         )
     }
 
-    public setDimensions(dimensions: Dimensions): void {
-        const canvas = this.getCanvas()
-
-        canvas.width = dimensions.width
-        canvas.height = dimensions.height
-    }
-
     protected async setup(): Promise<void> {
         this.msPerFrame = 1000 / this.parameters.fps | 30
     }
 
     protected build(): HTMLElement {
-        return Dom.canvas()
+        const canvas = Dom.canvas()
+
+        canvas.width = this.offsetWidth
+        canvas.height = this.offsetHeight
+
+        return canvas
     }
 
     private frame = (): void => {

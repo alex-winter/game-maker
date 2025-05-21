@@ -48,7 +48,6 @@ export class CanvasLayer extends Component {
         'layer-update': this.handleLayerUpdate,
         'moving-in-canvas': this.handleMovement,
         'sheet-selection-made': this.handleCurrentImageChange,
-        'window-resize': this.handleWindowResize,
     }
 
     protected css(): string {
@@ -59,6 +58,8 @@ export class CanvasLayer extends Component {
                 position: absolute;
                 top: 0;
                 left: 0;
+                width: 100%;
+                height: 100%;
             }
             
             :host(.active) {
@@ -73,6 +74,11 @@ export class CanvasLayer extends Component {
 
             .hide {
                 display: none;
+            }
+
+            .container {
+                width: 100%;
+                height: 100%;
             }
         `
     }
@@ -124,8 +130,6 @@ export class CanvasLayer extends Component {
     }
 
     protected afterBuild(): void {
-        this.handleWindowResize()
-
         this.canvas.startAnimation(this.frame.bind(this))
 
         Events.emit('built-canvas-layer')
@@ -294,12 +298,5 @@ export class CanvasLayer extends Component {
             this.findOne('.container')?.append(this.currentImage)
             this.currentImage.classList.add('current-image')
         }
-    }
-
-    private handleWindowResize(): void {
-        this.canvas.setDimensions({
-            width: window.innerWidth,
-            height: window.innerHeight,
-        })
     }
 }
