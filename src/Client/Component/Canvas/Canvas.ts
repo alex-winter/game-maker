@@ -64,8 +64,8 @@ export class Canvas2D extends Component {
     ): boolean {
         const viewLeft = viewCoordinates.x
         const viewTop = viewCoordinates.y
-        const viewRight = this.getCanvas().width
-        const viewBottom = this.getCanvas().height
+        const viewRight = viewLeft + this.getCanvas().width
+        const viewBottom = viewTop + this.getCanvas().height
 
         return !(
             rect.x + rect.width < viewLeft ||
