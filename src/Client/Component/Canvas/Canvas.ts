@@ -1,6 +1,6 @@
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
-import { Dimensions, Rect } from 'Model/Coordinates'
+import { Coordinates, Dimensions, Rect } from 'Model/Coordinates'
 
 export class Canvas2D extends Component {
     private animationTimeout!: number
@@ -59,17 +59,13 @@ export class Canvas2D extends Component {
     }
 
     public isRectVisible(
+        viewCoordinates: Coordinates,
         rect: Rect,
     ): boolean {
-        const viewLeft = 0
-        const viewTop = 0
+        const viewLeft = viewCoordinates.x
+        const viewTop = viewCoordinates.y
         const viewRight = this.getCanvas().width
         const viewBottom = this.getCanvas().height
-
-        console.log(
-            rect.x,
-            rect.y
-        )
 
         return !(
             rect.x + rect.width < viewLeft ||

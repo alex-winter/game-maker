@@ -40,7 +40,7 @@ export class CanvasLayer extends Component {
     private viewCoordinates: Coordinates = { x: 0, y: 0 }
     private isCollisionLayer: boolean = false
 
-    private readonly canvas: Canvas2D = Dom.makeComponent(Canvas2D, { fps: 30 }) as Canvas2D
+    private readonly canvas: Canvas2D = Dom.makeComponent(Canvas2D, { fps: 60 }) as Canvas2D
 
     protected readonly listeners: Listeners = {
         'got-user-data': this.handleGotUserData,
@@ -181,11 +181,24 @@ export class CanvasLayer extends Component {
     }
 
     private frame(): void {
-        const visible = this.loadedPlacements.filter(loadedPlacement => {
-            return this.canvas.isRectVisible(
-                loadedPlacement,
-            )
-        })
+        const visible = this.loadedPlacements
+        // .filter(loadedPlacement => {
+        //     return this.canvas.isRectVisible(
+        //         loadedPlacement,
+        //     )
+        // })
+
+        console.log(
+
+            this.loadedPlacements
+                .filter(loadedPlacement => {
+                    return this.canvas.isRectVisible(
+                        this.viewCoordinates,
+                        loadedPlacement,
+                    )
+                }).length
+
+        )
 
         visible.forEach(loadedPlacement => {
             this.canvas.drawImage(

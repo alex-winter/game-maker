@@ -47,12 +47,11 @@ class Canvas2D extends Component_1.Component {
     stopAnimation() {
         clearTimeout(this.animationTimeout);
     }
-    isRectVisible(rect) {
-        const viewLeft = 0;
-        const viewTop = 0;
+    isRectVisible(viewCoordinates, rect) {
+        const viewLeft = viewCoordinates.x;
+        const viewTop = viewCoordinates.y;
         const viewRight = this.getCanvas().width;
         const viewBottom = this.getCanvas().height;
-        console.log(rect.x, rect.y);
         return !(rect.x + rect.width < viewLeft ||
             rect.x > viewRight ||
             rect.y + rect.height < viewTop ||
@@ -118,7 +117,7 @@ class CanvasLayer extends Component_1.Component {
     lastMousePosition = { x: 0, y: 0 };
     viewCoordinates = { x: 0, y: 0 };
     isCollisionLayer = false;
-    canvas = Dom_1.Dom.makeComponent(Canvas_1.Canvas2D, { fps: 30 });
+    canvas = Dom_1.Dom.makeComponent(Canvas_1.Canvas2D, { fps: 60 });
     listeners = {
         'got-user-data': this.handleGotUserData,
         'layer-deleted': this.handleDelete,
@@ -226,9 +225,16 @@ class CanvasLayer extends Component_1.Component {
         }
     }
     frame() {
-        const visible = this.loadedPlacements.filter(loadedPlacement => {
-            return this.canvas.isRectVisible(loadedPlacement);
-        });
+        const visible = this.loadedPlacements;
+        // .filter(loadedPlacement => {
+        //     return this.canvas.isRectVisible(
+        //         loadedPlacement,
+        //     )
+        // })
+        console.log(this.loadedPlacements
+            .filter(loadedPlacement => {
+            return this.canvas.isRectVisible(this.viewCoordinates, loadedPlacement);
+        }).length);
         visible.forEach(loadedPlacement => {
             this.canvas.drawImage(loadedPlacement.image, loadedPlacement.x - this.viewCoordinates.x, loadedPlacement.y - this.viewCoordinates.y, loadedPlacement.image.width, loadedPlacement.image.height);
         });
