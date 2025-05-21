@@ -2,11 +2,13 @@ import { DraggableHTMLElement, handleDragAndDrop } from 'Client/Component/Generi
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
+import { WindowConfiguration } from 'Model/UserData'
 
 export class WindowBox extends Component implements DraggableHTMLElement {
     isDragging = false
     offsetX = 0
     offsetY = 0
+    private configuration!: WindowConfiguration
 
     public zIndexMoveDown(): void {
         this.style.zIndex = '1000'
@@ -99,12 +101,17 @@ export class WindowBox extends Component implements DraggableHTMLElement {
         `
     }
 
+    protected async setup(): Promise<void> {
+        this.configuration = this.parameters.configuration
+    }
+
     protected build(): HTMLElement {
         const container = Dom.div('window-box')
         const content = Dom.div('content')
         const slot = Dom.slot()
 
         container.addEventListener('mousedown', (e) => Events.emitMouseDownOnWindowBox(this))
+
 
         content.append(slot)
 
@@ -114,6 +121,14 @@ export class WindowBox extends Component implements DraggableHTMLElement {
         )
 
         return container
+    }
+
+    protected afterBuild(): void {
+        (new ResizeObserver(() => {
+            this.configuration.width = this.offsetWidth
+            this.configuration.height = this.offsetHeight
+            Events.emit('window-update', this.configuration)
+        })).observe(this)
     }
 
     private buildHeader(): HTMLElement {
@@ -127,10 +142,6 @@ export class WindowBox extends Component implements DraggableHTMLElement {
         title.innerText = this.dataset.title || ''
 
         element.addEventListener('mousedown', (e) => handleDragAndDrop(this, e))
-
-        element.addEventListener('mouseup', (e) => {
-
-        })
 
         close.addEventListener('click', (event) => {
             event.stopPropagation()

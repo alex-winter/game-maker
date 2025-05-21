@@ -1,6 +1,6 @@
 import 'Client/styles.css'
 
-import { COMPONENTS } from 'Client/Constants/components'
+import { COMPONENT_UUID_LOOKUP, COMPONENT_UUIDS_CONSTRUCT_LOOKUP, COMPONENTS } from 'Client/Constants/components'
 import { Events } from 'Client/Service/Events'
 import { FileUpload } from 'Client/Service/FileUpload'
 import { Dom } from 'Client/Service/Dom'
@@ -19,7 +19,7 @@ import { CanvasLayer } from 'Client/Component/Canvas/CanvasLayer'
 import { SheetRepository } from 'Client/Service/Repository/SheetRepository'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { UserDataRepsitory } from 'Client/Service/Repository/UserDataRepository'
-import { UserData } from 'Model/UserData'
+import { WindowConfiguration } from 'Model/UserData'
 import { Coordinates } from 'Model/Coordinates'
 
 COMPONENTS.forEach((tagName, constructor) => {
@@ -47,7 +47,18 @@ document.addEventListener('DOMContentLoaded', () => {
         })
     }
 
-    userDataRepository.getAll()
+    userDataRepository.getAll().then(userData => {
+        Object.entries(userData.windows).forEach(([componentUuid, windowConfiguration]) => {
+            WindowBoxFactory.make(
+                Dom.makeComponent(
+                    COMPONENT_UUID_LOOKUP.get(componentUuid)!,
+                    windowConfiguration.componentConfigration.dataset
+                ),
+                'test',
+                windowConfiguration,
+            )
+        })
+    })
 
     Events.listen(async event => {
         Events.emit('got-user-data', await userDataRepository.getAll())
@@ -62,11 +73,15 @@ document.addEventListener('DOMContentLoaded', () => {
             windowBoxes[sheet.name].flash()
             return
         }
-        const component = Dom.makeComponent(SheetViewer, { imageSrc: sheet.imageSrc })
+        const sheetViewerDataset = { imageSrc: sheet.imageSrc }
+        const component = Dom.makeComponent(SheetViewer, sheetViewerDataset)
 
         openSheets.push(sheet.name)
 
-        windowBoxes[sheet.name] = WindowBoxFactory.make(component, sheet.name)
+        windowBoxes[sheet.name] = WindowBoxFactory.make(component, sheet.name, {
+            uuid: COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetViewer)!,
+            componentConfigration: { dataset: sheetViewerDataset }
+        })
     })
 
     Events.listen(event => {
@@ -89,7 +104,10 @@ document.addEventListener('DOMContentLoaded', () => {
     Events.listenToSheetImportOpen(() => {
         const component = Dom.makeComponent(SheetImporter)
 
-        WindowBoxFactory.make(component, 'Import Sheets')
+        WindowBoxFactory.make(component, 'Import Sheets', {
+            uuid: COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetImporter)!,
+            componentConfigration: { dataset: {} }
+        })
     })
 
     Events.listen(() => {
@@ -186,6 +204,19 @@ document.addEventListener('DOMContentLoaded', () => {
             userDataRepository.persist(userData)
         },
         'updated-view-coordinates',
+    )
+
+    Events.listen(
+        async event => {
+            const windowConfiguration = event.detail as WindowConfiguration
+
+            const userData = await userDataRepository.getAll()
+
+            userData.windows[windowConfiguration.uuid] = windowConfiguration
+
+            userDataRepository.persist(userData)
+        },
+        'window-update',
     )
 
 

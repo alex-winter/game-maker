@@ -7,6 +7,8 @@ export class UserDataFactory {
                 x: 0,
                 y: 0,
             },
+
+            windows: {},
         }
     }
 }

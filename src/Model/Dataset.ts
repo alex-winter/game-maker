@@ -1,0 +1,1 @@
+export type Dataset = { [key: string]: any }
