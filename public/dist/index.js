@@ -225,16 +225,10 @@ class CanvasLayer extends Component_1.Component {
         }
     }
     frame() {
-        const visible = this.loadedPlacements;
-        // .filter(loadedPlacement => {
-        //     return this.canvas.isRectVisible(
-        //         loadedPlacement,
-        //     )
-        // })
-        console.log(this.loadedPlacements
+        const visible = this.loadedPlacements
             .filter(loadedPlacement => {
             return this.canvas.isRectVisible(this.viewCoordinates, loadedPlacement);
-        }).length);
+        });
         visible.forEach(loadedPlacement => {
             this.canvas.drawImage(loadedPlacement.image, loadedPlacement.x - this.viewCoordinates.x, loadedPlacement.y - this.viewCoordinates.y, loadedPlacement.image.width, loadedPlacement.image.height);
         });

@@ -182,23 +182,13 @@ export class CanvasLayer extends Component {
 
     private frame(): void {
         const visible = this.loadedPlacements
-        // .filter(loadedPlacement => {
-        //     return this.canvas.isRectVisible(
-        //         loadedPlacement,
-        //     )
-        // })
+            .filter(loadedPlacement => {
+                return this.canvas.isRectVisible(
+                    this.viewCoordinates,
+                    loadedPlacement,
+                )
+            })
 
-        console.log(
-
-            this.loadedPlacements
-                .filter(loadedPlacement => {
-                    return this.canvas.isRectVisible(
-                        this.viewCoordinates,
-                        loadedPlacement,
-                    )
-                }).length
-
-        )
 
         visible.forEach(loadedPlacement => {
             this.canvas.drawImage(
