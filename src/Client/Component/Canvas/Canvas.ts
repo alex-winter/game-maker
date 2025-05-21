@@ -1,11 +1,15 @@
-import { Component } from 'Client/Service/Component'
+import { Component, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
-import { Coordinates, Dimensions, Rect } from 'Model/Coordinates'
+import { Coordinates, Rect } from 'Model/Coordinates'
 
 export class Canvas2D extends Component {
     private animationTimeout!: number
     private frameFunction!: Function
     private msPerFrame: number = 100
+
+    protected listeners: Listeners = {
+        'window-resize': this.handleResize
+    }
 
     protected css(): string {
         return /*css*/`
@@ -96,6 +100,17 @@ export class Canvas2D extends Component {
         canvas.height = this.offsetHeight
 
         return canvas
+    }
+
+    protected afterBuild(): void {
+        this.handleResize()
+    }
+
+    private handleResize(): void {
+        const canvas = this.findOne('canvas')! as HTMLCanvasElement
+
+        canvas.width = this.offsetWidth
+        canvas.height = this.offsetHeight
     }
 
     private frame = (): void => {

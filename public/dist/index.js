@@ -17,6 +17,9 @@ class Canvas2D extends Component_1.Component {
     animationTimeout;
     frameFunction;
     msPerFrame = 100;
+    listeners = {
+        'window-resize': this.handleResize
+    };
     css() {
         return /*css*/ `
             :host {
@@ -74,6 +77,14 @@ class Canvas2D extends Component_1.Component {
         canvas.width = this.offsetWidth;
         canvas.height = this.offsetHeight;
         return canvas;
+    }
+    afterBuild() {
+        this.handleResize();
+    }
+    handleResize() {
+        const canvas = this.findOne('canvas');
+        canvas.width = this.offsetWidth;
+        canvas.height = this.offsetHeight;
     }
     frame = () => {
         const ctx = this.getCtx();
