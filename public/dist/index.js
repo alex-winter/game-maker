@@ -978,6 +978,7 @@ class CanvasLayer extends Component_1.Component {
     lastMousePosition = { x: 0, y: 0 };
     viewCoordinates = { x: 0, y: 0 };
     isCollisionLayer = false;
+    toolSelection = 'pencil';
     canvas = Dom_1.Dom.makeComponent(Canvas_1.Canvas2D, { fps: 60 });
     listeners = {
         'got-user-data': this.handleGotUserData,
@@ -985,6 +986,7 @@ class CanvasLayer extends Component_1.Component {
         'layer-update': this.handleLayerUpdate,
         'moving-in-canvas': this.handleMovement,
         'sheet-selection-made': this.handleCurrentImageChange,
+        'tool-selection': this.handleToolSelection,
     };
     css() {
         return /*css*/ `
@@ -1144,18 +1146,22 @@ class CanvasLayer extends Component_1.Component {
     }
     handleMouseDown(event) {
         if (event.button === mouse_events_1.LEFT_BUTTON && this.currentImage) {
-            // this.generatePlacement()
-            // const mouseMove = (event: MouseEvent) => {
-            //     this.generatePlacement()
-            // }
-            // const mouseUp = (event: MouseEvent) => {
-            //     Events.emit('layer-placement-made', this.layer)
-            //     document.removeEventListener('mouseup', mouseUp)
-            //     document.removeEventListener('mousemove', mouseMove)
-            // }
-            // document.addEventListener('mouseup', mouseUp)
-            // document.addEventListener('mousemove', mouseMove)
-            this.performFill(this.mouseCoordinates.x, this.mouseCoordinates.y);
+            if (this.toolSelection === 'pencil') {
+                this.generatePlacement();
+                const mouseMove = (event) => {
+                    this.generatePlacement();
+                };
+                const mouseUp = (event) => {
+                    Events_1.Events.emit('layer-placement-made', this.layer);
+                    document.removeEventListener('mouseup', mouseUp);
+                    document.removeEventListener('mousemove', mouseMove);
+                };
+                document.addEventListener('mouseup', mouseUp);
+                document.addEventListener('mousemove', mouseMove);
+            }
+            if (this.toolSelection === 'fill') {
+                this.performFill(this.mouseCoordinates.x, this.mouseCoordinates.y);
+            }
         }
         if (event.button === mouse_events_1.MIDDLE_BUTTON) {
             this.isMoving = true;
@@ -1243,6 +1249,9 @@ class CanvasLayer extends Component_1.Component {
         await this.loadPlacement(placement);
         Events_1.Events.emit('layer-placement-made', this.layer);
     }
+    handleToolSelection(event) {
+        this.toolSelection = event.detail;
+    }
 }
 exports.CanvasLayer = CanvasLayer;
 
@@ -1260,8 +1269,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CanvasTools = void 0;
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class CanvasTools extends Component_1.Component {
-    selectedTool = 'pencil';
+    currentTool = 'pencil';
+    isSingleton = true;
     css() {
         return /*css*/ `
             :host {
@@ -1284,25 +1295,40 @@ class CanvasTools extends Component_1.Component {
             button {
                 padding: 10px;
                 flex: 1;
+                border: 4px solid whitesmoke;
+            }
+
+            button.active {
+                border-color: black;
             }
         `;
     }
     async setup() {
-        this.selectedTool = this.parameters.selectedTool;
+        this.currentTool = this.parameters.currentTool;
     }
     build() {
         const container = Dom_1.Dom.div('container');
         const pencilButton = Dom_1.Dom.button();
         const pencilIcon = Dom_1.Dom.i('fa-solid', 'fa-pencil');
         pencilButton.append(pencilIcon);
-        pencilButton.classList.toggle('active', this.selectedTool === 'pencil');
+        pencilButton.classList.toggle('active', this.currentTool === 'pencil');
+        pencilButton.addEventListener('click', this.handlePencilToolClick);
         const fillButton = Dom_1.Dom.button();
         const fillIcon = Dom_1.Dom.i('fa-solid', 'fa-fill-drip');
         fillButton.append(fillIcon);
-        fillButton.classList.toggle('active', this.selectedTool === 'fill');
+        fillButton.classList.toggle('active', this.currentTool === 'fill');
+        fillButton.addEventListener('click', this.handleFillToolClick);
         container.append(pencilButton, fillButton);
         return container;
     }
+    handlePencilToolClick = (event) => {
+        Events_1.Events.emit('tool-selection', this.currentTool = 'pencil');
+        this.patch();
+    };
+    handleFillToolClick = (event) => {
+        Events_1.Events.emit('tool-selection', this.currentTool = 'fill');
+        this.patch();
+    };
 }
 exports.CanvasTools = CanvasTools;
 
@@ -3041,6 +3067,7 @@ const CanvasLayer_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasLaye
 const SheetRepository_1 = __webpack_require__(/*! Client/Service/Repository/SheetRepository */ "./src/Client/Service/Repository/SheetRepository.ts");
 const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Repository/PlacementImageRepository */ "./src/Client/Service/Repository/PlacementImageRepository.ts");
 const UserDataRepository_1 = __webpack_require__(/*! Client/Service/Repository/UserDataRepository */ "./src/Client/Service/Repository/UserDataRepository.ts");
+const CanvasTools_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasTools */ "./src/Client/Component/Canvas/CanvasTools.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
@@ -3063,6 +3090,8 @@ document.addEventListener('DOMContentLoaded', () => {
         Object.entries(userData.windows).forEach(([componentUuid, windowConfiguration]) => {
             WindowBoxFactory_1.WindowBoxFactory.make(Dom_1.Dom.makeComponent(components_1.COMPONENT_UUID_LOOKUP.get(componentUuid), windowConfiguration.componentConfigration.dataset), windowConfiguration.title, windowConfiguration);
         });
+        const tools = Dom_1.Dom.makeComponent(CanvasTools_1.CanvasTools, { currentTool: userData.currentTool });
+        document.body.append(tools);
     });
     Events_1.Events.listen(async (event) => {
         Events_1.Events.emit('got-user-data', await userDataRepository.getAll());

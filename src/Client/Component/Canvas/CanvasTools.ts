@@ -1,8 +1,11 @@
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
+import { Events } from 'Client/Service/Events'
 
 export class CanvasTools extends Component {
-    private selectedTool: string = 'pencil'
+    private currentTool: string = 'pencil'
+
+    public isSingleton: boolean = true
 
     protected css(): string {
         return /*css*/`
@@ -26,12 +29,17 @@ export class CanvasTools extends Component {
             button {
                 padding: 10px;
                 flex: 1;
+                border: 4px solid whitesmoke;
+            }
+
+            button.active {
+                border-color: black;
             }
         `
     }
 
     protected async setup(): Promise<void> {
-        this.selectedTool = this.parameters.selectedTool
+        this.currentTool = this.parameters.currentTool
     }
 
     protected build(): HTMLElement {
@@ -40,12 +48,15 @@ export class CanvasTools extends Component {
         const pencilButton = Dom.button()
         const pencilIcon = Dom.i('fa-solid', 'fa-pencil')
         pencilButton.append(pencilIcon)
-        pencilButton.classList.toggle('active', this.selectedTool === 'pencil')
+        pencilButton.classList.toggle('active', this.currentTool === 'pencil')
+        pencilButton.addEventListener('click', this.handlePencilToolClick)
 
         const fillButton = Dom.button()
         const fillIcon = Dom.i('fa-solid', 'fa-fill-drip')
         fillButton.append(fillIcon)
-        fillButton.classList.toggle('active', this.selectedTool === 'fill')
+        fillButton.classList.toggle('active', this.currentTool === 'fill')
+        fillButton.addEventListener('click', this.handleFillToolClick)
+
 
         container.append(
             pencilButton,
@@ -53,5 +64,15 @@ export class CanvasTools extends Component {
         )
 
         return container
+    }
+
+    private handlePencilToolClick = (event: Event): void => {
+        Events.emit('tool-selection', this.currentTool = 'pencil')
+        this.patch()
+    }
+
+    private handleFillToolClick = (event: Event): void => {
+        Events.emit('tool-selection', this.currentTool = 'fill')
+        this.patch()
     }
 }

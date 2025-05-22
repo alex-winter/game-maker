@@ -21,6 +21,7 @@ import { placementImageRepository } from 'Client/Service/Repository/PlacementIma
 import { UserDataRepsitory } from 'Client/Service/Repository/UserDataRepository'
 import { WindowConfiguration } from 'Model/UserData'
 import { Coordinates } from 'Model/Coordinates'
+import { CanvasTools } from 'Client/Component/Canvas/CanvasTools'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -58,6 +59,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 windowConfiguration,
             )
         })
+
+        const tools = Dom.makeComponent(CanvasTools, { currentTool: userData.currentTool })
+
+        document.body.append(tools)
     })
 
     Events.listen(async event => {

@@ -39,6 +39,7 @@ export class CanvasLayer extends Component {
     private lastMousePosition: Coordinates = { x: 0, y: 0 }
     private viewCoordinates: Coordinates = { x: 0, y: 0 }
     private isCollisionLayer: boolean = false
+    private toolSelection: string = 'pencil'
 
     private readonly canvas: Canvas2D = Dom.makeComponent(Canvas2D, { fps: 60 }) as Canvas2D
 
@@ -48,6 +49,7 @@ export class CanvasLayer extends Component {
         'layer-update': this.handleLayerUpdate,
         'moving-in-canvas': this.handleMovement,
         'sheet-selection-made': this.handleCurrentImageChange,
+        'tool-selection': this.handleToolSelection,
     }
 
     protected css(): string {
@@ -262,21 +264,26 @@ export class CanvasLayer extends Component {
 
     private handleMouseDown(event: MouseEvent): void {
         if (event.button === LEFT_BUTTON && this.currentImage) {
-            // this.generatePlacement()
+            if (this.toolSelection === 'pencil') {
+                this.generatePlacement()
 
-            // const mouseMove = (event: MouseEvent) => {
-            //     this.generatePlacement()
-            // }
+                const mouseMove = (event: MouseEvent) => {
+                    this.generatePlacement()
+                }
 
-            // const mouseUp = (event: MouseEvent) => {
-            //     Events.emit('layer-placement-made', this.layer)
-            //     document.removeEventListener('mouseup', mouseUp)
-            //     document.removeEventListener('mousemove', mouseMove)
-            // }
+                const mouseUp = (event: MouseEvent) => {
+                    Events.emit('layer-placement-made', this.layer)
+                    document.removeEventListener('mouseup', mouseUp)
+                    document.removeEventListener('mousemove', mouseMove)
+                }
 
-            // document.addEventListener('mouseup', mouseUp)
-            // document.addEventListener('mousemove', mouseMove)
-            this.performFill(this.mouseCoordinates.x, this.mouseCoordinates.y)
+                document.addEventListener('mouseup', mouseUp)
+                document.addEventListener('mousemove', mouseMove)
+            }
+
+            if (this.toolSelection === 'fill') {
+                this.performFill(this.mouseCoordinates.x, this.mouseCoordinates.y)
+            }
         }
 
         if (event.button === MIDDLE_BUTTON) {
@@ -405,5 +412,7 @@ export class CanvasLayer extends Component {
         Events.emit('layer-placement-made', this.layer)
     }
 
-
+    private handleToolSelection(event: CustomEvent): void {
+        this.toolSelection = event.detail as string
+    }
 }
