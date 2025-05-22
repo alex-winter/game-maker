@@ -1182,13 +1182,15 @@ class CanvasLayer extends Component_1.Component {
         const startTile = { x: targetX, y: targetY };
         const canvasWidth = this.canvas.getBoundingClientRect().width;
         const canvasHeight = this.canvas.getBoundingClientRect().height;
-        // Boundaries of the visible world space
         const minX = this.snap(this.viewCoordinates.x);
         const minY = this.snap(this.viewCoordinates.y);
         const maxX = this.snap(this.viewCoordinates.x + canvasWidth);
         const maxY = this.snap(this.viewCoordinates.y + canvasHeight);
+        const tileSize = CanvasLayer.TILE_SIZE;
+        const cols = (maxX - minX) / tileSize;
+        const rows = (maxY - minY) / tileSize;
         const isInBounds = (x, y) => {
-            return x >= minX && x <= maxX && y >= minY && y <= maxY;
+            return x >= minX && x < maxX && y >= minY && y < maxY;
         };
         const existing = this.layer.placements.find(p => p.coordinate.x === startTile.x && p.coordinate.y === startTile.y);
         const targetImageUuid = existing?.imageUuid ?? null;
@@ -1197,6 +1199,7 @@ class CanvasLayer extends Component_1.Component {
             return;
         const visited = new Set();
         const queue = [startTile];
+        const filledTiles = [];
         while (queue.length > 0) {
             const { x, y } = queue.pop();
             const key = `${x},${y}`;
@@ -1209,21 +1212,35 @@ class CanvasLayer extends Component_1.Component {
                 : match?.imageUuid === targetImageUuid;
             if (!matchesTarget)
                 continue;
-            // Replace or add placement
+            // Remove any old placement
             if (match) {
-                match.imageUuid = newImageUuid;
+                this.layer.placements = this.layer.placements.filter(p => p !== match);
             }
-            else {
-                const placement = {
-                    coordinate: { x, y },
-                    imageUuid: newImageUuid,
-                };
-                this.layer.placements.push(placement);
-                await this.loadPlacement(placement);
-            }
-            // Neighboring tiles (4-way)
-            queue.push({ x: x - CanvasLayer.TILE_SIZE, y }, { x: x + CanvasLayer.TILE_SIZE, y }, { x, y: y - CanvasLayer.TILE_SIZE }, { x, y: y + CanvasLayer.TILE_SIZE });
+            filledTiles.push({ x, y });
+            queue.push({ x: x - tileSize, y }, { x: x + tileSize, y }, { x, y: y - tileSize }, { x, y: y + tileSize });
         }
+        if (filledTiles.length === 0)
+            return;
+        // 🔥 Create the merged image
+        const fillCanvas = document.createElement('canvas');
+        const fillCtx = fillCanvas.getContext('2d');
+        const offsetX = Math.min(...filledTiles.map(t => t.x));
+        const offsetY = Math.min(...filledTiles.map(t => t.y));
+        const widthInTiles = Math.max(...filledTiles.map(t => t.x)) - offsetX + tileSize;
+        const heightInTiles = Math.max(...filledTiles.map(t => t.y)) - offsetY + tileSize;
+        fillCanvas.width = widthInTiles;
+        fillCanvas.height = heightInTiles;
+        filledTiles.forEach(tile => {
+            fillCtx.drawImage(this.currentImage, tile.x - offsetX, tile.y - offsetY, tileSize, tileSize);
+        });
+        const dataURL = fillCanvas.toDataURL();
+        const mergedImageUuid = (await PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(dataURL)).uuid;
+        const placement = {
+            coordinate: { x: offsetX, y: offsetY },
+            imageUuid: mergedImageUuid,
+        };
+        this.layer.placements.push(placement);
+        await this.loadPlacement(placement);
         Events_1.Events.emit('layer-placement-made', this.layer);
     }
 }
