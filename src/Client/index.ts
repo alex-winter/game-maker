@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     COMPONENT_UUID_LOOKUP.get(componentUuid)!,
                     windowConfiguration.componentConfigration.dataset
                 ),
-                'test',
+                windowConfiguration.title,
                 windowConfiguration,
             )
         })
@@ -80,7 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         windowBoxes[sheet.name] = WindowBoxFactory.make(component, sheet.name, {
             uuid: COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetViewer)!,
-            componentConfigration: { dataset: sheetViewerDataset }
+            componentConfigration: { dataset: sheetViewerDataset },
+            title: sheet.name,
         })
     })
 
@@ -106,7 +107,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         WindowBoxFactory.make(component, 'Import Sheets', {
             uuid: COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetImporter)!,
-            componentConfigration: { dataset: {} }
+            componentConfigration: { dataset: {} },
+            title: 'Import Sheets',
         })
     })
 

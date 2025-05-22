@@ -14,6 +14,7 @@ export type WindowConfiguration = {
         left: string
         top: string
     }
+    title: string
 }
 
 type WindowConfigurations = {

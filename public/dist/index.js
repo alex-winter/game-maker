@@ -2931,7 +2931,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     userDataRepository.getAll().then(userData => {
         Object.entries(userData.windows).forEach(([componentUuid, windowConfiguration]) => {
-            WindowBoxFactory_1.WindowBoxFactory.make(Dom_1.Dom.makeComponent(components_1.COMPONENT_UUID_LOOKUP.get(componentUuid), windowConfiguration.componentConfigration.dataset), 'test', windowConfiguration);
+            WindowBoxFactory_1.WindowBoxFactory.make(Dom_1.Dom.makeComponent(components_1.COMPONENT_UUID_LOOKUP.get(componentUuid), windowConfiguration.componentConfigration.dataset), windowConfiguration.title, windowConfiguration);
         });
     });
     Events_1.Events.listen(async (event) => {
@@ -2950,7 +2950,8 @@ document.addEventListener('DOMContentLoaded', () => {
         openSheets.push(sheet.name);
         windowBoxes[sheet.name] = WindowBoxFactory_1.WindowBoxFactory.make(component, sheet.name, {
             uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetViewer_1.SheetViewer),
-            componentConfigration: { dataset: sheetViewerDataset }
+            componentConfigration: { dataset: sheetViewerDataset },
+            title: sheet.name,
         });
     });
     Events_1.Events.listen(event => {
@@ -2972,7 +2973,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const component = Dom_1.Dom.makeComponent(SheetImporter_1.SheetImporter);
         WindowBoxFactory_1.WindowBoxFactory.make(component, 'Import Sheets', {
             uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetImporter_1.SheetImporter),
-            componentConfigration: { dataset: {} }
+            componentConfigration: { dataset: {} },
+            title: 'Import Sheets',
         });
     });
     Events_1.Events.listen(() => {
