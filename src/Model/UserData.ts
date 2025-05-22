@@ -27,4 +27,6 @@ export type UserData = {
 
     windows: WindowConfigurations
 
+    currentTool: 'pencil'
+
 }

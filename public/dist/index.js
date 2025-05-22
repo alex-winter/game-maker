@@ -1249,6 +1249,66 @@ exports.CanvasLayer = CanvasLayer;
 
 /***/ }),
 
+/***/ "./src/Client/Component/Canvas/CanvasTools.ts":
+/*!****************************************************!*\
+  !*** ./src/Client/Component/Canvas/CanvasTools.ts ***!
+  \****************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CanvasTools = void 0;
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+class CanvasTools extends Component_1.Component {
+    selectedTool = 'pencil';
+    css() {
+        return /*css*/ `
+            :host {
+                position: fixed;
+                display: block;
+                padding: 10px;
+                border-radius: 4px;
+                background-color: whitesmoke;
+                top: 10px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 800;
+            }
+
+            .container {
+                display: flex;
+                gap: 10px;
+            }
+
+            button {
+                padding: 10px;
+                flex: 1;
+            }
+        `;
+    }
+    async setup() {
+        this.selectedTool = this.parameters.selectedTool;
+    }
+    build() {
+        const container = Dom_1.Dom.div('container');
+        const pencilButton = Dom_1.Dom.button();
+        const pencilIcon = Dom_1.Dom.i('fa-solid', 'fa-pencil');
+        pencilButton.append(pencilIcon);
+        pencilButton.classList.toggle('active', this.selectedTool === 'pencil');
+        const fillButton = Dom_1.Dom.button();
+        const fillIcon = Dom_1.Dom.i('fa-solid', 'fa-fill-drip');
+        fillButton.append(fillIcon);
+        fillButton.classList.toggle('active', this.selectedTool === 'fill');
+        container.append(pencilButton, fillButton);
+        return container;
+    }
+}
+exports.CanvasTools = CanvasTools;
+
+
+/***/ }),
+
 /***/ "./src/Client/Component/File/FileUploader/FileUploader.ts":
 /*!****************************************************************!*\
   !*** ./src/Client/Component/File/FileUploader/FileUploader.ts ***!
@@ -2098,6 +2158,7 @@ const CanvasLayer_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasLaye
 const LayerItem_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerItem */ "./src/Client/Component/LayerListing/LayerItem.ts");
 const Canvas_1 = __webpack_require__(/*! Client/Component/Canvas/Canvas */ "./src/Client/Component/Canvas/Canvas.ts");
 const uuid_1 = __webpack_require__(/*! uuid */ "./node_modules/uuid/dist/cjs-browser/index.js");
+const CanvasTools_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasTools */ "./src/Client/Component/Canvas/CanvasTools.ts");
 const UUID_NAMESPACE = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
 exports.COMPONENTS = new Map([
     [SideMenu_1.SideMenu, 'side-menu'],
@@ -2112,6 +2173,7 @@ exports.COMPONENTS = new Map([
     [CanvasLayer_1.CanvasLayer, 'canvas-layer'],
     [LayerItem_1.LayerItem, 'layer-item'],
     [Canvas_1.Canvas2D, 'canvas-2d'],
+    [CanvasTools_1.CanvasTools, 'canvas-tools'],
 ]);
 exports.COMPONENT_UUID_LOOKUP = new Map(Array.from(exports.COMPONENTS).map(([component, tag]) => [
     (0, uuid_1.v5)(tag, UUID_NAMESPACE),
