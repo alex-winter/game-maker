@@ -9,6 +9,8 @@ export class UserDataFactory {
             },
 
             windows: {},
+
+            currentTool: 'pencil'
         }
     }
 }
