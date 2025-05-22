@@ -21,10 +21,10 @@ export class WindowBoxFactory {
             windowBox.dataset.title = title
 
             if (configuration.rect) {
-                windowBox.style.width = configuration.rect.width + 'px'
-                windowBox.style.height = configuration.rect.height + 'px'
-                windowBox.style.top = configuration.rect.y + 'px'
-                windowBox.style.left = configuration.rect.x + 'px'
+                windowBox.style.width = configuration.rect.width
+                windowBox.style.height = configuration.rect.height
+                windowBox.style.top = configuration.rect.top
+                windowBox.style.left = configuration.rect.left
             }
 
             windowBox.append(component)

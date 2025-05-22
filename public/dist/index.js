@@ -1885,7 +1885,6 @@ class WindowBox extends Component_1.Component {
                 display: block;
                 top: 50%;
                 left: 50%;
-                transform: translateX(-50%) translateY(-50%);
                 cursor: default;
                 z-index: 1001;
                 resize: both;
@@ -1966,9 +1965,17 @@ class WindowBox extends Component_1.Component {
         return container;
     }
     afterBuild() {
+        if (!this.configuration.rect) {
+            this.configuration.rect = {
+                left: this.style.left,
+                top: this.style.top,
+                width: this.style.width,
+                height: this.style.height,
+            };
+        }
         (new ResizeObserver(() => {
-            this.configuration.width = this.offsetWidth;
-            this.configuration.height = this.offsetHeight;
+            this.configuration.rect.width = this.style.width;
+            this.configuration.rect.height = this.style.height;
             Events_1.Events.emit('window-update', this.configuration);
         })).observe(this);
     }
@@ -1980,6 +1987,12 @@ class WindowBox extends Component_1.Component {
         close.innerText = 'x';
         title.innerText = this.dataset.title || '';
         element.addEventListener('mousedown', (e) => (0, handleDragAndDrop_1.handleDragAndDrop)(this, e));
+        element.addEventListener('mouseup', (e) => {
+            const rect = this.getBoundingClientRect();
+            this.configuration.rect.left = this.style.left;
+            this.configuration.rect.top = this.style.top;
+            Events_1.Events.emit('window-update', this.configuration);
+        });
         close.addEventListener('click', (event) => {
             event.stopPropagation();
             Events_1.Events.emit('window-destroyed', this.dataset.title);
@@ -2627,10 +2640,10 @@ class WindowBoxFactory {
         if (!windowBox.isConnected) {
             windowBox.dataset.title = title;
             if (configuration.rect) {
-                windowBox.style.width = configuration.rect.width + 'px';
-                windowBox.style.height = configuration.rect.height + 'px';
-                windowBox.style.top = configuration.rect.y + 'px';
-                windowBox.style.left = configuration.rect.x + 'px';
+                windowBox.style.width = configuration.rect.width;
+                windowBox.style.height = configuration.rect.height;
+                windowBox.style.top = configuration.rect.top;
+                windowBox.style.left = configuration.rect.left;
             }
             windowBox.append(component);
             if (component.isSingleton) {

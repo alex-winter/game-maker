@@ -32,7 +32,6 @@ export class WindowBox extends Component implements DraggableHTMLElement {
                 display: block;
                 top: 50%;
                 left: 50%;
-                transform: translateX(-50%) translateY(-50%);
                 cursor: default;
                 z-index: 1001;
                 resize: both;
@@ -124,9 +123,17 @@ export class WindowBox extends Component implements DraggableHTMLElement {
     }
 
     protected afterBuild(): void {
+        if (!this.configuration.rect) {
+            this.configuration.rect = {
+                left: this.style.left,
+                top: this.style.top,
+                width: this.style.width,
+                height: this.style.height,
+            }
+        }
         (new ResizeObserver(() => {
-            this.configuration.width = this.offsetWidth
-            this.configuration.height = this.offsetHeight
+            this.configuration.rect!.width = this.style.width
+            this.configuration.rect!.height = this.style.height
             Events.emit('window-update', this.configuration)
         })).observe(this)
     }
@@ -142,6 +149,13 @@ export class WindowBox extends Component implements DraggableHTMLElement {
         title.innerText = this.dataset.title || ''
 
         element.addEventListener('mousedown', (e) => handleDragAndDrop(this, e))
+
+        element.addEventListener('mouseup', (e) => {
+            const rect = this.getBoundingClientRect()
+            this.configuration.rect!.left = this.style.left
+            this.configuration.rect!.top = this.style.top
+            Events.emit('window-update', this.configuration)
+        })
 
         close.addEventListener('click', (event) => {
             event.stopPropagation()

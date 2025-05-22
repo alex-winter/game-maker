@@ -8,7 +8,12 @@ type ComponentConfiguration = {
 export type WindowConfiguration = {
     uuid: string
     componentConfigration: ComponentConfiguration
-    rect?: Rect
+    rect?: {
+        width: string
+        height: string
+        left: string
+        top: string
+    }
 }
 
 type WindowConfigurations = {
