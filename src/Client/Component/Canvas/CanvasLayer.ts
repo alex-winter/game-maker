@@ -262,20 +262,21 @@ export class CanvasLayer extends Component {
 
     private handleMouseDown(event: MouseEvent): void {
         if (event.button === LEFT_BUTTON && this.currentImage) {
-            this.generatePlacement()
+            // this.generatePlacement()
 
-            const mouseMove = (event: MouseEvent) => {
-                this.generatePlacement()
-            }
+            // const mouseMove = (event: MouseEvent) => {
+            //     this.generatePlacement()
+            // }
 
-            const mouseUp = (event: MouseEvent) => {
-                Events.emit('layer-placement-made', this.layer)
-                document.removeEventListener('mouseup', mouseUp)
-                document.removeEventListener('mousemove', mouseMove)
-            }
+            // const mouseUp = (event: MouseEvent) => {
+            //     Events.emit('layer-placement-made', this.layer)
+            //     document.removeEventListener('mouseup', mouseUp)
+            //     document.removeEventListener('mousemove', mouseMove)
+            // }
 
-            document.addEventListener('mouseup', mouseUp)
-            document.addEventListener('mousemove', mouseMove)
+            // document.addEventListener('mouseup', mouseUp)
+            // document.addEventListener('mousemove', mouseMove)
+            this.performFill(this.mouseCoordinates.x, this.mouseCoordinates.y)
         }
 
         if (event.button === MIDDLE_BUTTON) {
@@ -299,4 +300,77 @@ export class CanvasLayer extends Component {
             this.currentImage.classList.add('current-image')
         }
     }
+
+    private async performFill(startX: number, startY: number): Promise<void> {
+        const targetX = this.snap(startX)
+        const targetY = this.snap(startY)
+
+        const startTile = { x: targetX, y: targetY }
+
+        const canvasWidth = this.canvas.getBoundingClientRect().width
+        const canvasHeight = this.canvas.getBoundingClientRect().height
+
+        // Boundaries of the visible world space
+        const minX = this.snap(this.viewCoordinates.x)
+        const minY = this.snap(this.viewCoordinates.y)
+        const maxX = this.snap(this.viewCoordinates.x + canvasWidth)
+        const maxY = this.snap(this.viewCoordinates.y + canvasHeight)
+
+        const isInBounds = (x: number, y: number): boolean => {
+            return x >= minX && x <= maxX && y >= minY && y <= maxY
+        }
+
+        const existing = this.layer.placements.find(p =>
+            p.coordinate.x === startTile.x && p.coordinate.y === startTile.y
+        )
+
+        const targetImageUuid = existing?.imageUuid ?? null
+        const newImageUuid = (await placementImageRepository.findOrCreateBySrc(this.currentImage.src)).uuid
+        if (targetImageUuid === newImageUuid) return
+
+        const visited = new Set<string>()
+        const queue: Coordinates[] = [startTile]
+
+        while (queue.length > 0) {
+            const { x, y } = queue.pop()!
+
+            const key = `${x},${y}`
+            if (visited.has(key) || !isInBounds(x, y)) continue
+            visited.add(key)
+
+            const match = this.layer.placements.find(p =>
+                p.coordinate.x === x && p.coordinate.y === y
+            )
+
+            const matchesTarget = targetImageUuid === null
+                ? !match
+                : match?.imageUuid === targetImageUuid
+
+            if (!matchesTarget) continue
+
+            // Replace or add placement
+            if (match) {
+                match.imageUuid = newImageUuid
+            } else {
+                const placement: ImagePlacement = {
+                    coordinate: { x, y },
+                    imageUuid: newImageUuid,
+                }
+                this.layer.placements.push(placement)
+                await this.loadPlacement(placement)
+            }
+
+            // Neighboring tiles (4-way)
+            queue.push(
+                { x: x - CanvasLayer.TILE_SIZE, y },
+                { x: x + CanvasLayer.TILE_SIZE, y },
+                { x, y: y - CanvasLayer.TILE_SIZE },
+                { x, y: y + CanvasLayer.TILE_SIZE },
+            )
+        }
+
+        Events.emit('layer-placement-made', this.layer)
+    }
+
+
 }

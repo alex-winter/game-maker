@@ -1144,17 +1144,18 @@ class CanvasLayer extends Component_1.Component {
     }
     handleMouseDown(event) {
         if (event.button === mouse_events_1.LEFT_BUTTON && this.currentImage) {
-            this.generatePlacement();
-            const mouseMove = (event) => {
-                this.generatePlacement();
-            };
-            const mouseUp = (event) => {
-                Events_1.Events.emit('layer-placement-made', this.layer);
-                document.removeEventListener('mouseup', mouseUp);
-                document.removeEventListener('mousemove', mouseMove);
-            };
-            document.addEventListener('mouseup', mouseUp);
-            document.addEventListener('mousemove', mouseMove);
+            // this.generatePlacement()
+            // const mouseMove = (event: MouseEvent) => {
+            //     this.generatePlacement()
+            // }
+            // const mouseUp = (event: MouseEvent) => {
+            //     Events.emit('layer-placement-made', this.layer)
+            //     document.removeEventListener('mouseup', mouseUp)
+            //     document.removeEventListener('mousemove', mouseMove)
+            // }
+            // document.addEventListener('mouseup', mouseUp)
+            // document.addEventListener('mousemove', mouseMove)
+            this.performFill(this.mouseCoordinates.x, this.mouseCoordinates.y);
         }
         if (event.button === mouse_events_1.MIDDLE_BUTTON) {
             this.isMoving = true;
@@ -1174,6 +1175,56 @@ class CanvasLayer extends Component_1.Component {
             this.findOne('.container')?.append(this.currentImage);
             this.currentImage.classList.add('current-image');
         }
+    }
+    async performFill(startX, startY) {
+        const targetX = this.snap(startX);
+        const targetY = this.snap(startY);
+        const startTile = { x: targetX, y: targetY };
+        const canvasWidth = this.canvas.getBoundingClientRect().width;
+        const canvasHeight = this.canvas.getBoundingClientRect().height;
+        // Boundaries of the visible world space
+        const minX = this.snap(this.viewCoordinates.x);
+        const minY = this.snap(this.viewCoordinates.y);
+        const maxX = this.snap(this.viewCoordinates.x + canvasWidth);
+        const maxY = this.snap(this.viewCoordinates.y + canvasHeight);
+        const isInBounds = (x, y) => {
+            return x >= minX && x <= maxX && y >= minY && y <= maxY;
+        };
+        const existing = this.layer.placements.find(p => p.coordinate.x === startTile.x && p.coordinate.y === startTile.y);
+        const targetImageUuid = existing?.imageUuid ?? null;
+        const newImageUuid = (await PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(this.currentImage.src)).uuid;
+        if (targetImageUuid === newImageUuid)
+            return;
+        const visited = new Set();
+        const queue = [startTile];
+        while (queue.length > 0) {
+            const { x, y } = queue.pop();
+            const key = `${x},${y}`;
+            if (visited.has(key) || !isInBounds(x, y))
+                continue;
+            visited.add(key);
+            const match = this.layer.placements.find(p => p.coordinate.x === x && p.coordinate.y === y);
+            const matchesTarget = targetImageUuid === null
+                ? !match
+                : match?.imageUuid === targetImageUuid;
+            if (!matchesTarget)
+                continue;
+            // Replace or add placement
+            if (match) {
+                match.imageUuid = newImageUuid;
+            }
+            else {
+                const placement = {
+                    coordinate: { x, y },
+                    imageUuid: newImageUuid,
+                };
+                this.layer.placements.push(placement);
+                await this.loadPlacement(placement);
+            }
+            // Neighboring tiles (4-way)
+            queue.push({ x: x - CanvasLayer.TILE_SIZE, y }, { x: x + CanvasLayer.TILE_SIZE, y }, { x, y: y - CanvasLayer.TILE_SIZE }, { x, y: y + CanvasLayer.TILE_SIZE });
+        }
+        Events_1.Events.emit('layer-placement-made', this.layer);
     }
 }
 exports.CanvasLayer = CanvasLayer;
