@@ -938,8 +938,11 @@ class Canvas2D extends Component_1.Component {
         if (ctx) {
             this.clear();
             this.frameFunction(ctx);
+            this.animationTimeout = setTimeout(() => window.requestAnimationFrame(this.frame), this.msPerFrame);
         }
-        this.animationTimeout = setTimeout(() => window.requestAnimationFrame(this.frame), this.msPerFrame);
+        else {
+            setTimeout(() => window.requestAnimationFrame(this.frame), this.msPerFrame);
+        }
     };
     clear() {
         this.getCtx()?.clearRect(0, 0, this.getCanvas().width, this.getCanvas().height);
@@ -1046,24 +1049,21 @@ class CanvasLayer extends Component_1.Component {
         this.layer.placements.forEach(this.loadPlacement.bind(this));
     }
     build() {
+        this.canvas = Dom_1.Dom.makeComponent(Canvas_1.Canvas2D, { fps: 60 });
         const container = Dom_1.Dom.div('container');
-        const canvas = Dom_1.Dom.makeComponent(Canvas_1.Canvas2D, { fps: 60 });
-        this.canvas = canvas;
-        canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
-        canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
-        canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
-        canvas.classList.toggle('hide', !this.layer.is_visible);
+        this.canvas.classList.toggle('hide', !this.layer.is_visible);
         this.classList.toggle('active', this.layer.is_active);
-        if (this.isCollisionLayer) {
-            container.append(this.currentImage);
-            this.currentImage.classList.add('current-image');
-        }
-        canvas.startAnimation(this.frame.bind(this));
-        container.appendChild(canvas);
+        this.currentImage?.classList.add('current-image');
+        this.canvas.stopAnimation();
+        this.canvas.startAnimation(this.frameFn.bind(this));
+        container.append(this.canvas, this.currentImage);
         return container;
     }
     afterBuild() {
         Events_1.Events.emit('built-canvas-layer');
+        this.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
+        this.addEventListener('mousedown', this.handleMouseDown.bind(this));
+        this.addEventListener('mousemove', this.handleMouseMove.bind(this));
         this.addEventListener('mouseup', (event) => {
             if (event.button === mouse_events_1.MIDDLE_BUTTON) {
                 this.isMoving = false;
@@ -1100,7 +1100,7 @@ class CanvasLayer extends Component_1.Component {
             this.patch();
         }
     }
-    frame() {
+    frameFn() {
         const visible = this.loadedPlacements
             .filter(loadedPlacement => {
             return this.canvas.isRectVisible(this.viewCoordinates, loadedPlacement);
@@ -1181,7 +1181,7 @@ class CanvasLayer extends Component_1.Component {
     }
     handleCurrentImageChange(event) {
         const newImage = event.detail;
-        if (this.currentImage) {
+        if (this.currentImage?.isConnected) {
             this.currentImage.src = newImage.src;
         }
         else {
@@ -2959,10 +2959,10 @@ function patchDOM(oldNode, newNode) {
         for (let i = 0; i < max; i++) {
             const oldChild = oldChildren[i];
             const newChild = newChildren[i];
-            if (newChild.nodeType === Node.ELEMENT_NODE && isCustomElement(newChild.nodeName)) {
-                console.log('skipped');
-                continue;
-            }
+            // if (newChild && newChild.nodeType === Node.ELEMENT_NODE && isCustomElement(newChild.nodeName)) {
+            //     console.log('skipped')
+            //     continue
+            // }
             if (!oldChild && newChild) {
                 console.log('appending', newChild, oldChild);
                 oldEl.appendChild(newChild.cloneNode(true));

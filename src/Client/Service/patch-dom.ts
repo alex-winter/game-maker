@@ -58,10 +58,10 @@ export function patchDOM(oldNode: Node, newNode: Node): void {
             const oldChild = oldChildren[i]
             const newChild = newChildren[i]
 
-            if (newChild.nodeType === Node.ELEMENT_NODE && isCustomElement(newChild.nodeName)) {
-                console.log('skipped')
-                continue
-            }
+            // if (newChild && newChild.nodeType === Node.ELEMENT_NODE && isCustomElement(newChild.nodeName)) {
+            //     console.log('skipped')
+            //     continue
+            // }
 
             if (!oldChild && newChild) {
                 console.log('appending', newChild, oldChild)

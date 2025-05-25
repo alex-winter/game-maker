@@ -124,12 +124,17 @@ export class Canvas2D extends Component {
             this.clear()
 
             this.frameFunction(ctx)
-        }
 
-        this.animationTimeout = setTimeout(
-            () => window.requestAnimationFrame(this.frame),
-            this.msPerFrame,
-        ) as unknown as number
+            this.animationTimeout = setTimeout(
+                () => window.requestAnimationFrame(this.frame),
+                this.msPerFrame,
+            ) as unknown as number
+        } else {
+            setTimeout(
+                () => window.requestAnimationFrame(this.frame),
+                this.msPerFrame,
+            )
+        }
     }
 
     private clear(): void {

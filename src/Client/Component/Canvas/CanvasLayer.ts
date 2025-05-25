@@ -111,26 +111,22 @@ export class CanvasLayer extends Component {
     }
 
     protected build(): HTMLElement {
+        this.canvas = Dom.makeComponent(Canvas2D, { fps: 60 }) as Canvas2D
+
         const container = Dom.div('container')
-        const canvas = Dom.makeComponent(Canvas2D, { fps: 60 }) as Canvas2D
 
-        this.canvas = canvas
-
-        canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this))
-        canvas.addEventListener('mousedown', this.handleMouseDown.bind(this))
-        canvas.addEventListener('mousemove', this.handleMouseMove.bind(this))
-
-        canvas.classList.toggle('hide', !this.layer.is_visible)
+        this.canvas.classList.toggle('hide', !this.layer.is_visible)
         this.classList.toggle('active', this.layer.is_active)
 
-        if (this.isCollisionLayer) {
-            container.append(this.currentImage)
-            this.currentImage.classList.add('current-image')
-        }
+        this.currentImage?.classList.add('current-image')
 
-        canvas.startAnimation(this.frame.bind(this))
+        this.canvas.stopAnimation()
+        this.canvas.startAnimation(this.frameFn.bind(this))
 
-        container.appendChild(canvas)
+        container.append(
+            this.canvas,
+            this.currentImage,
+        )
 
         return container
     }
@@ -138,6 +134,9 @@ export class CanvasLayer extends Component {
     protected afterBuild(): void {
         Events.emit('built-canvas-layer')
 
+        this.addEventListener('mouseleave', this.handleMouseLeave.bind(this))
+        this.addEventListener('mousedown', this.handleMouseDown.bind(this))
+        this.addEventListener('mousemove', this.handleMouseMove.bind(this))
         this.addEventListener('mouseup', (event: MouseEvent) => {
             if (event.button === MIDDLE_BUTTON) {
                 this.isMoving = false
@@ -190,7 +189,7 @@ export class CanvasLayer extends Component {
         }
     }
 
-    private frame(): void {
+    private frameFn(): void {
         const visible = this.loadedPlacements
             .filter(loadedPlacement => {
                 return this.canvas.isRectVisible(
@@ -302,7 +301,7 @@ export class CanvasLayer extends Component {
     private handleCurrentImageChange(event: CustomEvent): void {
         const newImage = event.detail as HTMLImageElement
 
-        if (this.currentImage) {
+        if (this.currentImage?.isConnected) {
             this.currentImage.src = newImage.src
         } else {
             this.currentImage = newImage.cloneNode() as HTMLImageElement
