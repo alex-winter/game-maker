@@ -9,7 +9,6 @@ export class LayerItem extends Component {
     private visibleButton!: HTMLButtonElement
 
     private handleContainerClick = () => {
-        console.log('clicked container')
         Events.emit('layer-active', this.layer)
     }
 

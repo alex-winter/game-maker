@@ -3,7 +3,10 @@ export function patchDOM(oldNode: Node, newNode: Node): void {
 
     // Replace if node types or node names differ
     if (oldNode.nodeType !== newNode.nodeType || oldNode.nodeName !== newNode.nodeName) {
-        if (oldNode.nodeType === Node.ELEMENT_NODE || oldNode.nodeType === Node.TEXT_NODE) {
+        if (
+            oldNode.nodeType === Node.ELEMENT_NODE ||
+            oldNode.nodeType === Node.TEXT_NODE
+        ) {
             (oldNode as Element | Text).replaceWith(newNode.cloneNode(true))
         }
         return
@@ -46,23 +49,34 @@ export function patchDOM(oldNode: Node, newNode: Node): void {
             }
         }
 
-        // Recursively patch children
+        // Recursively patch children, skipping custom elements
         const oldChildren = Array.from(oldEl.childNodes)
         const newChildren = Array.from(newEl.childNodes)
-
         const max = Math.max(oldChildren.length, newChildren.length)
 
         for (let i = 0; i < max; i++) {
             const oldChild = oldChildren[i]
             const newChild = newChildren[i]
 
+            if (newChild.nodeType === Node.ELEMENT_NODE && isCustomElement(newChild.nodeName)) {
+                console.log('skipped')
+                continue
+            }
+
             if (!oldChild && newChild) {
+                console.log('appending', newChild, oldChild)
                 oldEl.appendChild(newChild.cloneNode(true))
             } else if (oldChild && !newChild) {
+                console.log('removing', oldChild)
                 oldEl.removeChild(oldChild)
             } else if (oldChild && newChild) {
                 patchDOM(oldChild, newChild)
             }
         }
     }
+}
+
+function isCustomElement(tagName: string): boolean {
+    // Either tagName has a hyphen or the custom element is registered
+    return tagName.includes('-') || !!customElements.get(tagName.toLowerCase())
 }

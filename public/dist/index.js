@@ -916,6 +916,7 @@ class Canvas2D extends Component_1.Component {
         this.msPerFrame = 1000 / this.parameters.fps | 30;
     }
     build() {
+        console.log('canvas build');
         const canvas = Dom_1.Dom.canvas();
         canvas.width = this.offsetWidth;
         canvas.height = this.offsetHeight;
@@ -923,6 +924,7 @@ class Canvas2D extends Component_1.Component {
     }
     afterBuild() {
         this.handleResize();
+        console.log('canvas after build');
     }
     handleResize() {
         const canvas = this.findOne('canvas');
@@ -1040,6 +1042,7 @@ class CanvasLayer extends Component_1.Component {
         this.layer.placements.forEach(this.loadPlacement.bind(this));
     }
     build() {
+        console.log('build canvas layer');
         const container = Dom_1.Dom.div('container');
         const canvas = this.canvas;
         canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
@@ -1193,14 +1196,13 @@ class CanvasLayer extends Component_1.Component {
         const maxX = this.snap(this.viewCoordinates.x + canvasWidth);
         const maxY = this.snap(this.viewCoordinates.y + canvasHeight);
         const tileSize = CanvasLayer.TILE_SIZE;
-        const cols = (maxX - minX) / tileSize;
-        const rows = (maxY - minY) / tileSize;
         const isInBounds = (x, y) => {
             return x >= minX && x < maxX && y >= minY && y < maxY;
         };
         const existing = this.layer.placements.find(p => p.coordinate.x === startTile.x && p.coordinate.y === startTile.y);
         const targetImageUuid = existing?.imageUuid ?? null;
         const newImageUuid = (await PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(this.currentImage.src)).uuid;
+        // Optimization: avoid unnecessary reprocessing
         if (targetImageUuid === newImageUuid)
             return;
         const visited = new Set();
@@ -1218,15 +1220,22 @@ class CanvasLayer extends Component_1.Component {
                 : match?.imageUuid === targetImageUuid;
             if (!matchesTarget)
                 continue;
-            // Remove any old placement
-            if (match) {
-                this.layer.placements = this.layer.placements.filter(p => p !== match);
-            }
             filledTiles.push({ x, y });
             queue.push({ x: x - tileSize, y }, { x: x + tileSize, y }, { x, y: y - tileSize }, { x, y: y + tileSize });
         }
         if (filledTiles.length === 0)
             return;
+        // ✅ Skip if all matched tiles already have the new image
+        const allAlreadyCorrect = filledTiles.every(({ x, y }) => {
+            const match = this.layer.placements.find(p => p.coordinate.x === x && p.coordinate.y === y);
+            return match?.imageUuid === newImageUuid;
+        });
+        if (allAlreadyCorrect)
+            return;
+        // 🔄 Remove old placements in the filled region
+        this.layer.placements = this.layer.placements.filter(p => {
+            return !filledTiles.some(t => t.x === p.coordinate.x && t.y === p.coordinate.y);
+        });
         // 🔥 Create the merged image
         const fillCanvas = document.createElement('canvas');
         const fillCtx = fillCanvas.getContext('2d');
@@ -1537,7 +1546,6 @@ class LayerItem extends Component_1.Component {
     container;
     visibleButton;
     handleContainerClick = () => {
-        console.log('clicked container');
         Events_1.Events.emit('layer-active', this.layer);
     };
     handleVisibleButtonClick = (e) => {
@@ -2903,7 +2911,8 @@ function patchDOM(oldNode, newNode) {
         return;
     // Replace if node types or node names differ
     if (oldNode.nodeType !== newNode.nodeType || oldNode.nodeName !== newNode.nodeName) {
-        if (oldNode.nodeType === Node.ELEMENT_NODE || oldNode.nodeType === Node.TEXT_NODE) {
+        if (oldNode.nodeType === Node.ELEMENT_NODE ||
+            oldNode.nodeType === Node.TEXT_NODE) {
             oldNode.replaceWith(newNode.cloneNode(true));
         }
         return;
@@ -2938,17 +2947,23 @@ function patchDOM(oldNode, newNode) {
                 oldEl.removeAttribute(attr.name);
             }
         }
-        // Recursively patch children
+        // Recursively patch children, skipping custom elements
         const oldChildren = Array.from(oldEl.childNodes);
         const newChildren = Array.from(newEl.childNodes);
         const max = Math.max(oldChildren.length, newChildren.length);
         for (let i = 0; i < max; i++) {
             const oldChild = oldChildren[i];
             const newChild = newChildren[i];
+            if (newChild.nodeType === Node.ELEMENT_NODE && isCustomElement(newChild.nodeName)) {
+                console.log('skipped');
+                continue;
+            }
             if (!oldChild && newChild) {
+                console.log('appending', newChild, oldChild);
                 oldEl.appendChild(newChild.cloneNode(true));
             }
             else if (oldChild && !newChild) {
+                console.log('removing', oldChild);
                 oldEl.removeChild(oldChild);
             }
             else if (oldChild && newChild) {
@@ -2958,6 +2973,10 @@ function patchDOM(oldNode, newNode) {
     }
 }
 exports.patchDOM = patchDOM;
+function isCustomElement(tagName) {
+    // Either tagName has a hyphen or the custom element is registered
+    return tagName.includes('-') || !!customElements.get(tagName.toLowerCase());
+}
 
 
 /***/ }),
@@ -3155,14 +3174,12 @@ document.addEventListener('DOMContentLoaded', () => {
         layerRepository.update(event.detail);
     }, events_1.EVENTS.layerPlacementMade);
     Events_1.Events.listen(event => {
-        console.log('heard event for layer active');
         layerRepository.setActive(event.detail.uuid);
     }, 'layer-active');
     Events_1.Events.listen(event => {
         layerRepository.toggleVisible(event.detail.uuid);
     }, 'layer-visible-toggle');
     Events_1.Events.listen(event => {
-        console.log('index heard update');
         layerRepository.update(event.detail);
     }, 'layer-update');
     Events_1.Events.listen(event => {

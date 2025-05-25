@@ -111,6 +111,7 @@ export class CanvasLayer extends Component {
     }
 
     protected build(): HTMLElement {
+        console.log('build canvas layer')
         const container = Dom.div('container')
         const canvas = this.canvas
 
@@ -311,7 +312,6 @@ export class CanvasLayer extends Component {
     private async performFill(startX: number, startY: number): Promise<void> {
         const targetX = this.snap(startX)
         const targetY = this.snap(startY)
-
         const startTile = { x: targetX, y: targetY }
 
         const canvasWidth = this.canvas.getBoundingClientRect().width
@@ -323,8 +323,6 @@ export class CanvasLayer extends Component {
         const maxY = this.snap(this.viewCoordinates.y + canvasHeight)
 
         const tileSize = CanvasLayer.TILE_SIZE
-        const cols = (maxX - minX) / tileSize
-        const rows = (maxY - minY) / tileSize
 
         const isInBounds = (x: number, y: number): boolean => {
             return x >= minX && x < maxX && y >= minY && y < maxY
@@ -336,6 +334,8 @@ export class CanvasLayer extends Component {
 
         const targetImageUuid = existing?.imageUuid ?? null
         const newImageUuid = (await placementImageRepository.findOrCreateBySrc(this.currentImage.src)).uuid
+
+        // Optimization: avoid unnecessary reprocessing
         if (targetImageUuid === newImageUuid) return
 
         const visited = new Set<string>()
@@ -344,8 +344,8 @@ export class CanvasLayer extends Component {
 
         while (queue.length > 0) {
             const { x, y } = queue.pop()!
-
             const key = `${x},${y}`
+
             if (visited.has(key) || !isInBounds(x, y)) continue
             visited.add(key)
 
@@ -359,11 +359,6 @@ export class CanvasLayer extends Component {
 
             if (!matchesTarget) continue
 
-            // Remove any old placement
-            if (match) {
-                this.layer.placements = this.layer.placements.filter(p => p !== match)
-            }
-
             filledTiles.push({ x, y })
 
             queue.push(
@@ -375,6 +370,21 @@ export class CanvasLayer extends Component {
         }
 
         if (filledTiles.length === 0) return
+
+        // ✅ Skip if all matched tiles already have the new image
+        const allAlreadyCorrect = filledTiles.every(({ x, y }) => {
+            const match = this.layer.placements.find(p =>
+                p.coordinate.x === x && p.coordinate.y === y
+            )
+            return match?.imageUuid === newImageUuid
+        })
+
+        if (allAlreadyCorrect) return
+
+        // 🔄 Remove old placements in the filled region
+        this.layer.placements = this.layer.placements.filter(p => {
+            return !filledTiles.some(t => t.x === p.coordinate.x && t.y === p.coordinate.y)
+        })
 
         // 🔥 Create the merged image
         const fillCanvas = document.createElement('canvas')
@@ -411,6 +421,7 @@ export class CanvasLayer extends Component {
 
         Events.emit('layer-placement-made', this.layer)
     }
+
 
     private handleToolSelection(event: CustomEvent): void {
         this.toolSelection = event.detail as string

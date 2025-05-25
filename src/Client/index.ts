@@ -160,7 +160,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     Events.listen(
         event => {
-            console.log('heard event for layer active')
             layerRepository.setActive((event.detail as Layer).uuid)
         },
         'layer-active',
@@ -175,7 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     Events.listen(
         event => {
-            console.log('index heard update')
             layerRepository.update(event.detail as Layer)
         },
         'layer-update',
