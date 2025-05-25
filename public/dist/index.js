@@ -979,6 +979,7 @@ const Canvas_1 = __webpack_require__(/*! Client/Component/Canvas/Canvas */ "./sr
 class CanvasLayer extends Component_1.Component {
     static TILE_SIZE = 16;
     static COLLISION_IMAGE = (0, generate_image_1.generateImageDataURL)(CanvasLayer.TILE_SIZE, CanvasLayer.TILE_SIZE, { r: 255, g: 0, b: 0, a: 0.3 });
+    static DEFAULT_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
     currentImage;
     layer;
     mouseCoordinates = { x: 0, y: 0 };
@@ -988,7 +989,6 @@ class CanvasLayer extends Component_1.Component {
     viewCoordinates = { x: 0, y: 0 };
     isCollisionLayer = false;
     toolSelection = 'pencil';
-    canvas;
     listeners = {
         'got-user-data': this.handleGotUserData,
         'layer-deleted': this.handleDelete,
@@ -1043,20 +1043,21 @@ class CanvasLayer extends Component_1.Component {
     async setup() {
         this.layer = this.parameters.layer;
         this.isCollisionLayer = this.layer.type === layers_1.LAYERS.typeCollision;
-        if (this.isCollisionLayer) {
-            this.currentImage = await Dom_1.Dom.image(CanvasLayer.COLLISION_IMAGE);
-        }
+        this.currentImage = await Dom_1.Dom.image(this.isCollisionLayer
+            ? CanvasLayer.COLLISION_IMAGE
+            : CanvasLayer.DEFAULT_IMAGE);
+        console.log('here');
         this.layer.placements.forEach(this.loadPlacement.bind(this));
     }
     build() {
-        this.canvas = Dom_1.Dom.makeComponent(Canvas_1.Canvas2D, { fps: 60 });
         const container = Dom_1.Dom.div('container');
-        this.canvas.classList.toggle('hide', !this.layer.is_visible);
+        const canvas = Dom_1.Dom.makeComponent(Canvas_1.Canvas2D, { fps: 60 });
+        canvas.classList.toggle('hide', !this.layer.is_visible);
         this.classList.toggle('active', this.layer.is_active);
-        this.currentImage?.classList.add('current-image');
-        this.canvas.stopAnimation();
-        this.canvas.startAnimation(this.frameFn.bind(this));
-        container.append(this.canvas, this.currentImage);
+        this.currentImage.classList.add('current-image');
+        canvas.stopAnimation();
+        canvas.startAnimation(this.frameFn);
+        container.append(canvas, this.currentImage);
         return container;
     }
     afterBuild() {
@@ -1076,9 +1077,10 @@ class CanvasLayer extends Component_1.Component {
         this.viewCoordinates.y = userData.lastViewPosition.y;
     }
     handleDelete(event) {
+        const canvas = this.findOne('canvas-2d');
         if (this.layer.uuid === event.detail) {
-            this.canvas.stopAnimation();
-            this.canvas.destroy();
+            canvas.stopAnimation();
+            canvas.destroy();
             this.destroy();
         }
     }
@@ -1094,21 +1096,23 @@ class CanvasLayer extends Component_1.Component {
     }
     handleLayerUpdate(event) {
         const layer = event.detail;
-        if (this.layer.uuid === layer.uuid) {
+        const canvas = this.findOne('canvas-2d');
+        if (canvas && this.layer.uuid === layer.uuid) {
             Object.assign(this.layer, layer);
-            this.canvas.stopAnimation();
+            canvas.stopAnimation();
             this.patch();
         }
     }
-    frameFn() {
+    frameFn = () => {
+        const canvas = this.findOne('canvas-2d');
         const visible = this.loadedPlacements
             .filter(loadedPlacement => {
-            return this.canvas.isRectVisible(this.viewCoordinates, loadedPlacement);
+            return canvas.isRectVisible(this.viewCoordinates, loadedPlacement);
         });
         visible.forEach(loadedPlacement => {
-            this.canvas.drawImage(loadedPlacement.image, loadedPlacement.x - this.viewCoordinates.x, loadedPlacement.y - this.viewCoordinates.y, loadedPlacement.image.width, loadedPlacement.image.height);
+            canvas.drawImage(loadedPlacement.image, loadedPlacement.x - this.viewCoordinates.x, loadedPlacement.y - this.viewCoordinates.y, loadedPlacement.image.width, loadedPlacement.image.height);
         });
-    }
+    };
     snap(value) {
         return Math.floor(value / CanvasLayer.TILE_SIZE) * CanvasLayer.TILE_SIZE;
     }

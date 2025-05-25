@@ -11,7 +11,6 @@ import { placementImageRepository } from 'Client/Service/Repository/PlacementIma
 import { Layer } from 'Model/Layer'
 import { UserData } from 'Model/UserData'
 import { Canvas2D } from 'Client/Component/Canvas/Canvas'
-import { RGBA } from 'Client/Model/RGB'
 
 type Movement = {
     clientX: number
@@ -30,6 +29,7 @@ export class CanvasLayer extends Component {
         CanvasLayer.TILE_SIZE,
         { r: 255, g: 0, b: 0, a: 0.3 },
     )
+    private static readonly DEFAULT_IMAGE: string = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII='
 
     private currentImage!: HTMLImageElement
     private layer!: Layer
@@ -40,8 +40,6 @@ export class CanvasLayer extends Component {
     private viewCoordinates: Coordinates = { x: 0, y: 0 }
     private isCollisionLayer: boolean = false
     private toolSelection: string = 'pencil'
-
-    private canvas!: Canvas2D
 
     protected readonly listeners: Listeners = {
         'got-user-data': this.handleGotUserData,
@@ -102,29 +100,33 @@ export class CanvasLayer extends Component {
     protected async setup(): Promise<void> {
         this.layer = this.parameters.layer
         this.isCollisionLayer = this.layer.type === LAYERS.typeCollision
+        this.currentImage = await Dom.image(
+            this.isCollisionLayer
+                ? CanvasLayer.COLLISION_IMAGE
+                : CanvasLayer.DEFAULT_IMAGE
+        )
 
-        if (this.isCollisionLayer) {
-            this.currentImage = await Dom.image(CanvasLayer.COLLISION_IMAGE)
-        }
+        console.log('here')
+
 
         this.layer.placements.forEach(this.loadPlacement.bind(this))
     }
 
     protected build(): HTMLElement {
-        this.canvas = Dom.makeComponent(Canvas2D, { fps: 60 }) as Canvas2D
-
         const container = Dom.div('container')
+        const canvas = Dom.makeComponent(Canvas2D, { fps: 60 }) as Canvas2D
 
-        this.canvas.classList.toggle('hide', !this.layer.is_visible)
+        canvas.classList.toggle('hide', !this.layer.is_visible)
+
         this.classList.toggle('active', this.layer.is_active)
 
-        this.currentImage?.classList.add('current-image')
+        this.currentImage.classList.add('current-image')
 
-        this.canvas.stopAnimation()
-        this.canvas.startAnimation(this.frameFn.bind(this))
+        canvas.stopAnimation()
+        canvas.startAnimation(this.frameFn)
 
         container.append(
-            this.canvas,
+            canvas,
             this.currentImage,
         )
 
@@ -152,9 +154,11 @@ export class CanvasLayer extends Component {
     }
 
     private handleDelete(event: CustomEvent) {
+        const canvas = this.findOne('canvas-2d')! as Canvas2D
+
         if (this.layer.uuid === event.detail as string) {
-            this.canvas.stopAnimation()
-            this.canvas.destroy()
+            canvas.stopAnimation()
+            canvas.destroy()
             this.destroy()
         }
     }
@@ -176,30 +180,33 @@ export class CanvasLayer extends Component {
 
     private handleLayerUpdate(event: CustomEvent): void {
         const layer = event.detail as Layer
+        const canvas = this.findOne('canvas-2d')! as Canvas2D
 
-        if (this.layer.uuid === layer.uuid) {
+        if (canvas && this.layer.uuid === layer.uuid) {
             Object.assign(
                 this.layer,
                 layer,
             )
 
-            this.canvas.stopAnimation()
+            canvas.stopAnimation()
 
             this.patch()
         }
     }
 
-    private frameFn(): void {
+    private frameFn = (): void => {
+        const canvas = this.findOne('canvas-2d')! as Canvas2D
+
         const visible = this.loadedPlacements
             .filter(loadedPlacement => {
-                return this.canvas.isRectVisible(
+                return canvas.isRectVisible(
                     this.viewCoordinates,
                     loadedPlacement,
                 )
             })
 
         visible.forEach(loadedPlacement => {
-            this.canvas.drawImage(
+            canvas.drawImage(
                 loadedPlacement.image,
                 loadedPlacement.x - this.viewCoordinates.x,
                 loadedPlacement.y - this.viewCoordinates.y,
