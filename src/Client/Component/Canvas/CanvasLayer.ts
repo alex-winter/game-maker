@@ -41,7 +41,7 @@ export class CanvasLayer extends Component {
     private isCollisionLayer: boolean = false
     private toolSelection: string = 'pencil'
 
-    private readonly canvas: Canvas2D = Dom.makeComponent(Canvas2D, { fps: 60 }) as Canvas2D
+    private canvas!: Canvas2D
 
     protected readonly listeners: Listeners = {
         'got-user-data': this.handleGotUserData,
@@ -111,9 +111,10 @@ export class CanvasLayer extends Component {
     }
 
     protected build(): HTMLElement {
-        console.log('build canvas layer')
         const container = Dom.div('container')
-        const canvas = this.canvas
+        const canvas = Dom.makeComponent(Canvas2D, { fps: 60 }) as Canvas2D
+
+        this.canvas = canvas
 
         canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this))
         canvas.addEventListener('mousedown', this.handleMouseDown.bind(this))
@@ -127,14 +128,14 @@ export class CanvasLayer extends Component {
             this.currentImage.classList.add('current-image')
         }
 
-        container.append(canvas)
+        canvas.startAnimation(this.frame.bind(this))
+
+        container.appendChild(canvas)
 
         return container
     }
 
     protected afterBuild(): void {
-        this.canvas.startAnimation(this.frame.bind(this))
-
         Events.emit('built-canvas-layer')
 
         this.addEventListener('mouseup', (event: MouseEvent) => {
@@ -183,6 +184,8 @@ export class CanvasLayer extends Component {
                 layer,
             )
 
+            this.canvas.stopAnimation()
+
             this.patch()
         }
     }
@@ -195,7 +198,6 @@ export class CanvasLayer extends Component {
                     loadedPlacement,
                 )
             })
-
 
         visible.forEach(loadedPlacement => {
             this.canvas.drawImage(

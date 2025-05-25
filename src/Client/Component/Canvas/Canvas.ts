@@ -42,25 +42,27 @@ export class Canvas2D extends Component {
             dw !== undefined &&
             dh !== undefined
         ) {
-            ctx.drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh)
+            ctx?.drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh)
         } else if (dw !== undefined && dh !== undefined) {
-            ctx.drawImage(image, dx, dy, dw, dh)
+            ctx?.drawImage(image, dx, dy, dw, dh)
         } else {
-            ctx.drawImage(image, dx, dy)
+            ctx?.drawImage(image, dx, dy)
         }
     }
 
     public drawDebugRect(rect: Rect): void {
         const ctx = this.getCtx()
 
-        ctx.strokeStyle = 'red'
-        ctx.lineWidth = 1
-        ctx.strokeRect(
-            rect.x,
-            rect.y,
-            rect.width,
-            rect.height,
-        )
+        if (ctx) {
+            ctx.strokeStyle = 'red'
+            ctx.lineWidth = 1
+            ctx.strokeRect(
+                rect.x,
+                rect.y,
+                rect.width,
+                rect.height,
+            )
+        }
     }
 
     public startAnimation(frameFunction: Function): void {
@@ -118,9 +120,11 @@ export class Canvas2D extends Component {
     private frame = (): void => {
         const ctx = this.getCtx()
 
-        this.clear()
+        if (ctx) {
+            this.clear()
 
-        this.frameFunction(ctx)
+            this.frameFunction(ctx)
+        }
 
         this.animationTimeout = setTimeout(
             () => window.requestAnimationFrame(this.frame),
@@ -129,7 +133,7 @@ export class Canvas2D extends Component {
     }
 
     private clear(): void {
-        this.getCtx().clearRect(
+        this.getCtx()?.clearRect(
             0,
             0,
             this.getCanvas().width,
@@ -141,7 +145,7 @@ export class Canvas2D extends Component {
         return this.findOne('canvas')!
     }
 
-    private getCtx(): CanvasRenderingContext2D {
-        return this.getCanvas().getContext('2d')!
+    private getCtx(): CanvasRenderingContext2D | null {
+        return this.getCanvas()?.getContext('2d')
     }
 }

@@ -880,20 +880,22 @@ class Canvas2D extends Component_1.Component {
             sh !== undefined &&
             dw !== undefined &&
             dh !== undefined) {
-            ctx.drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh);
+            ctx?.drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh);
         }
         else if (dw !== undefined && dh !== undefined) {
-            ctx.drawImage(image, dx, dy, dw, dh);
+            ctx?.drawImage(image, dx, dy, dw, dh);
         }
         else {
-            ctx.drawImage(image, dx, dy);
+            ctx?.drawImage(image, dx, dy);
         }
     }
     drawDebugRect(rect) {
         const ctx = this.getCtx();
-        ctx.strokeStyle = 'red';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+        if (ctx) {
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+        }
     }
     startAnimation(frameFunction) {
         this.frameFunction = frameFunction;
@@ -933,18 +935,20 @@ class Canvas2D extends Component_1.Component {
     }
     frame = () => {
         const ctx = this.getCtx();
-        this.clear();
-        this.frameFunction(ctx);
+        if (ctx) {
+            this.clear();
+            this.frameFunction(ctx);
+        }
         this.animationTimeout = setTimeout(() => window.requestAnimationFrame(this.frame), this.msPerFrame);
     };
     clear() {
-        this.getCtx().clearRect(0, 0, this.getCanvas().width, this.getCanvas().height);
+        this.getCtx()?.clearRect(0, 0, this.getCanvas().width, this.getCanvas().height);
     }
     getCanvas() {
         return this.findOne('canvas');
     }
     getCtx() {
-        return this.getCanvas().getContext('2d');
+        return this.getCanvas()?.getContext('2d');
     }
 }
 exports.Canvas2D = Canvas2D;
@@ -981,7 +985,7 @@ class CanvasLayer extends Component_1.Component {
     viewCoordinates = { x: 0, y: 0 };
     isCollisionLayer = false;
     toolSelection = 'pencil';
-    canvas = Dom_1.Dom.makeComponent(Canvas_1.Canvas2D, { fps: 60 });
+    canvas;
     listeners = {
         'got-user-data': this.handleGotUserData,
         'layer-deleted': this.handleDelete,
@@ -1042,9 +1046,9 @@ class CanvasLayer extends Component_1.Component {
         this.layer.placements.forEach(this.loadPlacement.bind(this));
     }
     build() {
-        console.log('build canvas layer');
         const container = Dom_1.Dom.div('container');
-        const canvas = this.canvas;
+        const canvas = Dom_1.Dom.makeComponent(Canvas_1.Canvas2D, { fps: 60 });
+        this.canvas = canvas;
         canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
         canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
         canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
@@ -1054,11 +1058,11 @@ class CanvasLayer extends Component_1.Component {
             container.append(this.currentImage);
             this.currentImage.classList.add('current-image');
         }
-        container.append(canvas);
+        canvas.startAnimation(this.frame.bind(this));
+        container.appendChild(canvas);
         return container;
     }
     afterBuild() {
-        this.canvas.startAnimation(this.frame.bind(this));
         Events_1.Events.emit('built-canvas-layer');
         this.addEventListener('mouseup', (event) => {
             if (event.button === mouse_events_1.MIDDLE_BUTTON) {
@@ -1092,6 +1096,7 @@ class CanvasLayer extends Component_1.Component {
         const layer = event.detail;
         if (this.layer.uuid === layer.uuid) {
             Object.assign(this.layer, layer);
+            this.canvas.stopAnimation();
             this.patch();
         }
     }
