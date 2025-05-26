@@ -32,6 +32,8 @@ export class CanvasLayer extends Component {
     private static readonly DEFAULT_IMAGE: string = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII='
 
     private currentImage!: HTMLImageElement
+    private readonly canvas = Dom.makeComponent(Canvas2D, { fps: 60 }) as Canvas2D
+
     private layer!: Layer
     private readonly mouseCoordinates: Coordinates = { x: 0, y: 0 }
     private readonly loadedPlacements: LoadedPlacement[] = []
@@ -72,10 +74,7 @@ export class CanvasLayer extends Component {
                 z-index: 510;
             }
 
-            .hide {
-                display: none;
-            }
-
+       
             .container {
                 width: 100%;
                 height: 100%;
@@ -106,22 +105,18 @@ export class CanvasLayer extends Component {
                 : CanvasLayer.DEFAULT_IMAGE
         )
 
-        console.log('here')
-
-
         this.layer.placements.forEach(this.loadPlacement.bind(this))
     }
 
     protected build(): HTMLElement {
         const container = Dom.div('container')
-        const canvas = Dom.makeComponent(Canvas2D, { fps: 60 }) as Canvas2D
-
-        canvas.classList.toggle('hide', !this.layer.is_visible)
+        const canvas = this.canvas
 
         this.classList.toggle('active', this.layer.is_active)
 
         this.currentImage.classList.add('current-image')
 
+        canvas.classList.toggle('hide', !this.layer.is_visible)
         canvas.stopAnimation()
         canvas.startAnimation(this.frameFn)
 
@@ -322,8 +317,10 @@ export class CanvasLayer extends Component {
         const targetY = this.snap(startY)
         const startTile = { x: targetX, y: targetY }
 
-        const canvasWidth = this.canvas.getBoundingClientRect().width
-        const canvasHeight = this.canvas.getBoundingClientRect().height
+        const canvas = this.findOne('canvas-2d') as Canvas2D
+
+        const canvasWidth = canvas.getBoundingClientRect().width
+        const canvasHeight = canvas.getBoundingClientRect().height
 
         const minX = this.snap(this.viewCoordinates.x)
         const minY = this.snap(this.viewCoordinates.y)

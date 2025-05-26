@@ -18,6 +18,10 @@ export class Canvas2D extends Component {
                 width: 100%;
                 height: 100%;
             }
+            :host(.hide) {
+                visibility: hidden;
+                pointer-events: none;
+            }
         `
     }
 
@@ -112,7 +116,7 @@ export class Canvas2D extends Component {
 
     private handleResize(): void {
         const canvas = this.findOne('canvas')! as HTMLCanvasElement
-
+        console.log(this.offsetHeight)
         canvas.width = this.offsetWidth
         canvas.height = this.offsetHeight
     }

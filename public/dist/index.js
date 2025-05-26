@@ -870,6 +870,10 @@ class Canvas2D extends Component_1.Component {
                 width: 100%;
                 height: 100%;
             }
+            :host(.hide) {
+                visibility: hidden;
+                pointer-events: none;
+            }
         `;
     }
     drawImage(image, dx, dy, dw, dh, sx, sy, sw, sh) {
@@ -930,6 +934,7 @@ class Canvas2D extends Component_1.Component {
     }
     handleResize() {
         const canvas = this.findOne('canvas');
+        console.log(this.offsetHeight);
         canvas.width = this.offsetWidth;
         canvas.height = this.offsetHeight;
     }
@@ -981,6 +986,7 @@ class CanvasLayer extends Component_1.Component {
     static COLLISION_IMAGE = (0, generate_image_1.generateImageDataURL)(CanvasLayer.TILE_SIZE, CanvasLayer.TILE_SIZE, { r: 255, g: 0, b: 0, a: 0.3 });
     static DEFAULT_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
     currentImage;
+    canvas = Dom_1.Dom.makeComponent(Canvas_1.Canvas2D, { fps: 60 });
     layer;
     mouseCoordinates = { x: 0, y: 0 };
     loadedPlacements = [];
@@ -1019,10 +1025,7 @@ class CanvasLayer extends Component_1.Component {
                 z-index: 510;
             }
 
-            .hide {
-                display: none;
-            }
-
+       
             .container {
                 width: 100%;
                 height: 100%;
@@ -1046,15 +1049,14 @@ class CanvasLayer extends Component_1.Component {
         this.currentImage = await Dom_1.Dom.image(this.isCollisionLayer
             ? CanvasLayer.COLLISION_IMAGE
             : CanvasLayer.DEFAULT_IMAGE);
-        console.log('here');
         this.layer.placements.forEach(this.loadPlacement.bind(this));
     }
     build() {
         const container = Dom_1.Dom.div('container');
-        const canvas = Dom_1.Dom.makeComponent(Canvas_1.Canvas2D, { fps: 60 });
-        canvas.classList.toggle('hide', !this.layer.is_visible);
+        const canvas = this.canvas;
         this.classList.toggle('active', this.layer.is_active);
         this.currentImage.classList.add('current-image');
+        canvas.classList.toggle('hide', !this.layer.is_visible);
         canvas.stopAnimation();
         canvas.startAnimation(this.frameFn);
         container.append(canvas, this.currentImage);
@@ -1198,8 +1200,9 @@ class CanvasLayer extends Component_1.Component {
         const targetX = this.snap(startX);
         const targetY = this.snap(startY);
         const startTile = { x: targetX, y: targetY };
-        const canvasWidth = this.canvas.getBoundingClientRect().width;
-        const canvasHeight = this.canvas.getBoundingClientRect().height;
+        const canvas = this.findOne('canvas-2d');
+        const canvasWidth = canvas.getBoundingClientRect().width;
+        const canvasHeight = canvas.getBoundingClientRect().height;
         const minX = this.snap(this.viewCoordinates.x);
         const minY = this.snap(this.viewCoordinates.y);
         const maxX = this.snap(this.viewCoordinates.x + canvasWidth);
