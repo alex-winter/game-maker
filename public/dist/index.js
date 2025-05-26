@@ -2633,10 +2633,10 @@ class LayerRepository extends Repository_1.Repository {
         await this.patch(this.API_PATH, layer);
     }
     async getAll() {
-        if (this.layers) {
-            return this.layers;
+        if (!this.layers) {
+            this.layers = await this.get(this.API_PATH);
         }
-        return this.layers = await this.get(this.API_PATH);
+        return this.layers.sort((a, b) => a.order - b.order);
     }
     async remove(uuid) {
         await this.delete(this.API_PATH + '/' + uuid);
@@ -3184,7 +3184,9 @@ document.addEventListener('DOMContentLoaded', () => {
         layerRepository.persist(layer);
     }, events_1.EVENTS.newLayerSubmit);
     Events_1.Events.listen(event => {
-        document.body.append(...event.detail.map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer })));
+        document.body.append(...event.detail
+            .sort((a, b) => b.order - a.order)
+            .map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer })));
     }, events_1.EVENTS.gotLayer, events_1.EVENTS.newLayerMapped);
     Events_1.Events.listen(event => {
         layerRepository.update(event.detail);

@@ -48,11 +48,11 @@ export class LayerRepository extends Repository {
     }
 
     public async getAll(): Promise<Layer[]> {
-        if (this.layers) {
-            return this.layers
+        if (!this.layers) {
+            this.layers = await this.get(this.API_PATH)
         }
 
-        return this.layers = await this.get(this.API_PATH)
+        return this.layers.sort((a, b) => a.order - b.order)
     }
 
     public async remove(uuid: string): Promise<void> {

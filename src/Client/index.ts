@@ -144,7 +144,9 @@ document.addEventListener('DOMContentLoaded', () => {
     Events.listen(
         event => {
             document.body.append(
-                ...(event.detail as Layer[]).map(layer => Dom.makeComponent(CanvasLayer, { layer }))
+                ...(event.detail as Layer[])
+                    .sort((a, b) => b.order - a.order)
+                    .map(layer => Dom.makeComponent(CanvasLayer, { layer }))
             )
         },
         EVENTS.gotLayer,
