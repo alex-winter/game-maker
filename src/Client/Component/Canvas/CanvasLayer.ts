@@ -62,10 +62,11 @@ export class CanvasLayer extends Component {
                 left: 0;
                 width: 100%;
                 height: 100%;
+                pointer-events: none;
             }
             
             :host(.active) {
-                z-index: 501;
+                pointer-events: all;
             }
 
             .current-image {

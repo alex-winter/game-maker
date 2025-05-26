@@ -58,16 +58,9 @@ export function patchDOM(oldNode: Node, newNode: Node): void {
             const oldChild = oldChildren[i]
             const newChild = newChildren[i]
 
-            // if (newChild && newChild.nodeType === Node.ELEMENT_NODE && isCustomElement(newChild.nodeName)) {
-            //     console.log('skipped')
-            //     continue
-            // }
-
             if (!oldChild && newChild) {
-                console.log('appending', newChild, oldChild)
                 oldEl.appendChild(newChild.cloneNode(true))
             } else if (oldChild && !newChild) {
-                console.log('removing', oldChild)
                 oldEl.removeChild(oldChild)
             } else if (oldChild && newChild) {
                 patchDOM(oldChild, newChild)

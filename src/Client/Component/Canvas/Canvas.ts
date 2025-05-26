@@ -100,7 +100,6 @@ export class Canvas2D extends Component {
     }
 
     protected build(): HTMLElement {
-        console.log('canvas build')
         const canvas = Dom.canvas()
 
         canvas.width = this.offsetWidth
@@ -111,12 +110,10 @@ export class Canvas2D extends Component {
 
     protected afterBuild(): void {
         this.handleResize()
-        console.log('canvas after build')
     }
 
     private handleResize(): void {
         const canvas = this.findOne('canvas')! as HTMLCanvasElement
-        console.log(this.offsetHeight)
         canvas.width = this.offsetWidth
         canvas.height = this.offsetHeight
     }

@@ -922,7 +922,6 @@ class Canvas2D extends Component_1.Component {
         this.msPerFrame = 1000 / this.parameters.fps | 30;
     }
     build() {
-        console.log('canvas build');
         const canvas = Dom_1.Dom.canvas();
         canvas.width = this.offsetWidth;
         canvas.height = this.offsetHeight;
@@ -930,11 +929,9 @@ class Canvas2D extends Component_1.Component {
     }
     afterBuild() {
         this.handleResize();
-        console.log('canvas after build');
     }
     handleResize() {
         const canvas = this.findOne('canvas');
-        console.log(this.offsetHeight);
         canvas.width = this.offsetWidth;
         canvas.height = this.offsetHeight;
     }
@@ -1013,10 +1010,11 @@ class CanvasLayer extends Component_1.Component {
                 left: 0;
                 width: 100%;
                 height: 100%;
+                pointer-events: none;
             }
             
             :host(.active) {
-                z-index: 501;
+                pointer-events: all;
             }
 
             .current-image {
@@ -2967,16 +2965,10 @@ function patchDOM(oldNode, newNode) {
         for (let i = 0; i < max; i++) {
             const oldChild = oldChildren[i];
             const newChild = newChildren[i];
-            // if (newChild && newChild.nodeType === Node.ELEMENT_NODE && isCustomElement(newChild.nodeName)) {
-            //     console.log('skipped')
-            //     continue
-            // }
             if (!oldChild && newChild) {
-                console.log('appending', newChild, oldChild);
                 oldEl.appendChild(newChild.cloneNode(true));
             }
             else if (oldChild && !newChild) {
-                console.log('removing', oldChild);
                 oldEl.removeChild(oldChild);
             }
             else if (oldChild && newChild) {
