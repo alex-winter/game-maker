@@ -16,6 +16,8 @@ export class LayerFactory {
             is_active: false,
 
             placements: [],
+
+            order: 0
         }
     }
 }

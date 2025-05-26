@@ -7,9 +7,23 @@ export class LayerRepository extends Repository {
 
     private layers!: Layer[]
 
+    private getLastOrder(): number {
+        if (this.layers.length === 0) {
+            return -1
+        }
+        return Math.max(...this.layers.map(item => item.order))
+    }
+
     public async persist(...layers: Layer[]): Promise<void> {
 
-        this.layers.push(...layers)
+
+        layers.forEach((layer) => {
+            const lastOrder = this.getLastOrder()
+
+            layer.order = lastOrder + 1
+
+            this.layers.push(layer)
+        })
 
         await this.post(
             this.API_PATH,

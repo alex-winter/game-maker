@@ -2611,8 +2611,18 @@ const Repository_1 = __webpack_require__(/*! Client/Service/Repository/Repositor
 class LayerRepository extends Repository_1.Repository {
     API_PATH = '/layers';
     layers;
+    getLastOrder() {
+        if (this.layers.length === 0) {
+            return -1;
+        }
+        return Math.max(...this.layers.map(item => item.order));
+    }
     async persist(...layers) {
-        this.layers.push(...layers);
+        layers.forEach((layer) => {
+            const lastOrder = this.getLastOrder();
+            layer.order = lastOrder + 1;
+            this.layers.push(layer);
+        });
         await this.post(this.API_PATH, layers);
     }
     async update(layer) {
@@ -3017,6 +3027,7 @@ class LayerFactory {
             is_visible: true,
             is_active: false,
             placements: [],
+            order: 0
         };
     }
 }

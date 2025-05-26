@@ -12,6 +12,8 @@ type BaseLayer = {
     is_visible: boolean
 
     is_active: boolean
+
+    order: number
 }
 
 export type Layer = BaseLayer & {
