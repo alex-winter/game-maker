@@ -3,7 +3,7 @@ import path from 'path'
 import multer from 'multer'
 import fs from 'fs'
 import { UserData } from 'Model/UserData'
-import { PlacementImage } from 'Client/Model/Placement'
+import { PlacementImage } from 'Model/Placement'
 import { Layer } from 'Model/Layer'
 import { UserDataFactory } from 'Model/Factory/UserDataFactory'
 

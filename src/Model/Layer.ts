@@ -1,4 +1,4 @@
-import { CollisionPlacement, ImagePlacement } from 'Client/Model/Placement'
+import { CollisionPlacement, ImagePlacement } from 'Model/Placement'
 
 type BaseLayer = {
     uuid: string

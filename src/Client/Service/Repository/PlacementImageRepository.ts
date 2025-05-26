@@ -1,4 +1,4 @@
-import { PlacementImage } from 'Client/Model/Placement'
+import { PlacementImage } from 'Model/Placement'
 import { Repository } from 'Client/Service/Repository/Repository'
 
 class PlacementImageRepository extends Repository {
