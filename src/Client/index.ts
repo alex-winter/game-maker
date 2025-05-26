@@ -13,10 +13,10 @@ import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 import { NewLayerForm } from 'Client/Component/NewLayerForm/NewLayerForm'
 import { LayerInput } from 'Client/Model/LayerInput'
 import { LayerFactory } from 'Model/Factory/LayerFactory'
-import { LayerRepository } from 'Client/Service/Repository/LayerRepository'
+import { layerRepository } from 'Client/Service/Repository/LayerRepository'
 import { Layer } from 'Model/Layer'
 import { CanvasLayer } from 'Client/Component/Canvas/CanvasLayer'
-import { SheetRepository } from 'Client/Service/Repository/SheetRepository'
+import { sheetRepository } from 'Client/Service/Repository/SheetRepository'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { UserDataRepsitory } from 'Client/Service/Repository/UserDataRepository'
 import { WindowConfiguration } from 'Model/UserData'
@@ -31,8 +31,6 @@ let openSheets: string[] = []
 
 let windowBoxes: { [key: string]: WindowBox } = {}
 
-const layerRepository = new LayerRepository()
-const sheetRepository = new SheetRepository()
 const userDataRepository = new UserDataRepsitory()
 
 document.addEventListener('DOMContentLoaded', () => {

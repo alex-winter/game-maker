@@ -2,7 +2,7 @@ import { Events } from 'Client/Service/Events'
 import { Repository } from 'Client/Service/Repository/Repository'
 import { Layer } from 'Model/Layer'
 
-export class LayerRepository extends Repository {
+class LayerRepository extends Repository {
     private readonly API_PATH = '/layers'
 
     private layers!: Layer[]
@@ -75,3 +75,5 @@ export class LayerRepository extends Repository {
         }
     }
 }
+
+export const layerRepository = new LayerRepository()

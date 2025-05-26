@@ -2605,7 +2605,7 @@ exports.FileUpload = FileUpload;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.LayerRepository = void 0;
+exports.layerRepository = void 0;
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 const Repository_1 = __webpack_require__(/*! Client/Service/Repository/Repository */ "./src/Client/Service/Repository/Repository.ts");
 class LayerRepository extends Repository_1.Repository {
@@ -2656,7 +2656,7 @@ class LayerRepository extends Repository_1.Repository {
         }
     }
 }
-exports.LayerRepository = LayerRepository;
+exports.layerRepository = new LayerRepository();
 
 
 /***/ }),
@@ -2762,7 +2762,7 @@ exports.Repository = Repository;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.SheetRepository = void 0;
+exports.sheetRepository = void 0;
 const Repository_1 = __webpack_require__(/*! Client/Service/Repository/Repository */ "./src/Client/Service/Repository/Repository.ts");
 class SheetRepository extends Repository_1.Repository {
     API_PATH = '/sheets';
@@ -2770,7 +2770,7 @@ class SheetRepository extends Repository_1.Repository {
         return await this.get(this.API_PATH);
     }
 }
-exports.SheetRepository = SheetRepository;
+exports.sheetRepository = new SheetRepository();
 
 
 /***/ }),
@@ -3108,16 +3108,14 @@ components_1.COMPONENTS.forEach((tagName, constructor) => {
 });
 let openSheets = [];
 let windowBoxes = {};
-const layerRepository = new LayerRepository_1.LayerRepository();
-const sheetRepository = new SheetRepository_1.SheetRepository();
 const userDataRepository = new UserDataRepository_1.UserDataRepsitory();
 document.addEventListener('DOMContentLoaded', () => {
-    layerRepository.getAll().then(layers => {
+    LayerRepository_1.layerRepository.getAll().then(layers => {
         Events_1.Events.emit(events_1.EVENTS.gotLayer, layers);
     });
     PlacementImageRepository_1.placementImageRepository.getAll();
     const getSheets = () => {
-        sheetRepository.getAll().then(sheets => {
+        SheetRepository_1.sheetRepository.getAll().then(sheets => {
             Events_1.Events.emit(events_1.EVENTS.gotSheets, sheets);
         });
     };
@@ -3181,7 +3179,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = event.detail;
         const layer = Object.assign(LayerFactory_1.LayerFactory.make(), input);
         Events_1.Events.emit(events_1.EVENTS.newLayerMapped, [layer]);
-        layerRepository.persist(layer);
+        LayerRepository_1.layerRepository.persist(layer);
     }, events_1.EVENTS.newLayerSubmit);
     Events_1.Events.listen(event => {
         document.body.append(...event.detail
@@ -3189,20 +3187,20 @@ document.addEventListener('DOMContentLoaded', () => {
             .map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer })));
     }, events_1.EVENTS.gotLayer, events_1.EVENTS.newLayerMapped);
     Events_1.Events.listen(event => {
-        layerRepository.update(event.detail);
+        LayerRepository_1.layerRepository.update(event.detail);
     }, events_1.EVENTS.layerPlacementMade);
     Events_1.Events.listen(event => {
-        layerRepository.setActive(event.detail.uuid);
+        LayerRepository_1.layerRepository.setActive(event.detail.uuid);
     }, 'layer-active');
     Events_1.Events.listen(event => {
-        layerRepository.toggleVisible(event.detail.uuid);
+        LayerRepository_1.layerRepository.toggleVisible(event.detail.uuid);
     }, 'layer-visible-toggle');
     Events_1.Events.listen(event => {
-        layerRepository.update(event.detail);
+        LayerRepository_1.layerRepository.update(event.detail);
     }, 'layer-update');
     Events_1.Events.listen(event => {
         const uuid = event.detail;
-        layerRepository.remove(uuid)
+        LayerRepository_1.layerRepository.remove(uuid)
             .then(() => {
             Events_1.Events.emit('layer-deleted', uuid);
         });

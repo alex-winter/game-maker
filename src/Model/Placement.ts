@@ -8,13 +8,18 @@ export type PlacementImage = {
 
 }
 
-export type CollisionPlacement = {
+export type Placement = {
+    uuid: string
+}
+
+
+export type CollisionPlacement = Placement & {
 
     coordinate: Coordinates
 
 }
 
-export type ImagePlacement = {
+export type ImagePlacement = Placement & {
 
     coordinate: Coordinates
 
