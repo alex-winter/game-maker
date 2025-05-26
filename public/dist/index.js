@@ -1024,6 +1024,9 @@ class CanvasLayer extends Component_1.Component {
                 pointer-events: none;
                 z-index: 510;
             }
+            .current-image.hide {
+                display: none;
+            }
 
        
             .container {
@@ -1129,10 +1132,11 @@ class CanvasLayer extends Component_1.Component {
         const screenY = snappedWorldY - this.viewCoordinates.y;
         this.mouseCoordinates.x = snappedWorldX;
         this.mouseCoordinates.y = snappedWorldY;
-        if (this.currentImage) {
-            this.currentImage.classList.remove('hide');
-            this.currentImage.style.left = screenX + 'px';
-            this.currentImage.style.top = screenY + 'px';
+        const currentImage = this.getCurrentImage();
+        if (currentImage) {
+            currentImage.classList.remove('hide');
+            currentImage.style.left = screenX + 'px';
+            currentImage.style.top = screenY + 'px';
         }
         if (this.isMoving) {
             const movement = {
@@ -1150,7 +1154,7 @@ class CanvasLayer extends Component_1.Component {
                 x: this.mouseCoordinates.x,
                 y: this.mouseCoordinates.y,
             },
-            imageUuid: (await PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(this.currentImage.src)).uuid,
+            imageUuid: (await PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(this.getCurrentImage().src)).uuid,
         };
         const lastPlacement = this.layer.placements[this.layer.placements.length - 1];
         if (JSON.stringify(lastPlacement) === JSON.stringify(placement))
@@ -1159,7 +1163,7 @@ class CanvasLayer extends Component_1.Component {
         this.loadPlacement(placement);
     }
     handleMouseDown(event) {
-        if (event.button === mouse_events_1.LEFT_BUTTON && this.currentImage) {
+        if (event.button === mouse_events_1.LEFT_BUTTON && this.getCurrentImage()) {
             if (this.toolSelection === 'pencil') {
                 this.generatePlacement();
                 const mouseMove = (event) => {
@@ -1183,18 +1187,12 @@ class CanvasLayer extends Component_1.Component {
         }
     }
     handleMouseLeave(event) {
-        this.currentImage?.classList.add('hide');
+        this.getCurrentImage().classList.add('hide');
     }
     handleCurrentImageChange(event) {
         const newImage = event.detail;
-        if (this.currentImage?.isConnected) {
-            this.currentImage.src = newImage.src;
-        }
-        else {
-            this.currentImage = newImage.cloneNode();
-            this.findOne('.container')?.append(this.currentImage);
-            this.currentImage.classList.add('current-image');
-        }
+        this.getCurrentImage().src = newImage.src;
+        this.currentImage = newImage;
     }
     async performFill(startX, startY) {
         const targetX = this.snap(startX);
@@ -1213,7 +1211,7 @@ class CanvasLayer extends Component_1.Component {
         };
         const existing = this.layer.placements.find(p => p.coordinate.x === startTile.x && p.coordinate.y === startTile.y);
         const targetImageUuid = existing?.imageUuid ?? null;
-        const newImageUuid = (await PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(this.currentImage.src)).uuid;
+        const newImageUuid = (await PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(this.getCurrentImage().src)).uuid;
         // Optimization: avoid unnecessary reprocessing
         if (targetImageUuid === newImageUuid)
             return;
@@ -1258,7 +1256,7 @@ class CanvasLayer extends Component_1.Component {
         fillCanvas.width = widthInTiles;
         fillCanvas.height = heightInTiles;
         filledTiles.forEach(tile => {
-            fillCtx.drawImage(this.currentImage, tile.x - offsetX, tile.y - offsetY, tileSize, tileSize);
+            fillCtx.drawImage(this.getCurrentImage(), tile.x - offsetX, tile.y - offsetY, tileSize, tileSize);
         });
         const dataURL = fillCanvas.toDataURL();
         const mergedImageUuid = (await PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(dataURL)).uuid;
@@ -1272,6 +1270,9 @@ class CanvasLayer extends Component_1.Component {
     }
     handleToolSelection(event) {
         this.toolSelection = event.detail;
+    }
+    getCurrentImage() {
+        return this.findOne('.current-image');
     }
 }
 exports.CanvasLayer = CanvasLayer;

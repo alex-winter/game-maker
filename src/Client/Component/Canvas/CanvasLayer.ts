@@ -73,6 +73,9 @@ export class CanvasLayer extends Component {
                 pointer-events: none;
                 z-index: 510;
             }
+            .current-image.hide {
+                display: none;
+            }
 
        
             .container {
@@ -231,10 +234,12 @@ export class CanvasLayer extends Component {
         this.mouseCoordinates.x = snappedWorldX
         this.mouseCoordinates.y = snappedWorldY
 
-        if (this.currentImage) {
-            this.currentImage.classList.remove('hide')
-            this.currentImage.style.left = screenX + 'px'
-            this.currentImage.style.top = screenY + 'px'
+        const currentImage = this.getCurrentImage()
+
+        if (currentImage) {
+            currentImage.classList.remove('hide')
+            currentImage.style.left = screenX + 'px'
+            currentImage.style.top = screenY + 'px'
         }
 
         if (this.isMoving) {
@@ -256,7 +261,7 @@ export class CanvasLayer extends Component {
                 x: this.mouseCoordinates.x,
                 y: this.mouseCoordinates.y,
             },
-            imageUuid: (await placementImageRepository.findOrCreateBySrc(this.currentImage.src)).uuid,
+            imageUuid: (await placementImageRepository.findOrCreateBySrc(this.getCurrentImage().src)).uuid,
         }
 
         const lastPlacement = this.layer.placements[this.layer.placements.length - 1]
@@ -267,7 +272,7 @@ export class CanvasLayer extends Component {
     }
 
     private handleMouseDown(event: MouseEvent): void {
-        if (event.button === LEFT_BUTTON && this.currentImage) {
+        if (event.button === LEFT_BUTTON && this.getCurrentImage()) {
             if (this.toolSelection === 'pencil') {
                 this.generatePlacement()
 
@@ -297,19 +302,14 @@ export class CanvasLayer extends Component {
     }
 
     private handleMouseLeave(event: MouseEvent): void {
-        this.currentImage?.classList.add('hide')
+        this.getCurrentImage().classList.add('hide')
     }
 
     private handleCurrentImageChange(event: CustomEvent): void {
         const newImage = event.detail as HTMLImageElement
 
-        if (this.currentImage?.isConnected) {
-            this.currentImage.src = newImage.src
-        } else {
-            this.currentImage = newImage.cloneNode() as HTMLImageElement
-            this.findOne('.container')?.append(this.currentImage)
-            this.currentImage.classList.add('current-image')
-        }
+        this.getCurrentImage().src = newImage.src
+        this.currentImage = newImage
     }
 
     private async performFill(startX: number, startY: number): Promise<void> {
@@ -338,7 +338,7 @@ export class CanvasLayer extends Component {
         )
 
         const targetImageUuid = existing?.imageUuid ?? null
-        const newImageUuid = (await placementImageRepository.findOrCreateBySrc(this.currentImage.src)).uuid
+        const newImageUuid = (await placementImageRepository.findOrCreateBySrc(this.getCurrentImage().src)).uuid
 
         // Optimization: avoid unnecessary reprocessing
         if (targetImageUuid === newImageUuid) return
@@ -405,7 +405,7 @@ export class CanvasLayer extends Component {
 
         filledTiles.forEach(tile => {
             fillCtx.drawImage(
-                this.currentImage,
+                this.getCurrentImage(),
                 tile.x - offsetX,
                 tile.y - offsetY,
                 tileSize,
@@ -430,5 +430,9 @@ export class CanvasLayer extends Component {
 
     private handleToolSelection(event: CustomEvent): void {
         this.toolSelection = event.detail as string
+    }
+
+    private getCurrentImage(): HTMLImageElement {
+        return this.findOne('.current-image')!
     }
 }
