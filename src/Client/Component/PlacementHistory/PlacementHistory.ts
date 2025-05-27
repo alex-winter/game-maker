@@ -14,7 +14,6 @@ export class PlacementHistory extends Component {
 
         const header = Dom.div('placement-history-header')
         header.append(
-            Dom.div('column', 'uuid-col', 'header-cell').appendChild(document.createTextNode('UUID')),
             Dom.div('column', 'coords-col', 'header-cell').appendChild(document.createTextNode('Coordinates')),
             Dom.div('column', 'dims-col', 'header-cell').appendChild(document.createTextNode('Dimensions')),
             Dom.div('column', 'image-col', 'header-cell').appendChild(document.createTextNode('Image'))
@@ -37,9 +36,6 @@ export class PlacementHistory extends Component {
     private buildPlacementRow(placement: LoadedPlacement): HTMLElement {
         const row = Dom.div('placement-row')
 
-        const uuidCol = Dom.div('column', 'uuid-col')
-        uuidCol.textContent = placement.uuid
-
         const coordsCol = Dom.div('column', 'coords-col')
         coordsCol.textContent = `(${placement.x}, ${placement.y})`
 
@@ -51,7 +47,11 @@ export class PlacementHistory extends Component {
         thumbnail.classList.add('placement-thumb')
         imageCol.appendChild(thumbnail)
 
-        row.append(uuidCol, coordsCol, dimsCol, imageCol)
+        row.append(
+            coordsCol,
+            dimsCol,
+            imageCol,
+        )
 
         return row
     }

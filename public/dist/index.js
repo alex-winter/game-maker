@@ -1789,7 +1789,7 @@ class PlacementHistory extends Component_1.Component {
     build() {
         const container = Dom_1.Dom.div('placement-history');
         const header = Dom_1.Dom.div('placement-history-header');
-        header.append(Dom_1.Dom.div('column', 'uuid-col', 'header-cell').appendChild(document.createTextNode('UUID')), Dom_1.Dom.div('column', 'coords-col', 'header-cell').appendChild(document.createTextNode('Coordinates')), Dom_1.Dom.div('column', 'dims-col', 'header-cell').appendChild(document.createTextNode('Dimensions')), Dom_1.Dom.div('column', 'image-col', 'header-cell').appendChild(document.createTextNode('Image')));
+        header.append(Dom_1.Dom.div('column', 'coords-col', 'header-cell').appendChild(document.createTextNode('Coordinates')), Dom_1.Dom.div('column', 'dims-col', 'header-cell').appendChild(document.createTextNode('Dimensions')), Dom_1.Dom.div('column', 'image-col', 'header-cell').appendChild(document.createTextNode('Image')));
         container.appendChild(header);
         LoadedPlacement_1.loadedPlacementRepository.get().forEach(placement => {
             container.append(this.buildPlacementRow(placement));
@@ -1801,8 +1801,6 @@ class PlacementHistory extends Component_1.Component {
     }
     buildPlacementRow(placement) {
         const row = Dom_1.Dom.div('placement-row');
-        const uuidCol = Dom_1.Dom.div('column', 'uuid-col');
-        uuidCol.textContent = placement.uuid;
         const coordsCol = Dom_1.Dom.div('column', 'coords-col');
         coordsCol.textContent = `(${placement.x}, ${placement.y})`;
         const dimsCol = Dom_1.Dom.div('column', 'dims-col');
@@ -1811,7 +1809,7 @@ class PlacementHistory extends Component_1.Component {
         const thumbnail = placement.image.cloneNode(true);
         thumbnail.classList.add('placement-thumb');
         imageCol.appendChild(thumbnail);
-        row.append(uuidCol, coordsCol, dimsCol, imageCol);
+        row.append(coordsCol, dimsCol, imageCol);
         return row;
     }
     css() {
