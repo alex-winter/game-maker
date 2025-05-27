@@ -999,6 +999,7 @@ class CanvasLayer extends Component_1.Component {
         'moving-in-canvas': this.handleMovement,
         'sheet-selection-made': this.handleCurrentImageChange,
         'tool-selection': this.handleToolSelection,
+        'click-placement-history-row': this.handleClickPlacementHistoryRow,
     };
     css() {
         return /*css*/ `
@@ -1274,6 +1275,9 @@ class CanvasLayer extends Component_1.Component {
     }
     getCurrentImage() {
         return this.findOne('.current-image');
+    }
+    handleClickPlacementHistoryRow() {
+        console.log('clicked');
     }
 }
 exports.CanvasLayer = CanvasLayer;
@@ -1786,6 +1790,9 @@ class PlacementHistory extends Component_1.Component {
     listeners = {
         'loaded-placement-added': this.handleLoadedPlacementAdded
     };
+    events = {
+        '.placement-row:click': this.handleClickRow
+    };
     build() {
         const container = Dom_1.Dom.div('placement-history');
         const header = Dom_1.Dom.div('placement-history-header');
@@ -1811,6 +1818,9 @@ class PlacementHistory extends Component_1.Component {
         imageCol.appendChild(thumbnail);
         row.append(coordsCol, dimsCol, imageCol);
         return row;
+    }
+    handleClickRow(event) {
+        console.log('emit');
     }
     css() {
         return /*css*/ `
@@ -2438,6 +2448,7 @@ class Component extends HTMLElement {
     isSingleton = false;
     parameters = {};
     listeners;
+    events;
     constructor() {
         super();
         this.shadow = this.attachShadow({ mode: 'open' });
@@ -2482,6 +2493,15 @@ class Component extends HTMLElement {
             throw new Error('there should only be one root child of the shadow dom');
         }
         (0, patch_dom_1.patchDOM)(firstChild[0], this.build());
+        this.afterPatch();
+    }
+    afterPatch() {
+        Object.entries(this.events).forEach(([key, eventFn]) => {
+            const [selector, eventType] = key.split(':');
+            this.findAll(selector).forEach(element => {
+                element.addEventListener(eventType, eventFn);
+            });
+        });
     }
     setListners() {
         if (this.listeners) {
@@ -2492,6 +2512,9 @@ class Component extends HTMLElement {
     }
     findOne(query) {
         return this.shadow.querySelector(query);
+    }
+    findAll(query) {
+        return Array.from(this.shadow.querySelectorAll(query));
     }
 }
 exports.Component = Component;

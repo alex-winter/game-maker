@@ -9,6 +9,10 @@ export class PlacementHistory extends Component {
         'loaded-placement-added': this.handleLoadedPlacementAdded
     }
 
+    protected events = {
+        '.placement-row:click': this.handleClickRow
+    }
+
     protected build(): HTMLElement {
         const container = Dom.div('placement-history')
 
@@ -54,6 +58,10 @@ export class PlacementHistory extends Component {
         )
 
         return row
+    }
+
+    private handleClickRow(event: Event): void {
+        console.log('emit')
     }
 
     protected css(): string {

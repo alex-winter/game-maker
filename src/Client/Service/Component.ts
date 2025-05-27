@@ -12,6 +12,7 @@ export abstract class Component extends HTMLElement {
     public isSingleton: boolean = false
     protected readonly parameters: { [key: string]: any } = {}
     protected readonly listeners!: Listeners
+    protected readonly events!: { [key: string]: (event: Event) => void }
 
     constructor() {
         super()
@@ -75,6 +76,17 @@ export abstract class Component extends HTMLElement {
         }
 
         patchDOM(firstChild[0], this.build())
+
+        this.afterPatch()
+    }
+
+    protected afterPatch(): void {
+        Object.entries(this.events).forEach(([key, eventFn]) => {
+            const [selector, eventType] = key.split(':')
+            this.findAll(selector).forEach(element => {
+                element.addEventListener(eventType, eventFn)
+            })
+        })
     }
 
     protected setListners(): void {
@@ -91,5 +103,11 @@ export abstract class Component extends HTMLElement {
 
     protected findOne<T = HTMLElement>(query: string): T | null {
         return this.shadow.querySelector(query) as T | null
+    }
+
+    protected findAll<T = HTMLElement[]>(query: string): T {
+        return Array.from(
+            this.shadow.querySelectorAll(query)
+        ) as T
     }
 }

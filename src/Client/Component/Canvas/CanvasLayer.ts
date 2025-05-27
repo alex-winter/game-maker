@@ -50,6 +50,7 @@ export class CanvasLayer extends Component {
         'moving-in-canvas': this.handleMovement,
         'sheet-selection-made': this.handleCurrentImageChange,
         'tool-selection': this.handleToolSelection,
+        'click-placement-history-row': this.handleClickPlacementHistoryRow,
     }
 
     protected css(): string {
@@ -438,5 +439,9 @@ export class CanvasLayer extends Component {
 
     private getCurrentImage(): HTMLImageElement {
         return this.findOne('.current-image')!
+    }
+
+    private handleClickPlacementHistoryRow(): void {
+        console.log('clicked')
     }
 }
