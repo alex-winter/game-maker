@@ -1,16 +1,14 @@
-import { LayerRepository } from 'Client/Service/Repository/LayerRepository'
 import './play.css'
 import { Dom } from 'Client/Service/Dom'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { Coordinates } from 'Model/Coordinates'
 import { LAYERS } from 'Client/Constants/layers'
+import { layerRepository } from 'Client/Service/Repository/LayerRepository'
 
 interface GamePlacement extends LoadedPlacement {
     type: string
 }
-
-const layerRepository = new LayerRepository()
 
 const viewCoordinates: Coordinates = {
     x: 0,
@@ -80,6 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             )
 
             loadedPlacements.push({
+                uuid: crypto.randomUUID(),
                 image,
                 x: placement.coordinate.x,
                 y: placement.coordinate.y,

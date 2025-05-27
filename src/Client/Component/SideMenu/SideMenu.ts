@@ -22,20 +22,29 @@ export class SideMenu extends Component {
     protected build(): HTMLElement {
         const container = Dom.div()
         const slot = Dom.slot()
-        const sheetImportOption = this.buildMiniOption()
+        const sheetImportOption = this.buildSheetImportOption()
 
         container.append(
             slot,
             sheetImportOption,
+            this.buildHistoryOption()
         )
 
         return container
     }
 
-    protected buildMiniOption(): HTMLElement {
+    protected buildSheetImportOption(): HTMLElement {
         const option = Dom.button('s', 'sheet-import')
 
         option.addEventListener('click', () => Events.emitSheetImportOpen())
+
+        return option
+    }
+
+    protected buildHistoryOption(): HTMLElement {
+        const option = Dom.button('h')
+
+        option.addEventListener('click', () => Events.emit('click-open-history'))
 
         return option
     }

@@ -978,6 +978,7 @@ const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/
 const generate_image_1 = __webpack_require__(/*! Client/Service/generate-image */ "./src/Client/Service/generate-image.ts");
 const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Repository/PlacementImageRepository */ "./src/Client/Service/Repository/PlacementImageRepository.ts");
 const Canvas_1 = __webpack_require__(/*! Client/Component/Canvas/Canvas */ "./src/Client/Component/Canvas/Canvas.ts");
+const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
 class CanvasLayer extends Component_1.Component {
     static TILE_SIZE = 16;
     static COLLISION_IMAGE = (0, generate_image_1.generateImageDataURL)(CanvasLayer.TILE_SIZE, CanvasLayer.TILE_SIZE, { r: 255, g: 0, b: 0, a: 0.3 });
@@ -986,7 +987,6 @@ class CanvasLayer extends Component_1.Component {
     canvas = Dom_1.Dom.makeComponent(Canvas_1.Canvas2D, { fps: 60 });
     layer;
     mouseCoordinates = { x: 0, y: 0 };
-    loadedPlacements = [];
     isMoving = false;
     lastMousePosition = { x: 0, y: 0 };
     viewCoordinates = { x: 0, y: 0 };
@@ -1036,7 +1036,8 @@ class CanvasLayer extends Component_1.Component {
     async loadPlacement(placement) {
         const image = (await PlacementImageRepository_1.placementImageRepository.getByUuid(placement.imageUuid));
         const loadedImage = await Dom_1.Dom.image(image.src);
-        this.loadedPlacements.push({
+        LoadedPlacement_1.loadedPlacementRepository.add({
+            uuid: placement.uuid,
             image: loadedImage,
             x: placement.coordinate.x,
             y: placement.coordinate.y,
@@ -1108,7 +1109,7 @@ class CanvasLayer extends Component_1.Component {
     }
     frameFn = () => {
         const canvas = this.findOne('canvas-2d');
-        const visible = this.loadedPlacements
+        const visible = LoadedPlacement_1.loadedPlacementRepository.get()
             .filter(loadedPlacement => {
             return canvas.isRectVisible(this.viewCoordinates, loadedPlacement);
         });
@@ -1148,6 +1149,7 @@ class CanvasLayer extends Component_1.Component {
     }
     async generatePlacement() {
         const placement = {
+            uuid: crypto.randomUUID(),
             coordinate: {
                 x: this.mouseCoordinates.x,
                 y: this.mouseCoordinates.y,
@@ -1259,6 +1261,7 @@ class CanvasLayer extends Component_1.Component {
         const dataURL = fillCanvas.toDataURL();
         const mergedImageUuid = (await PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(dataURL)).uuid;
         const placement = {
+            uuid: crypto.randomUUID(),
             coordinate: { x: offsetX, y: offsetY },
             imageUuid: mergedImageUuid,
         };
@@ -1767,6 +1770,112 @@ exports.NewLayerForm = NewLayerForm;
 
 /***/ }),
 
+/***/ "./src/Client/Component/PlacementHistory/PlacementHistory.ts":
+/*!*******************************************************************!*\
+  !*** ./src/Client/Component/PlacementHistory/PlacementHistory.ts ***!
+  \*******************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.PlacementHistory = void 0;
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
+class PlacementHistory extends Component_1.Component {
+    listeners = {
+        'loaded-placement-added': this.handleLoadedPlacementAdded
+    };
+    build() {
+        const container = Dom_1.Dom.div('placement-history');
+        const header = Dom_1.Dom.div('placement-history-header');
+        header.append(Dom_1.Dom.div('column', 'uuid-col', 'header-cell').appendChild(document.createTextNode('UUID')), Dom_1.Dom.div('column', 'coords-col', 'header-cell').appendChild(document.createTextNode('Coordinates')), Dom_1.Dom.div('column', 'dims-col', 'header-cell').appendChild(document.createTextNode('Dimensions')), Dom_1.Dom.div('column', 'image-col', 'header-cell').appendChild(document.createTextNode('Image')));
+        container.appendChild(header);
+        LoadedPlacement_1.loadedPlacementRepository.get().forEach(placement => {
+            container.append(this.buildPlacementRow(placement));
+        });
+        return container;
+    }
+    handleLoadedPlacementAdded() {
+        this.patch();
+    }
+    buildPlacementRow(placement) {
+        const row = Dom_1.Dom.div('placement-row');
+        const uuidCol = Dom_1.Dom.div('column', 'uuid-col');
+        uuidCol.textContent = placement.uuid;
+        const coordsCol = Dom_1.Dom.div('column', 'coords-col');
+        coordsCol.textContent = `(${placement.x}, ${placement.y})`;
+        const dimsCol = Dom_1.Dom.div('column', 'dims-col');
+        dimsCol.textContent = `${placement.width}×${placement.height}`;
+        const imageCol = Dom_1.Dom.div('column', 'image-col');
+        const thumbnail = placement.image.cloneNode(true);
+        thumbnail.classList.add('placement-thumb');
+        imageCol.appendChild(thumbnail);
+        row.append(uuidCol, coordsCol, dimsCol, imageCol);
+        return row;
+    }
+    css() {
+        return /*css*/ `
+            .placement-history {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                font-family: sans-serif;
+                padding: 1rem;
+                background: #fafafa;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+            }
+
+            .placement-history-header,
+            .placement-row {
+                display: flex;
+                align-items: center;
+                padding: 0.5rem;
+                border-bottom: 1px solid #e0e0e0;
+            }
+
+            .placement-history-header {
+                font-weight: bold;
+                background: #f0f0f0;
+                border-radius: 4px;
+            }
+
+            .column {
+                flex: 1;
+                padding: 0 0.5rem;
+            }
+
+            .uuid-col {
+                flex: 2;
+            }
+
+            .coords-col,
+            .dims-col {
+                flex: 1.5;
+            }
+
+            .image-col {
+                flex: 2;
+                display: flex;
+                align-items: center;
+            }
+
+            .placement-thumb {
+                max-width: 60px;
+                max-height: 40px;
+                object-fit: contain;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+            }
+        `;
+    }
+}
+exports.PlacementHistory = PlacementHistory;
+
+
+/***/ }),
+
 /***/ "./src/Client/Component/SheetListing/SheetListing.ts":
 /*!***********************************************************!*\
   !*** ./src/Client/Component/SheetListing/SheetListing.ts ***!
@@ -1874,13 +1983,18 @@ class SideMenu extends Component_1.Component {
     build() {
         const container = Dom_1.Dom.div();
         const slot = Dom_1.Dom.slot();
-        const sheetImportOption = this.buildMiniOption();
-        container.append(slot, sheetImportOption);
+        const sheetImportOption = this.buildSheetImportOption();
+        container.append(slot, sheetImportOption, this.buildHistoryOption());
         return container;
     }
-    buildMiniOption() {
+    buildSheetImportOption() {
         const option = Dom_1.Dom.button('s', 'sheet-import');
         option.addEventListener('click', () => Events_1.Events.emitSheetImportOpen());
+        return option;
+    }
+    buildHistoryOption() {
+        const option = Dom_1.Dom.button('h');
+        option.addEventListener('click', () => Events_1.Events.emit('click-open-history'));
         return option;
     }
 }
@@ -2204,6 +2318,7 @@ const LayerItem_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerI
 const Canvas_1 = __webpack_require__(/*! Client/Component/Canvas/Canvas */ "./src/Client/Component/Canvas/Canvas.ts");
 const uuid_1 = __webpack_require__(/*! uuid */ "./node_modules/uuid/dist/cjs-browser/index.js");
 const CanvasTools_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasTools */ "./src/Client/Component/Canvas/CanvasTools.ts");
+const PlacementHistory_1 = __webpack_require__(/*! Client/Component/PlacementHistory/PlacementHistory */ "./src/Client/Component/PlacementHistory/PlacementHistory.ts");
 const UUID_NAMESPACE = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
 exports.COMPONENTS = new Map([
     [SideMenu_1.SideMenu, 'side-menu'],
@@ -2219,6 +2334,7 @@ exports.COMPONENTS = new Map([
     [LayerItem_1.LayerItem, 'layer-item'],
     [Canvas_1.Canvas2D, 'canvas-2d'],
     [CanvasTools_1.CanvasTools, 'canvas-tools'],
+    [PlacementHistory_1.PlacementHistory, 'placement-history'],
 ]);
 exports.COMPONENT_UUID_LOOKUP = new Map(Array.from(exports.COMPONENTS).map(([component, tag]) => [
     (0, uuid_1.v5)(tag, UUID_NAMESPACE),
@@ -2657,6 +2773,31 @@ class LayerRepository extends Repository_1.Repository {
     }
 }
 exports.layerRepository = new LayerRepository();
+
+
+/***/ }),
+
+/***/ "./src/Client/Service/Repository/LoadedPlacement.ts":
+/*!**********************************************************!*\
+  !*** ./src/Client/Service/Repository/LoadedPlacement.ts ***!
+  \**********************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.loadedPlacementRepository = void 0;
+const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
+class LoadedPlacementRepository {
+    data = [];
+    add(...loadedPlacement) {
+        this.data.push(...loadedPlacement);
+        Events_1.Events.emit('loaded-placement-added');
+    }
+    get() {
+        return this.data;
+    }
+}
+exports.loadedPlacementRepository = new LoadedPlacementRepository();
 
 
 /***/ }),
@@ -3103,6 +3244,7 @@ const SheetRepository_1 = __webpack_require__(/*! Client/Service/Repository/Shee
 const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Repository/PlacementImageRepository */ "./src/Client/Service/Repository/PlacementImageRepository.ts");
 const UserDataRepository_1 = __webpack_require__(/*! Client/Service/Repository/UserDataRepository */ "./src/Client/Service/Repository/UserDataRepository.ts");
 const CanvasTools_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasTools */ "./src/Client/Component/Canvas/CanvasTools.ts");
+const PlacementHistory_1 = __webpack_require__(/*! Client/Component/PlacementHistory/PlacementHistory */ "./src/Client/Component/PlacementHistory/PlacementHistory.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
@@ -3221,6 +3363,13 @@ document.addEventListener('DOMContentLoaded', () => {
         userData.windows[windowConfiguration.uuid] = windowConfiguration;
         userDataRepository.persist(userData);
     }, 'window-update');
+    Events_1.Events.listen(event => {
+        WindowBoxFactory_1.WindowBoxFactory.make(Dom_1.Dom.makeComponent(PlacementHistory_1.PlacementHistory), 'Placement History', {
+            uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(PlacementHistory_1.PlacementHistory),
+            componentConfigration: { dataset: {} },
+            title: 'Placement History',
+        });
+    }, 'click-open-history');
     window.addEventListener('resize', () => Events_1.Events.emit(events_1.EVENTS.windowResize));
 });
 

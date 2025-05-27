@@ -14,6 +14,7 @@ import {
   v5 as uuidv5
 } from 'uuid'
 import { CanvasTools } from 'Client/Component/Canvas/CanvasTools'
+import { PlacementHistory } from 'Client/Component/PlacementHistory/PlacementHistory'
 
 const UUID_NAMESPACE = '6fa459ea-ee8a-3ca4-894e-db77e160355e'
 
@@ -31,6 +32,7 @@ export const COMPONENTS = new Map<CustomElementConstructor, string>([
   [LayerItem, 'layer-item'],
   [Canvas2D, 'canvas-2d'],
   [CanvasTools, 'canvas-tools'],
+  [PlacementHistory, 'placement-history'],
 ])
 
 export const COMPONENT_UUID_LOOKUP = new Map<string, CustomElementConstructor>(

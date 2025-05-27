@@ -22,6 +22,7 @@ import { UserDataRepsitory } from 'Client/Service/Repository/UserDataRepository'
 import { WindowConfiguration } from 'Model/UserData'
 import { Coordinates } from 'Model/Coordinates'
 import { CanvasTools } from 'Client/Component/Canvas/CanvasTools'
+import { PlacementHistory } from 'Client/Component/PlacementHistory/PlacementHistory'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -224,6 +225,20 @@ document.addEventListener('DOMContentLoaded', () => {
         'window-update',
     )
 
+    Events.listen(
+        event => {
+            WindowBoxFactory.make(
+                Dom.makeComponent(PlacementHistory),
+                'Placement History',
+                {
+                    uuid: COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(PlacementHistory)!,
+                    componentConfigration: { dataset: {} },
+                    title: 'Placement History',
+                }
+            )
+        },
+        'click-open-history'
+    )
 
     window.addEventListener('resize', () => Events.emit(EVENTS.windowResize))
 })

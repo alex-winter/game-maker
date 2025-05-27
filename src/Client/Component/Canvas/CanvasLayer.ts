@@ -11,6 +11,7 @@ import { placementImageRepository } from 'Client/Service/Repository/PlacementIma
 import { Layer } from 'Model/Layer'
 import { UserData } from 'Model/UserData'
 import { Canvas2D } from 'Client/Component/Canvas/Canvas'
+import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
 
 type Movement = {
     clientX: number
@@ -36,7 +37,6 @@ export class CanvasLayer extends Component {
 
     private layer!: Layer
     private readonly mouseCoordinates: Coordinates = { x: 0, y: 0 }
-    private readonly loadedPlacements: LoadedPlacement[] = []
     private isMoving: boolean = false
     private lastMousePosition: Coordinates = { x: 0, y: 0 }
     private viewCoordinates: Coordinates = { x: 0, y: 0 }
@@ -91,7 +91,8 @@ export class CanvasLayer extends Component {
 
         const loadedImage = await Dom.image(image.src)
 
-        this.loadedPlacements.push({
+        loadedPlacementRepository.add({
+            uuid: placement.uuid,
             image: loadedImage,
             x: placement.coordinate.x,
             y: placement.coordinate.y,
@@ -196,7 +197,7 @@ export class CanvasLayer extends Component {
     private frameFn = (): void => {
         const canvas = this.findOne('canvas-2d')! as Canvas2D
 
-        const visible = this.loadedPlacements
+        const visible = loadedPlacementRepository.get()
             .filter(loadedPlacement => {
                 return canvas.isRectVisible(
                     this.viewCoordinates,
@@ -258,6 +259,7 @@ export class CanvasLayer extends Component {
 
     private async generatePlacement(): Promise<void> {
         const placement: ImagePlacement = {
+            uuid: crypto.randomUUID(),
             coordinate: {
                 x: this.mouseCoordinates.x,
                 y: this.mouseCoordinates.y,
@@ -418,6 +420,7 @@ export class CanvasLayer extends Component {
         const mergedImageUuid = (await placementImageRepository.findOrCreateBySrc(dataURL)).uuid
 
         const placement: ImagePlacement = {
+            uuid: crypto.randomUUID(),
             coordinate: { x: offsetX, y: offsetY },
             imageUuid: mergedImageUuid,
         }
