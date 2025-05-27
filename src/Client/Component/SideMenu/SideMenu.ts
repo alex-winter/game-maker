@@ -34,17 +34,23 @@ export class SideMenu extends Component {
     }
 
     protected buildSheetImportOption(): HTMLElement {
-        const option = Dom.button('s', 'sheet-import')
+        const option = Dom.button()
+        const icon = Dom.i('fa-solid', 'fa-images')
 
         option.addEventListener('click', () => Events.emitSheetImportOpen())
+
+        option.append(icon)
 
         return option
     }
 
     protected buildHistoryOption(): HTMLElement {
-        const option = Dom.button('h')
+        const option = Dom.button()
+        const icon = Dom.i('fa-solid', 'fa-clock-rotate-left')
 
         option.addEventListener('click', () => Events.emit('click-open-history'))
+
+        option.append(icon)
 
         return option
     }

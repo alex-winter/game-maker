@@ -1988,13 +1988,17 @@ class SideMenu extends Component_1.Component {
         return container;
     }
     buildSheetImportOption() {
-        const option = Dom_1.Dom.button('s', 'sheet-import');
+        const option = Dom_1.Dom.button();
+        const icon = Dom_1.Dom.i('fa-solid', 'fa-images');
         option.addEventListener('click', () => Events_1.Events.emitSheetImportOpen());
+        option.append(icon);
         return option;
     }
     buildHistoryOption() {
-        const option = Dom_1.Dom.button('h');
+        const option = Dom_1.Dom.button();
+        const icon = Dom_1.Dom.i('fa-solid', 'fa-clock-rotate-left');
         option.addEventListener('click', () => Events_1.Events.emit('click-open-history'));
+        option.append(icon);
         return option;
     }
 }
