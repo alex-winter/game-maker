@@ -3,16 +3,18 @@ import { isJSON } from 'Client/Service/is-json'
 import { patchDOM } from 'Client/Service/patch-dom'
 
 export type EventFn<T = any> = (event: CustomEvent<T>) => void
-export type Listeners = {
+export type ExternalListeners = {
     [key: string]: EventFn
 }
-
+export type Listeners = {
+    [key: string]: (event: any) => void
+}
 export abstract class Component extends HTMLElement {
     private readonly shadow: ShadowRoot
     public isSingleton: boolean = false
     protected readonly parameters: { [key: string]: any } = {}
+    protected readonly externalListners!: ExternalListeners
     protected readonly listeners!: Listeners
-    protected readonly events!: { [key: string]: (event: Event) => void }
 
     constructor() {
         super()
@@ -81,7 +83,7 @@ export abstract class Component extends HTMLElement {
     }
 
     protected afterPatch(): void {
-        Object.entries(this.events).forEach(([key, eventFn]) => {
+        Object.entries(this.listeners).forEach(([key, eventFn]) => {
             const [selector, eventType] = key.split(':')
             this.findAll(selector).forEach(element => {
                 element.addEventListener(eventType, eventFn)
@@ -90,8 +92,8 @@ export abstract class Component extends HTMLElement {
     }
 
     protected setListners(): void {
-        if (this.listeners) {
-            Object.entries(this.listeners).forEach(([key, listener]) => {
+        if (this.externalListners) {
+            Object.entries(this.externalListners).forEach(([key, listener]) => {
                 Events.listen(
                     listener.bind(this),
                     key,

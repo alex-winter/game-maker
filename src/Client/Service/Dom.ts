@@ -61,12 +61,14 @@ export class Dom {
         return document.createElement('slot')
     }
 
-    public static multiFileInput(): HTMLInputElement {
+    public static multiFileInput(...classList: string[]): HTMLInputElement {
         const element = document.createElement('input')
 
         element.type = 'file'
         element.multiple = true
-
+        if (classList.length) {
+            element.classList.add(...classList)
+        }
         return element
     }
 

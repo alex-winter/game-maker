@@ -1,11 +1,15 @@
-import { Component } from 'Client/Service/Component'
+import { Component, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 
 export class FileUploader extends Component {
-    private readonly container: HTMLDivElement = Dom.div('uploader')
-
     public isSingleton: boolean = true
+
+    protected listeners: Listeners = {
+        '.uploader:dragover': this.handleDragOver,
+        '.file-input:change': this.handleInputChange,
+        '.upload-button:click': this.handleUploadButtonClick,
+    }
 
     protected css(): string {
         return /*css*/`
@@ -44,27 +48,18 @@ export class FileUploader extends Component {
     }
 
     protected build(): HTMLElement {
-        this.container.textContent = 'Drag & drop files here'
+        const container = Dom.div('uploader')
+        container.textContent = 'Drag & drop files here'
 
-        this.container.addEventListener('dragover', this.handleDragOver.bind(this))
-        this.container.addEventListener('dragleave', this.handleDragLeave.bind(this))
-        this.container.addEventListener('drop', this.handleDragDrop.bind(this))
+        container.addEventListener('dragleave', this.handleDragLeave.bind(this))
+        container.addEventListener('drop', this.handleDragDrop.bind(this))
 
-        const input = Dom.multiFileInput()
-
-        input.addEventListener('change', () => {
-            if (input.files) {
-                this.handleFiles(input.files)
-            }
-        })
-
+        const input = Dom.multiFileInput('file-input')
         const button = Dom.button('Select Files', 'upload-button')
-        button.addEventListener('click', () => input.click())
-
         const wrapper = Dom.div()
 
         wrapper.append(
-            this.container,
+            container,
             button,
             input,
         )
@@ -72,20 +67,38 @@ export class FileUploader extends Component {
         return wrapper
     }
 
+    private getContainer(): HTMLDivElement {
+        return this.findOne('.uploader')!
+    }
+
+    private handleUploadButtonClick(event: Event): void {
+        const input = this.findOne('.file-input') as HTMLInputElement
+
+        input.click()
+    }
+
+    private handleInputChange(event: Event): void {
+        const input = event.target as HTMLInputElement
+
+        if (input.files) {
+            this.handleFiles(input.files)
+        }
+    }
+
     private handleDragOver(event: DragEvent): void {
         event.preventDefault()
 
-        this.container.classList.add('dragover')
+        this.getContainer().classList.add('dragover')
     }
 
     private handleDragLeave(event: DragEvent): void {
-        this.container.classList.remove('dragover')
+        this.getContainer().classList.remove('dragover')
     }
 
     private handleDragDrop(event: DragEvent): void {
         event.preventDefault()
 
-        this.container.classList.remove('dragover')
+        this.getContainer().classList.remove('dragover')
 
         if (event.dataTransfer?.files) {
             this.handleFiles(event.dataTransfer.files)

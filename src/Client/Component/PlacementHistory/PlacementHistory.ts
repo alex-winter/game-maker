@@ -6,11 +6,11 @@ import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlace
 export class PlacementHistory extends Component {
 
     protected listeners: Listeners = {
-        'loaded-placement-added': this.handleLoadedPlacementAdded
+        'loaded-placement-added': this.handleLoadedPlacementAdded,
     }
 
     protected events = {
-        '.placement-row:click': this.handleClickRow
+        '.placement-row:click': this.handleClickRow,
     }
 
     protected build(): HTMLElement {

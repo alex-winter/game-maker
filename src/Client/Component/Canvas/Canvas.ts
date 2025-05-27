@@ -1,4 +1,4 @@
-import { Component, Listeners } from 'Client/Service/Component'
+import { Component, ExternalListeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Coordinates, Rect } from 'Model/Coordinates'
 
@@ -7,7 +7,7 @@ export class Canvas2D extends Component {
     private frameFunction!: Function
     private msPerFrame: number = 100
 
-    protected listeners: Listeners = {
+    protected externalListners: ExternalListeners = {
         'window-resize': this.handleResize
     }
 
@@ -82,10 +82,11 @@ export class Canvas2D extends Component {
         viewCoordinates: Coordinates,
         rect: Rect,
     ): boolean {
+        const canvas = this.getCanvas()
         const viewLeft = viewCoordinates.x
         const viewTop = viewCoordinates.y
-        const viewRight = viewLeft + this.getCanvas().width
-        const viewBottom = viewTop + this.getCanvas().height
+        const viewRight = viewLeft + canvas.width
+        const viewBottom = viewTop + canvas.height
 
         return !(
             rect.x + rect.width < viewLeft ||
@@ -113,7 +114,7 @@ export class Canvas2D extends Component {
     }
 
     private handleResize(): void {
-        const canvas = this.findOne('canvas')! as HTMLCanvasElement
+        const canvas = this.getCanvas()
         canvas.width = this.offsetWidth
         canvas.height = this.offsetHeight
     }

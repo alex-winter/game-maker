@@ -1,9 +1,16 @@
-import { EVENTS } from 'Client/Constants/events'
-import { Component } from 'Client/Service/Component'
+import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 
 export class BasicModal extends Component {
+
+    protected listeners: Listeners = {
+        '.backdrop:click': this.handleClickBackdrop,
+    }
+
+    protected externalListners: ExternalListeners = {
+        'close-modal': this.handleCloseModal,
+    }
 
     protected css(): string {
         return /*css*/`
@@ -34,22 +41,26 @@ export class BasicModal extends Component {
         const content = Dom.div('modal-content')
         const slot = Dom.slot()
 
-        backdrop.addEventListener('click', (event: MouseEvent) => {
-            if (event.target === backdrop) {
-                this.destroy()
-            }
-        })
-
-        Events.listen((event) => {
-            if (this.contains(event.detail as Component)) {
-                this.destroy()
-            }
-        }, EVENTS.closeModal)
-
         content.append(slot)
 
-        backdrop.appendChild(content)
+        backdrop.append(content)
 
         return backdrop
+    }
+
+    private getBackdrop(): HTMLDivElement {
+        return this.findOne('.backdrop')!
+    }
+
+    private handleCloseModal(event: CustomEvent): void {
+        if (this.contains(event.detail as Component)) {
+            this.destroy()
+        }
+    }
+
+    private handleClickBackdrop(event: Event): void {
+        if (event.target === this.getBackdrop()) {
+            this.destroy()
+        }
     }
 }

@@ -860,7 +860,7 @@ class Canvas2D extends Component_1.Component {
     animationTimeout;
     frameFunction;
     msPerFrame = 100;
-    listeners = {
+    externalListners = {
         'window-resize': this.handleResize
     };
     css() {
@@ -909,10 +909,11 @@ class Canvas2D extends Component_1.Component {
         clearTimeout(this.animationTimeout);
     }
     isRectVisible(viewCoordinates, rect) {
+        const canvas = this.getCanvas();
         const viewLeft = viewCoordinates.x;
         const viewTop = viewCoordinates.y;
-        const viewRight = viewLeft + this.getCanvas().width;
-        const viewBottom = viewTop + this.getCanvas().height;
+        const viewRight = viewLeft + canvas.width;
+        const viewBottom = viewTop + canvas.height;
         return !(rect.x + rect.width < viewLeft ||
             rect.x > viewRight ||
             rect.y + rect.height < viewTop ||
@@ -931,7 +932,7 @@ class Canvas2D extends Component_1.Component {
         this.handleResize();
     }
     handleResize() {
-        const canvas = this.findOne('canvas');
+        const canvas = this.getCanvas();
         canvas.width = this.offsetWidth;
         canvas.height = this.offsetHeight;
     }
@@ -992,7 +993,7 @@ class CanvasLayer extends Component_1.Component {
     viewCoordinates = { x: 0, y: 0 };
     isCollisionLayer = false;
     toolSelection = 'pencil';
-    listeners = {
+    externalListners = {
         'got-user-data': this.handleGotUserData,
         'layer-deleted': this.handleDelete,
         'layer-update': this.handleLayerUpdate,
@@ -1300,6 +1301,10 @@ const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/
 class CanvasTools extends Component_1.Component {
     currentTool = 'pencil';
     isSingleton = true;
+    listeners = {
+        'pencil-button:click': this.handlePencilToolClick,
+        'fill-button:click': this.handleFillToolClick,
+    };
     css() {
         return /*css*/ `
             :host {
@@ -1335,27 +1340,25 @@ class CanvasTools extends Component_1.Component {
     }
     build() {
         const container = Dom_1.Dom.div('container');
-        const pencilButton = Dom_1.Dom.button();
+        const pencilButton = Dom_1.Dom.button('pencil-button');
         const pencilIcon = Dom_1.Dom.i('fa-solid', 'fa-pencil');
         pencilButton.append(pencilIcon);
         pencilButton.classList.toggle('active', this.currentTool === 'pencil');
-        pencilButton.addEventListener('click', this.handlePencilToolClick);
-        const fillButton = Dom_1.Dom.button();
+        const fillButton = Dom_1.Dom.button('fill-button');
         const fillIcon = Dom_1.Dom.i('fa-solid', 'fa-fill-drip');
         fillButton.append(fillIcon);
         fillButton.classList.toggle('active', this.currentTool === 'fill');
-        fillButton.addEventListener('click', this.handleFillToolClick);
         container.append(pencilButton, fillButton);
         return container;
     }
-    handlePencilToolClick = (event) => {
+    handlePencilToolClick(event) {
         Events_1.Events.emit('tool-selection', this.currentTool = 'pencil');
         this.patch();
-    };
-    handleFillToolClick = (event) => {
+    }
+    handleFillToolClick(event) {
         Events_1.Events.emit('tool-selection', this.currentTool = 'fill');
         this.patch();
-    };
+    }
 }
 exports.CanvasTools = CanvasTools;
 
@@ -1375,8 +1378,12 @@ const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/C
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class FileUploader extends Component_1.Component {
-    container = Dom_1.Dom.div('uploader');
     isSingleton = true;
+    listeners = {
+        '.uploader:dragover': this.handleDragOver,
+        '.file-input:change': this.handleInputChange,
+        '.upload-button:click': this.handleUploadButtonClick,
+    };
     css() {
         return /*css*/ `
             :host {
@@ -1413,32 +1420,39 @@ class FileUploader extends Component_1.Component {
         `;
     }
     build() {
-        this.container.textContent = 'Drag & drop files here';
-        this.container.addEventListener('dragover', this.handleDragOver.bind(this));
-        this.container.addEventListener('dragleave', this.handleDragLeave.bind(this));
-        this.container.addEventListener('drop', this.handleDragDrop.bind(this));
-        const input = Dom_1.Dom.multiFileInput();
-        input.addEventListener('change', () => {
-            if (input.files) {
-                this.handleFiles(input.files);
-            }
-        });
+        const container = Dom_1.Dom.div('uploader');
+        container.textContent = 'Drag & drop files here';
+        container.addEventListener('dragleave', this.handleDragLeave.bind(this));
+        container.addEventListener('drop', this.handleDragDrop.bind(this));
+        const input = Dom_1.Dom.multiFileInput('file-input');
         const button = Dom_1.Dom.button('Select Files', 'upload-button');
-        button.addEventListener('click', () => input.click());
         const wrapper = Dom_1.Dom.div();
-        wrapper.append(this.container, button, input);
+        wrapper.append(container, button, input);
         return wrapper;
+    }
+    getContainer() {
+        return this.findOne('.uploader');
+    }
+    handleUploadButtonClick(event) {
+        const input = this.findOne('.file-input');
+        input.click();
+    }
+    handleInputChange(event) {
+        const input = event.target;
+        if (input.files) {
+            this.handleFiles(input.files);
+        }
     }
     handleDragOver(event) {
         event.preventDefault();
-        this.container.classList.add('dragover');
+        this.getContainer().classList.add('dragover');
     }
     handleDragLeave(event) {
-        this.container.classList.remove('dragover');
+        this.getContainer().classList.remove('dragover');
     }
     handleDragDrop(event) {
         event.preventDefault();
-        this.container.classList.remove('dragover');
+        this.getContainer().classList.remove('dragover');
         if (event.dataTransfer?.files) {
             this.handleFiles(event.dataTransfer.files);
         }
@@ -1461,11 +1475,15 @@ exports.FileUploader = FileUploader;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BasicModal = void 0;
-const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
-const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class BasicModal extends Component_1.Component {
+    listeners = {
+        '.backdrop:click': this.handleClickBackdrop,
+    };
+    externalListners = {
+        'close-modal': this.handleCloseModal,
+    };
     css() {
         return /*css*/ `
             .backdrop {
@@ -1493,19 +1511,22 @@ class BasicModal extends Component_1.Component {
         const backdrop = Dom_1.Dom.div('backdrop');
         const content = Dom_1.Dom.div('modal-content');
         const slot = Dom_1.Dom.slot();
-        backdrop.addEventListener('click', (event) => {
-            if (event.target === backdrop) {
-                this.destroy();
-            }
-        });
-        Events_1.Events.listen((event) => {
-            if (this.contains(event.detail)) {
-                this.destroy();
-            }
-        }, events_1.EVENTS.closeModal);
         content.append(slot);
-        backdrop.appendChild(content);
+        backdrop.append(content);
         return backdrop;
+    }
+    getBackdrop() {
+        return this.findOne('.backdrop');
+    }
+    handleCloseModal(event) {
+        if (this.contains(event.detail)) {
+            this.destroy();
+        }
+    }
+    handleClickBackdrop(event) {
+        if (event.target === this.getBackdrop()) {
+            this.destroy();
+        }
     }
 }
 exports.BasicModal = BasicModal;
@@ -1561,8 +1582,10 @@ const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Servic
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class LayerItem extends Component_1.Component {
     layer;
-    container;
-    visibleButton;
+    externalListners = {
+        'layer-update': this.handleLayerUpdate,
+        'layer-deleted': this.handleLayerDeleted,
+    };
     handleContainerClick = () => {
         Events_1.Events.emit('layer-active', this.layer);
     };
@@ -1603,10 +1626,10 @@ class LayerItem extends Component_1.Component {
         this.layer = this.parameters.layer;
     }
     build() {
-        this.container = Dom_1.Dom.div('container');
+        const container = Dom_1.Dom.div('container');
         const name = Dom_1.Dom.div();
         const options = Dom_1.Dom.div('options');
-        this.visibleButton = Dom_1.Dom.button();
+        const visibleButton = Dom_1.Dom.button('visibility-button');
         const eyeIcon = Dom_1.Dom.i('fa-solid');
         const deleteButton = Dom_1.Dom.button();
         const trashIcon = Dom_1.Dom.i('fa-solid', 'fa-trash');
@@ -1616,31 +1639,32 @@ class LayerItem extends Component_1.Component {
         }
         name.append(document.createTextNode(this.layer.name));
         eyeIcon.classList.add(this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash');
-        this.container.classList.toggle('active', this.layer.is_active);
-        this.container.classList.toggle('collision-layer', this.layer.type === 'collision');
-        this.container.addEventListener('click', this.handleContainerClick);
-        this.visibleButton.addEventListener('click', this.handleVisibleButtonClick);
+        container.classList.toggle('active', this.layer.is_active);
+        container.classList.toggle('collision-layer', this.layer.type === 'collision');
+        container.addEventListener('click', this.handleContainerClick);
+        visibleButton.addEventListener('click', this.handleVisibleButtonClick);
         deleteButton.addEventListener('click', this.handleClickDelete);
         deleteButton.append(trashIcon);
-        this.visibleButton.append(eyeIcon);
-        options.append(deleteButton, this.visibleButton);
-        this.container.append(name, options);
-        return this.container;
+        visibleButton.append(eyeIcon);
+        options.append(deleteButton, visibleButton);
+        container.append(name, options);
+        return container;
     }
-    afterBuild() {
-        Events_1.Events.listen(event => {
-            const update = event.detail;
-            if (update.uuid === this.layer.uuid) {
-                this.layer = event.detail;
-                this.patch();
-            }
-        }, 'layer-update');
-        Events_1.Events.listen(event => {
-            const uuid = event.detail;
-            if (this.layer.uuid === uuid) {
-                this.destroy();
-            }
-        }, 'layer-deleted');
+    getVisibleButton() {
+        return this.findOne('.visibility-button');
+    }
+    handleLayerUpdate(event) {
+        const update = event.detail;
+        if (update.uuid === this.layer.uuid) {
+            this.layer = event.detail;
+            this.patch();
+        }
+    }
+    handleLayerDeleted(event) {
+        const uuid = event.detail;
+        if (this.layer.uuid === uuid) {
+            this.destroy();
+        }
     }
 }
 exports.LayerItem = LayerItem;
@@ -1788,10 +1812,10 @@ const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Servic
 const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
 class PlacementHistory extends Component_1.Component {
     listeners = {
-        'loaded-placement-added': this.handleLoadedPlacementAdded
+        'loaded-placement-added': this.handleLoadedPlacementAdded,
     };
     events = {
-        '.placement-row:click': this.handleClickRow
+        '.placement-row:click': this.handleClickRow,
     };
     build() {
         const container = Dom_1.Dom.div('placement-history');
@@ -2447,8 +2471,8 @@ class Component extends HTMLElement {
     shadow;
     isSingleton = false;
     parameters = {};
+    externalListners;
     listeners;
-    events;
     constructor() {
         super();
         this.shadow = this.attachShadow({ mode: 'open' });
@@ -2496,7 +2520,7 @@ class Component extends HTMLElement {
         this.afterPatch();
     }
     afterPatch() {
-        Object.entries(this.events).forEach(([key, eventFn]) => {
+        Object.entries(this.listeners).forEach(([key, eventFn]) => {
             const [selector, eventType] = key.split(':');
             this.findAll(selector).forEach(element => {
                 element.addEventListener(eventType, eventFn);
@@ -2504,8 +2528,8 @@ class Component extends HTMLElement {
         });
     }
     setListners() {
-        if (this.listeners) {
-            Object.entries(this.listeners).forEach(([key, listener]) => {
+        if (this.externalListners) {
+            Object.entries(this.externalListners).forEach(([key, listener]) => {
                 Events_1.Events.listen(listener.bind(this), key);
             });
         }
@@ -2573,10 +2597,13 @@ class Dom {
     static slot() {
         return document.createElement('slot');
     }
-    static multiFileInput() {
+    static multiFileInput(...classList) {
         const element = document.createElement('input');
         element.type = 'file';
         element.multiple = true;
+        if (classList.length) {
+            element.classList.add(...classList);
+        }
         return element;
     }
     static async image(src) {

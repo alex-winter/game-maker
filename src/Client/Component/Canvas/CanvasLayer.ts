@@ -3,7 +3,7 @@ import { LEFT_BUTTON, MIDDLE_BUTTON } from 'Client/Constants/mouse-events'
 import { Coordinates } from 'Model/Coordinates'
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { ImagePlacement } from 'Model/Placement'
-import { Component, Listeners } from 'Client/Service/Component'
+import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 import { generateImageDataURL } from 'Client/Service/generate-image'
@@ -43,7 +43,7 @@ export class CanvasLayer extends Component {
     private isCollisionLayer: boolean = false
     private toolSelection: string = 'pencil'
 
-    protected readonly listeners: Listeners = {
+    protected readonly externalListners: ExternalListeners = {
         'got-user-data': this.handleGotUserData,
         'layer-deleted': this.handleDelete,
         'layer-update': this.handleLayerUpdate,

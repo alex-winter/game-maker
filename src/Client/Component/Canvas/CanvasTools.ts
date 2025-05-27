@@ -1,11 +1,14 @@
-import { Component } from 'Client/Service/Component'
+import { Component, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 
 export class CanvasTools extends Component {
     private currentTool: string = 'pencil'
-
     public isSingleton: boolean = true
+    protected listeners: Listeners = {
+        'pencil-button:click': this.handlePencilToolClick,
+        'fill-button:click': this.handleFillToolClick,
+    }
 
     protected css(): string {
         return /*css*/`
@@ -45,17 +48,15 @@ export class CanvasTools extends Component {
     protected build(): HTMLElement {
         const container = Dom.div('container')
 
-        const pencilButton = Dom.button()
+        const pencilButton = Dom.button('pencil-button')
         const pencilIcon = Dom.i('fa-solid', 'fa-pencil')
         pencilButton.append(pencilIcon)
         pencilButton.classList.toggle('active', this.currentTool === 'pencil')
-        pencilButton.addEventListener('click', this.handlePencilToolClick)
 
-        const fillButton = Dom.button()
+        const fillButton = Dom.button('fill-button')
         const fillIcon = Dom.i('fa-solid', 'fa-fill-drip')
         fillButton.append(fillIcon)
         fillButton.classList.toggle('active', this.currentTool === 'fill')
-        fillButton.addEventListener('click', this.handleFillToolClick)
 
 
         container.append(
@@ -66,12 +67,12 @@ export class CanvasTools extends Component {
         return container
     }
 
-    private handlePencilToolClick = (event: Event): void => {
+    private handlePencilToolClick(event: Event): void {
         Events.emit('tool-selection', this.currentTool = 'pencil')
         this.patch()
     }
 
-    private handleFillToolClick = (event: Event): void => {
+    private handleFillToolClick(event: Event): void {
         Events.emit('tool-selection', this.currentTool = 'fill')
         this.patch()
     }

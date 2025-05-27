@@ -1,12 +1,15 @@
-import { Component } from 'Client/Service/Component'
+import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 import { Layer } from 'Model/Layer'
 
 export class LayerItem extends Component {
     private layer!: Layer
-    private container!: HTMLDivElement
-    private visibleButton!: HTMLButtonElement
+
+    protected externalListners: ExternalListeners = {
+        'layer-update': this.handleLayerUpdate,
+        'layer-deleted': this.handleLayerDeleted,
+    }
 
     private handleContainerClick = () => {
         Events.emit('layer-active', this.layer)
@@ -53,10 +56,10 @@ export class LayerItem extends Component {
     }
 
     protected build(): HTMLElement {
-        this.container = Dom.div('container')
+        const container = Dom.div('container')
         const name = Dom.div()
         const options = Dom.div('options')
-        this.visibleButton = Dom.button()
+        const visibleButton = Dom.button('visibility-button')
         const eyeIcon = Dom.i('fa-solid')
         const deleteButton = Dom.button()
         const trashIcon = Dom.i('fa-solid', 'fa-trash')
@@ -72,44 +75,48 @@ export class LayerItem extends Component {
 
         eyeIcon.classList.add(this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash')
 
-        this.container.classList.toggle('active', this.layer.is_active)
+        container.classList.toggle('active', this.layer.is_active)
 
-        this.container.classList.toggle('collision-layer', this.layer.type === 'collision')
+        container.classList.toggle('collision-layer', this.layer.type === 'collision')
 
-        this.container.addEventListener('click', this.handleContainerClick)
-        this.visibleButton.addEventListener('click', this.handleVisibleButtonClick)
+        container.addEventListener('click', this.handleContainerClick)
+        visibleButton.addEventListener('click', this.handleVisibleButtonClick)
         deleteButton.addEventListener('click', this.handleClickDelete)
 
         deleteButton.append(trashIcon)
-        this.visibleButton.append(eyeIcon)
+        visibleButton.append(eyeIcon)
 
         options.append(
             deleteButton,
-            this.visibleButton,
+            visibleButton,
         )
 
-        this.container.append(
+        container.append(
             name,
             options,
         )
 
-        return this.container
+        return container
     }
 
-    protected afterBuild(): void {
-        Events.listen(event => {
-            const update = event.detail as Layer
-            if (update.uuid === this.layer.uuid) {
-                this.layer = event.detail as Layer
-                this.patch()
-            }
-        }, 'layer-update')
+    private getVisibleButton(): HTMLButtonElement {
+        return this.findOne('.visibility-button')!
+    }
 
-        Events.listen(event => {
-            const uuid = event.detail as string
-            if (this.layer.uuid === uuid) {
-                this.destroy()
-            }
-        }, 'layer-deleted')
+    private handleLayerUpdate(event: CustomEvent): void {
+        const update = event.detail as Layer
+
+        if (update.uuid === this.layer.uuid) {
+            this.layer = event.detail as Layer
+            this.patch()
+        }
+    }
+
+    private handleLayerDeleted(event: CustomEvent): void {
+        const uuid = event.detail as string
+
+        if (this.layer.uuid === uuid) {
+            this.destroy()
+        }
     }
 }
