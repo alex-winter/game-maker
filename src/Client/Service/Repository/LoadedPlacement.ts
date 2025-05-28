@@ -13,6 +13,10 @@ class LoadedPlacementRepository {
     public get(): LoadedPlacement[] {
         return this.data
     }
+
+    public getByUuid(uuid: string): LoadedPlacement | undefined {
+        return this.data.find(p => p.uuid === uuid)
+    }
 }
 
 export const loadedPlacementRepository = new LoadedPlacementRepository()

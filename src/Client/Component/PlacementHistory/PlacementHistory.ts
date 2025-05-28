@@ -1,6 +1,7 @@
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
+import { Events } from 'Client/Service/Events'
 import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
 
 export class PlacementHistory extends Component {
@@ -83,8 +84,8 @@ export class PlacementHistory extends Component {
         event.stopPropagation()
         const row = (event.target as HTMLElement).closest('.placement-row') as HTMLElement
         const uuid = row?.dataset.uuid
-        console.log('View clicked for UUID:', uuid)
-        // Add custom logic here
+
+        Events.emit('request-focus-on-placement', uuid)
     }
 
     private handleDeleteClick(event: Event): void {

@@ -51,6 +51,7 @@ export class CanvasLayer extends Component {
         'sheet-selection-made': this.handleCurrentImageChange,
         'tool-selection': this.handleToolSelection,
         'click-placement-history-row': this.handleClickPlacementHistoryRow,
+        'request-focus-on-placement': this.handleRequestFocusOnPlacement,
     }
 
     protected css(): string {
@@ -446,5 +447,44 @@ export class CanvasLayer extends Component {
 
     private handleClickPlacementHistoryRow(): void {
         console.log('clicked')
+    }
+
+    private handleRequestFocusOnPlacement(event: CustomEvent): void {
+        const uuid = event.detail as string
+        const targetPlacement = loadedPlacementRepository.getByUuid(uuid)
+        const canvas = this.findOne('canvas-2d') as Canvas2D
+
+        if (!targetPlacement || !canvas) return
+
+        const canvasRect = canvas.getBoundingClientRect()
+
+        // Compute target view coordinates to center placement
+        const targetViewX = targetPlacement.x + targetPlacement.width / 2 - canvasRect.width / 2
+        const targetViewY = targetPlacement.y + targetPlacement.height / 2 - canvasRect.height / 2
+
+        const startX = this.viewCoordinates.x
+        const startY = this.viewCoordinates.y
+        const deltaX = targetViewX - startX
+        const deltaY = targetViewY - startY
+
+        const duration = 300 // milliseconds
+        const startTime = performance.now()
+
+        const animate = (currentTime: number) => {
+            const elapsed = currentTime - startTime
+            const progress = Math.min(elapsed / duration, 1)
+            const easeOut = 1 - Math.pow(1 - progress, 3)
+
+            this.viewCoordinates.x = startX + deltaX * easeOut
+            this.viewCoordinates.y = startY + deltaY * easeOut
+
+            Events.emit('updated-view-coordinates', { ...this.viewCoordinates })
+
+            if (progress < 1) {
+                requestAnimationFrame(animate)
+            }
+        }
+
+        requestAnimationFrame(animate)
     }
 }

@@ -1001,6 +1001,7 @@ class CanvasLayer extends Component_1.Component {
         'sheet-selection-made': this.handleCurrentImageChange,
         'tool-selection': this.handleToolSelection,
         'click-placement-history-row': this.handleClickPlacementHistoryRow,
+        'request-focus-on-placement': this.handleRequestFocusOnPlacement,
     };
     css() {
         return /*css*/ `
@@ -1282,6 +1283,35 @@ class CanvasLayer extends Component_1.Component {
     }
     handleClickPlacementHistoryRow() {
         console.log('clicked');
+    }
+    handleRequestFocusOnPlacement(event) {
+        const uuid = event.detail;
+        const targetPlacement = LoadedPlacement_1.loadedPlacementRepository.getByUuid(uuid);
+        const canvas = this.findOne('canvas-2d');
+        if (!targetPlacement || !canvas)
+            return;
+        const canvasRect = canvas.getBoundingClientRect();
+        // Compute target view coordinates to center placement
+        const targetViewX = targetPlacement.x + targetPlacement.width / 2 - canvasRect.width / 2;
+        const targetViewY = targetPlacement.y + targetPlacement.height / 2 - canvasRect.height / 2;
+        const startX = this.viewCoordinates.x;
+        const startY = this.viewCoordinates.y;
+        const deltaX = targetViewX - startX;
+        const deltaY = targetViewY - startY;
+        const duration = 300; // milliseconds
+        const startTime = performance.now();
+        const animate = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            this.viewCoordinates.x = startX + deltaX * easeOut;
+            this.viewCoordinates.y = startY + deltaY * easeOut;
+            Events_1.Events.emit('updated-view-coordinates', { ...this.viewCoordinates });
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            }
+        };
+        requestAnimationFrame(animate);
     }
 }
 exports.CanvasLayer = CanvasLayer;
@@ -1809,6 +1839,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PlacementHistory = void 0;
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
 class PlacementHistory extends Component_1.Component {
     externalListners = {
@@ -1861,8 +1892,7 @@ class PlacementHistory extends Component_1.Component {
         event.stopPropagation();
         const row = event.target.closest('.placement-row');
         const uuid = row?.dataset.uuid;
-        console.log('View clicked for UUID:', uuid);
-        // Add custom logic here
+        Events_1.Events.emit('request-focus-on-placement', uuid);
     }
     handleDeleteClick(event) {
         event.stopPropagation();
@@ -2891,6 +2921,9 @@ class LoadedPlacementRepository {
     }
     get() {
         return this.data;
+    }
+    getByUuid(uuid) {
+        return this.data.find(p => p.uuid === uuid);
     }
 }
 exports.loadedPlacementRepository = new LoadedPlacementRepository();
