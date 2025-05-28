@@ -59,7 +59,7 @@ export class LayerItem extends Component {
         const container = Dom.div('container')
         const name = Dom.div()
         const options = Dom.div('options')
-        const visibleButton = Dom.button('visibility-button')
+        const visibleButton = Dom.button('', 'visibility-button')
         const eyeIcon = Dom.i('fa-solid')
         const deleteButton = Dom.button()
         const trashIcon = Dom.i('fa-solid', 'fa-trash')
@@ -97,10 +97,6 @@ export class LayerItem extends Component {
         )
 
         return container
-    }
-
-    private getVisibleButton(): HTMLButtonElement {
-        return this.findOne('.visibility-button')!
     }
 
     private handleLayerUpdate(event: CustomEvent): void {

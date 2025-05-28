@@ -1340,11 +1340,11 @@ class CanvasTools extends Component_1.Component {
     }
     build() {
         const container = Dom_1.Dom.div('container');
-        const pencilButton = Dom_1.Dom.button('pencil-button');
+        const pencilButton = Dom_1.Dom.button('', 'pencil-button');
         const pencilIcon = Dom_1.Dom.i('fa-solid', 'fa-pencil');
         pencilButton.append(pencilIcon);
         pencilButton.classList.toggle('active', this.currentTool === 'pencil');
-        const fillButton = Dom_1.Dom.button('fill-button');
+        const fillButton = Dom_1.Dom.button('', 'fill-button');
         const fillIcon = Dom_1.Dom.i('fa-solid', 'fa-fill-drip');
         fillButton.append(fillIcon);
         fillButton.classList.toggle('active', this.currentTool === 'fill');
@@ -1629,7 +1629,7 @@ class LayerItem extends Component_1.Component {
         const container = Dom_1.Dom.div('container');
         const name = Dom_1.Dom.div();
         const options = Dom_1.Dom.div('options');
-        const visibleButton = Dom_1.Dom.button('visibility-button');
+        const visibleButton = Dom_1.Dom.button('', 'visibility-button');
         const eyeIcon = Dom_1.Dom.i('fa-solid');
         const deleteButton = Dom_1.Dom.button();
         const trashIcon = Dom_1.Dom.i('fa-solid', 'fa-trash');
@@ -1649,9 +1649,6 @@ class LayerItem extends Component_1.Component {
         options.append(deleteButton, visibleButton);
         container.append(name, options);
         return container;
-    }
-    getVisibleButton() {
-        return this.findOne('.visibility-button');
     }
     handleLayerUpdate(event) {
         const update = event.detail;
@@ -1811,10 +1808,10 @@ const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/C
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
 class PlacementHistory extends Component_1.Component {
-    listeners = {
+    externalListners = {
         'loaded-placement-added': this.handleLoadedPlacementAdded,
     };
-    events = {
+    listeners = {
         '.placement-row:click': this.handleClickRow,
     };
     build() {

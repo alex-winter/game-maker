@@ -1,15 +1,15 @@
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
-import { Component, Listeners } from 'Client/Service/Component'
+import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
 
 export class PlacementHistory extends Component {
 
-    protected listeners: Listeners = {
+    protected externalListners: ExternalListeners = {
         'loaded-placement-added': this.handleLoadedPlacementAdded,
     }
 
-    protected events = {
+    protected listeners: Listeners = {
         '.placement-row:click': this.handleClickRow,
     }
 

@@ -48,12 +48,12 @@ export class CanvasTools extends Component {
     protected build(): HTMLElement {
         const container = Dom.div('container')
 
-        const pencilButton = Dom.button('pencil-button')
+        const pencilButton = Dom.button('', 'pencil-button')
         const pencilIcon = Dom.i('fa-solid', 'fa-pencil')
         pencilButton.append(pencilIcon)
         pencilButton.classList.toggle('active', this.currentTool === 'pencil')
 
-        const fillButton = Dom.button('fill-button')
+        const fillButton = Dom.button('', 'fill-button')
         const fillIcon = Dom.i('fa-solid', 'fa-fill-drip')
         fillButton.append(fillIcon)
         fillButton.classList.toggle('active', this.currentTool === 'fill')
