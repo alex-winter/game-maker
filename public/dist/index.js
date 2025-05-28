@@ -1813,11 +1813,13 @@ class PlacementHistory extends Component_1.Component {
     };
     listeners = {
         '.placement-row:click': this.handleClickRow,
+        '.view-btn:click': this.handleViewClick,
+        '.delete-btn:click': this.handleDeleteClick,
     };
     build() {
         const container = Dom_1.Dom.div('placement-history');
         const header = Dom_1.Dom.div('placement-history-header');
-        header.append(Dom_1.Dom.div('column', 'coords-col', 'header-cell').appendChild(document.createTextNode('Coordinates')), Dom_1.Dom.div('column', 'dims-col', 'header-cell').appendChild(document.createTextNode('Dimensions')), Dom_1.Dom.div('column', 'image-col', 'header-cell').appendChild(document.createTextNode('Image')));
+        header.append(Dom_1.Dom.div('column', 'coords-col', 'header-cell').appendChild(document.createTextNode('Coordinates')), Dom_1.Dom.div('column', 'dims-col', 'header-cell').appendChild(document.createTextNode('Dimensions')), Dom_1.Dom.div('column', 'image-col', 'header-cell').appendChild(document.createTextNode('Image')), Dom_1.Dom.div('column', 'tools-col', 'header-cell').appendChild(document.createTextNode('Tools')));
         container.appendChild(header);
         LoadedPlacement_1.loadedPlacementRepository.get().forEach(placement => {
             container.append(this.buildPlacementRow(placement));
@@ -1829,6 +1831,7 @@ class PlacementHistory extends Component_1.Component {
     }
     buildPlacementRow(placement) {
         const row = Dom_1.Dom.div('placement-row');
+        row.dataset.uuid = placement.uuid;
         const coordsCol = Dom_1.Dom.div('column', 'coords-col');
         coordsCol.textContent = `(${placement.x}, ${placement.y})`;
         const dimsCol = Dom_1.Dom.div('column', 'dims-col');
@@ -1837,11 +1840,33 @@ class PlacementHistory extends Component_1.Component {
         const thumbnail = placement.image.cloneNode(true);
         thumbnail.classList.add('placement-thumb');
         imageCol.appendChild(thumbnail);
-        row.append(coordsCol, dimsCol, imageCol);
+        const toolsCol = Dom_1.Dom.div('column', 'tools-col');
+        const viewBtn = Dom_1.Dom.button('', 'view-btn');
+        const eyeIcon = Dom_1.Dom.i('fa', 'fa-eye');
+        viewBtn.append(eyeIcon);
+        const trashIcon = Dom_1.Dom.i('fa', 'fa-trash');
+        const deleteBtn = Dom_1.Dom.button('', 'delete-btn');
+        deleteBtn.append(trashIcon);
+        toolsCol.append(viewBtn, deleteBtn);
+        row.append(coordsCol, dimsCol, imageCol, toolsCol);
         return row;
     }
     handleClickRow(event) {
         console.log('emit');
+    }
+    handleViewClick(event) {
+        event.stopPropagation();
+        const row = event.target.closest('.placement-row');
+        const uuid = row?.dataset.uuid;
+        console.log('View clicked for UUID:', uuid);
+        // Add custom logic here
+    }
+    handleDeleteClick(event) {
+        event.stopPropagation();
+        const row = event.target.closest('.placement-row');
+        const uuid = row?.dataset.uuid;
+        console.log('Delete clicked for UUID:', uuid);
+        // Add deletion logic here
     }
     css() {
         return /*css*/ `
@@ -1890,12 +1915,31 @@ class PlacementHistory extends Component_1.Component {
                 align-items: center;
             }
 
+            .tools-col {
+                flex: 1;
+                display: flex;
+                justify-content: flex-end;
+                gap: 0.5rem;
+            }
+
             .placement-thumb {
                 max-width: 60px;
                 max-height: 40px;
                 object-fit: contain;
                 border: 1px solid #ddd;
                 border-radius: 4px;
+            }
+
+            .tools-col button {
+                background: none;
+                border: none;
+                cursor: pointer;
+                font-size: 1rem;
+                color: #555;
+            }
+
+            .tools-col button:hover {
+                color: #000;
             }
         `;
     }

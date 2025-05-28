@@ -11,6 +11,8 @@ export class PlacementHistory extends Component {
 
     protected listeners: Listeners = {
         '.placement-row:click': this.handleClickRow,
+        '.view-btn:click': this.handleViewClick,
+        '.delete-btn:click': this.handleDeleteClick,
     }
 
     protected build(): HTMLElement {
@@ -20,7 +22,8 @@ export class PlacementHistory extends Component {
         header.append(
             Dom.div('column', 'coords-col', 'header-cell').appendChild(document.createTextNode('Coordinates')),
             Dom.div('column', 'dims-col', 'header-cell').appendChild(document.createTextNode('Dimensions')),
-            Dom.div('column', 'image-col', 'header-cell').appendChild(document.createTextNode('Image'))
+            Dom.div('column', 'image-col', 'header-cell').appendChild(document.createTextNode('Image')),
+            Dom.div('column', 'tools-col', 'header-cell').appendChild(document.createTextNode('Tools'))
         )
         container.appendChild(header)
 
@@ -39,6 +42,7 @@ export class PlacementHistory extends Component {
 
     private buildPlacementRow(placement: LoadedPlacement): HTMLElement {
         const row = Dom.div('placement-row')
+        row.dataset.uuid = placement.uuid
 
         const coordsCol = Dom.div('column', 'coords-col')
         coordsCol.textContent = `(${placement.x}, ${placement.y})`
@@ -51,10 +55,21 @@ export class PlacementHistory extends Component {
         thumbnail.classList.add('placement-thumb')
         imageCol.appendChild(thumbnail)
 
+        const toolsCol = Dom.div('column', 'tools-col')
+        const viewBtn = Dom.button('', 'view-btn')
+        const eyeIcon = Dom.i('fa', 'fa-eye')
+        viewBtn.append(eyeIcon)
+
+        const trashIcon = Dom.i('fa', 'fa-trash')
+        const deleteBtn = Dom.button('', 'delete-btn')
+        deleteBtn.append(trashIcon)
+        toolsCol.append(viewBtn, deleteBtn)
+
         row.append(
             coordsCol,
             dimsCol,
             imageCol,
+            toolsCol
         )
 
         return row
@@ -62,6 +77,22 @@ export class PlacementHistory extends Component {
 
     private handleClickRow(event: Event): void {
         console.log('emit')
+    }
+
+    private handleViewClick(event: Event): void {
+        event.stopPropagation()
+        const row = (event.target as HTMLElement).closest('.placement-row') as HTMLElement
+        const uuid = row?.dataset.uuid
+        console.log('View clicked for UUID:', uuid)
+        // Add custom logic here
+    }
+
+    private handleDeleteClick(event: Event): void {
+        event.stopPropagation()
+        const row = (event.target as HTMLElement).closest('.placement-row') as HTMLElement
+        const uuid = row?.dataset.uuid
+        console.log('Delete clicked for UUID:', uuid)
+        // Add deletion logic here
     }
 
     protected css(): string {
@@ -111,12 +142,31 @@ export class PlacementHistory extends Component {
                 align-items: center;
             }
 
+            .tools-col {
+                flex: 1;
+                display: flex;
+                justify-content: flex-end;
+                gap: 0.5rem;
+            }
+
             .placement-thumb {
                 max-width: 60px;
                 max-height: 40px;
                 object-fit: contain;
                 border: 1px solid #ddd;
                 border-radius: 4px;
+            }
+
+            .tools-col button {
+                background: none;
+                border: none;
+                cursor: pointer;
+                font-size: 1rem;
+                color: #555;
+            }
+
+            .tools-col button:hover {
+                color: #000;
             }
         `
     }
