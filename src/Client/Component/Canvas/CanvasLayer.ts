@@ -259,6 +259,9 @@ export class CanvasLayer extends Component {
 
 
     private async generatePlacement(): Promise<void> {
+        if (this.getCurrentImage().src === CanvasLayer.DEFAULT_IMAGE) {
+            return
+        }
         const placement: ImagePlacement = {
             uuid: crypto.randomUUID(),
             coordinate: {

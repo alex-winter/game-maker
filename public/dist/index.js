@@ -1150,6 +1150,9 @@ class CanvasLayer extends Component_1.Component {
         }
     }
     async generatePlacement() {
+        if (this.getCurrentImage().src === CanvasLayer.DEFAULT_IMAGE) {
+            return;
+        }
         const placement = {
             uuid: crypto.randomUUID(),
             coordinate: {
