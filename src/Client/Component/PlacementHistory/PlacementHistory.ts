@@ -8,6 +8,7 @@ export class PlacementHistory extends Component {
 
     protected externalListners: ExternalListeners = {
         'loaded-placement-added': this.handleLoadedPlacementAdded,
+        'layer-update': this.handleLayerUpdate,
     }
 
     protected listeners: Listeners = {
@@ -38,6 +39,10 @@ export class PlacementHistory extends Component {
     }
 
     private handleLoadedPlacementAdded(): void {
+        this.patch()
+    }
+
+    private handleLayerUpdate(): void {
         this.patch()
     }
 

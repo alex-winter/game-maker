@@ -126,7 +126,7 @@ export class Canvas2D extends Component {
         }
     }
 
-    private frame = (): void => {
+    private frame(): void {
         const ctx = this.getCtx()
 
         this.clear()
@@ -136,7 +136,7 @@ export class Canvas2D extends Component {
         }
 
         this.animationTimeout = setTimeout(
-            () => window.requestAnimationFrame(this.frame),
+            () => window.requestAnimationFrame(this.frame.bind(this)),
             this.msPerFrame,
         ) as unknown as number
     }

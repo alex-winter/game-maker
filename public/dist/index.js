@@ -941,14 +941,14 @@ class Canvas2D extends Component_1.Component {
             canvas.height = this.offsetHeight;
         }
     }
-    frame = () => {
+    frame() {
         const ctx = this.getCtx();
         this.clear();
         if (ctx) {
             this.frameFunction(ctx);
         }
-        this.animationTimeout = setTimeout(() => window.requestAnimationFrame(this.frame), this.msPerFrame);
-    };
+        this.animationTimeout = setTimeout(() => window.requestAnimationFrame(this.frame.bind(this)), this.msPerFrame);
+    }
     clear() {
         const canvas = this.getCanvas();
         if (canvas) {
@@ -990,7 +990,6 @@ class CanvasLayer extends Component_1.Component {
     static COLLISION_IMAGE = (0, generate_image_1.generateImageDataURL)(CanvasLayer.TILE_SIZE, CanvasLayer.TILE_SIZE, { r: 255, g: 0, b: 0, a: 0.3 });
     static DEFAULT_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
     currentImage;
-    canvas = Dom_1.Dom.makeComponent(Canvas_1.Canvas2D, { fps: 60 });
     layer;
     mouseCoordinates = { x: 0, y: 0 };
     isMoving = false;
@@ -1064,7 +1063,7 @@ class CanvasLayer extends Component_1.Component {
     }
     build() {
         const container = Dom_1.Dom.div('container');
-        const canvas = this.canvas;
+        const canvas = Dom_1.Dom.makeComponent(Canvas_1.Canvas2D, { fps: 60 });
         this.classList.toggle('active', this.layer.is_active);
         this.currentImage.classList.add('current-image');
         canvas.classList.toggle('hide', !this.layer.is_visible);
@@ -1081,12 +1080,10 @@ class CanvasLayer extends Component_1.Component {
                 this.isMoving = false;
             }
         });
-        this.canvas.stopAnimation();
-        this.canvas.startAnimation(this.frameFn);
+        this.getCanvas().startAnimation(this.frameFn.bind(this));
     }
     afterPatch() {
-        this.canvas.stopAnimation();
-        this.canvas.startAnimation(this.frameFn);
+        this.getCanvas().startAnimation(this.frameFn.bind(this));
     }
     handleGotUserData(event) {
         const userData = event.detail;
@@ -1111,16 +1108,20 @@ class CanvasLayer extends Component_1.Component {
         this.lastMousePosition.y = movement.clientY;
         Events_1.Events.emit('updated-view-coordinates', this.viewCoordinates);
     }
+    getCanvas() {
+        return this.findOne('canvas-2d');
+    }
     handleLayerUpdate(event) {
         const layer = event.detail;
-        const canvas = this.findOne('canvas-2d');
+        const canvas = this.getCanvas();
         if (canvas && this.layer.uuid === layer.uuid) {
             Object.assign(this.layer, layer);
+            canvas.stopAnimation();
             this.patch();
         }
     }
-    frameFn = () => {
-        const canvas = this.findOne('canvas-2d');
+    frameFn() {
+        const canvas = this.getCanvas();
         const visible = LoadedPlacement_1.loadedPlacementRepository.get()
             .filter(loadedPlacement => loadedPlacement.layerUuid === this.layer.uuid)
             .filter(loadedPlacement => {
@@ -1129,7 +1130,7 @@ class CanvasLayer extends Component_1.Component {
         visible.forEach(loadedPlacement => {
             canvas.drawImage(loadedPlacement.image, loadedPlacement.x - this.viewCoordinates.x, loadedPlacement.y - this.viewCoordinates.y, loadedPlacement.image.width, loadedPlacement.image.height);
         });
-    };
+    }
     snap(value) {
         return Math.floor(value / CanvasLayer.TILE_SIZE) * CanvasLayer.TILE_SIZE;
     }
@@ -1852,6 +1853,7 @@ const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/Load
 class PlacementHistory extends Component_1.Component {
     externalListners = {
         'loaded-placement-added': this.handleLoadedPlacementAdded,
+        'layer-update': this.handleLayerUpdate,
     };
     listeners = {
         '.placement-row:click': this.handleClickRow,
@@ -1869,6 +1871,9 @@ class PlacementHistory extends Component_1.Component {
         return container;
     }
     handleLoadedPlacementAdded() {
+        this.patch();
+    }
+    handleLayerUpdate() {
         this.patch();
     }
     buildPlacementRow(placement) {

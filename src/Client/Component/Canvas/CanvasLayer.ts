@@ -33,7 +33,6 @@ export class CanvasLayer extends Component {
     private static readonly DEFAULT_IMAGE: string = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII='
 
     private currentImage!: HTMLImageElement
-    private readonly canvas = Dom.makeComponent(Canvas2D, { fps: 60 }) as Canvas2D
 
     private layer!: Layer
     private readonly mouseCoordinates: Coordinates = { x: 0, y: 0 }
@@ -118,7 +117,7 @@ export class CanvasLayer extends Component {
 
     protected build(): HTMLElement {
         const container = Dom.div('container')
-        const canvas = this.canvas
+        const canvas = Dom.makeComponent(Canvas2D, { fps: 60 }) as Canvas2D
 
         this.classList.toggle('active', this.layer.is_active)
 
@@ -146,13 +145,11 @@ export class CanvasLayer extends Component {
             }
         })
 
-        this.canvas.stopAnimation()
-        this.canvas.startAnimation(this.frameFn)
+        this.getCanvas().startAnimation(this.frameFn.bind(this))
     }
 
     protected afterPatch(): void {
-        this.canvas.stopAnimation()
-        this.canvas.startAnimation(this.frameFn)
+        this.getCanvas().startAnimation(this.frameFn.bind(this))
     }
 
     private handleGotUserData(event: CustomEvent) {
@@ -187,9 +184,13 @@ export class CanvasLayer extends Component {
         Events.emit('updated-view-coordinates', this.viewCoordinates)
     }
 
+    private getCanvas(): Canvas2D {
+        return this.findOne('canvas-2d')! as Canvas2D
+    }
+
     private handleLayerUpdate(event: CustomEvent): void {
         const layer = event.detail as Layer
-        const canvas = this.findOne('canvas-2d')! as Canvas2D
+        const canvas = this.getCanvas()
 
         if (canvas && this.layer.uuid === layer.uuid) {
             Object.assign(
@@ -197,12 +198,14 @@ export class CanvasLayer extends Component {
                 layer,
             )
 
+            canvas.stopAnimation()
+
             this.patch()
         }
     }
 
-    private frameFn = (): void => {
-        const canvas = this.findOne('canvas-2d')! as Canvas2D
+    private frameFn(): void {
+        const canvas = this.getCanvas()
 
         const visible = loadedPlacementRepository.get()
             .filter(loadedPlacement => loadedPlacement.layerUuid === this.layer.uuid)
