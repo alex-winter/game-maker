@@ -7,8 +7,8 @@ import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlace
 export class PlacementHistory extends Component {
 
     protected externalListners: ExternalListeners = {
-        'loaded-placement-added': this.handleLoadedPlacementAdded,
-        'layer-update': this.handleLayerUpdate,
+        'loaded-placement-added': this.patch,
+        'layer-update': this.patch,
     }
 
     protected listeners: Listeners = {

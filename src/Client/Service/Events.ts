@@ -10,6 +10,7 @@ export class Events {
     }
 
     public static emit<T>(key: string, detail: T | undefined = undefined): void {
+        console.log('emit')
         document.dispatchEvent(
             new CustomEvent<T>(
                 key,

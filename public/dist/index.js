@@ -1852,8 +1852,8 @@ const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/
 const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
 class PlacementHistory extends Component_1.Component {
     externalListners = {
-        'loaded-placement-added': this.handleLoadedPlacementAdded,
-        'layer-update': this.handleLayerUpdate,
+        'loaded-placement-added': this.patch,
+        'layer-update': this.patch,
     };
     listeners = {
         '.placement-row:click': this.handleClickRow,
@@ -2773,6 +2773,7 @@ class Events {
         throw new Error('Can not construct');
     }
     static emit(key, detail = undefined) {
+        console.log('emit');
         document.dispatchEvent(new CustomEvent(key, {
             detail,
             bubbles: false,
