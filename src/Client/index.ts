@@ -240,6 +240,25 @@ document.addEventListener('DOMContentLoaded', () => {
         'click-open-history'
     )
 
+    Events.listen(
+        async event => {
+            const placementUuid = event.detail as string
+            const layers = await layerRepository.getAll()
+
+            for (const layer of layers) {
+                const index = layer.placements.findIndex(p => p.uuid === placementUuid)
+                if (index !== -1) {
+                    layer.placements.splice(index, 1)
+                    layerRepository.update(layer)
+                    Events.emit('layer-update', layer)
+                    break
+                }
+            }
+
+        },
+        'request-placement-deletion'
+    )
+
     window.addEventListener('resize', () => Events.emit(EVENTS.windowResize))
 })
 

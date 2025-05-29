@@ -14,7 +14,7 @@ export abstract class Component extends HTMLElement {
     public isSingleton: boolean = false
     protected readonly parameters: { [key: string]: any } = {}
     protected readonly externalListners!: ExternalListeners
-    protected readonly listeners!: Listeners
+    protected readonly listeners: Listeners = {}
 
     constructor() {
         super()

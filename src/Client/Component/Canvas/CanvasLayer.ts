@@ -190,6 +190,8 @@ export class CanvasLayer extends Component {
                 layer,
             )
 
+            console.log(layer.placements)
+
             canvas.stopAnimation()
 
             this.patch()
@@ -399,8 +401,7 @@ export class CanvasLayer extends Component {
             return !filledTiles.some(t => t.x === p.coordinate.x && t.y === p.coordinate.y)
         })
 
-        // 🔥 Create the merged image
-        const fillCanvas = document.createElement('canvas')
+        const fillCanvas = Dom.canvas()
         const fillCtx = fillCanvas.getContext('2d')!
 
         const offsetX = Math.min(...filledTiles.map(t => t.x))
@@ -458,7 +459,6 @@ export class CanvasLayer extends Component {
 
         const canvasRect = canvas.getBoundingClientRect()
 
-        // Compute target view coordinates to center placement
         const targetViewX = targetPlacement.x + targetPlacement.width / 2 - canvasRect.width / 2
         const targetViewY = targetPlacement.y + targetPlacement.height / 2 - canvasRect.height / 2
 
@@ -467,7 +467,7 @@ export class CanvasLayer extends Component {
         const deltaX = targetViewX - startX
         const deltaY = targetViewY - startY
 
-        const duration = 300 // milliseconds
+        const duration = 300
         const startTime = performance.now()
 
         const animate = (currentTime: number) => {

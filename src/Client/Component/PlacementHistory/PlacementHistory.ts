@@ -92,8 +92,8 @@ export class PlacementHistory extends Component {
         event.stopPropagation()
         const row = (event.target as HTMLElement).closest('.placement-row') as HTMLElement
         const uuid = row?.dataset.uuid
-        console.log('Delete clicked for UUID:', uuid)
-        // Add deletion logic here
+
+        Events.emit('request-placement-deletion', uuid)
     }
 
     protected css(): string {

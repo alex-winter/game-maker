@@ -1106,6 +1106,7 @@ class CanvasLayer extends Component_1.Component {
         const canvas = this.findOne('canvas-2d');
         if (canvas && this.layer.uuid === layer.uuid) {
             Object.assign(this.layer, layer);
+            console.log(layer.placements);
             canvas.stopAnimation();
             this.patch();
         }
@@ -1252,8 +1253,7 @@ class CanvasLayer extends Component_1.Component {
         this.layer.placements = this.layer.placements.filter(p => {
             return !filledTiles.some(t => t.x === p.coordinate.x && t.y === p.coordinate.y);
         });
-        // 🔥 Create the merged image
-        const fillCanvas = document.createElement('canvas');
+        const fillCanvas = Dom_1.Dom.canvas();
         const fillCtx = fillCanvas.getContext('2d');
         const offsetX = Math.min(...filledTiles.map(t => t.x));
         const offsetY = Math.min(...filledTiles.map(t => t.y));
@@ -1291,14 +1291,13 @@ class CanvasLayer extends Component_1.Component {
         if (!targetPlacement || !canvas)
             return;
         const canvasRect = canvas.getBoundingClientRect();
-        // Compute target view coordinates to center placement
         const targetViewX = targetPlacement.x + targetPlacement.width / 2 - canvasRect.width / 2;
         const targetViewY = targetPlacement.y + targetPlacement.height / 2 - canvasRect.height / 2;
         const startX = this.viewCoordinates.x;
         const startY = this.viewCoordinates.y;
         const deltaX = targetViewX - startX;
         const deltaY = targetViewY - startY;
-        const duration = 300; // milliseconds
+        const duration = 300;
         const startTime = performance.now();
         const animate = (currentTime) => {
             const elapsed = currentTime - startTime;
@@ -1898,8 +1897,7 @@ class PlacementHistory extends Component_1.Component {
         event.stopPropagation();
         const row = event.target.closest('.placement-row');
         const uuid = row?.dataset.uuid;
-        console.log('Delete clicked for UUID:', uuid);
-        // Add deletion logic here
+        Events_1.Events.emit('request-placement-deletion', uuid);
     }
     css() {
         return /*css*/ `
@@ -2546,7 +2544,7 @@ class Component extends HTMLElement {
     isSingleton = false;
     parameters = {};
     externalListners;
-    listeners;
+    listeners = {};
     constructor() {
         super();
         this.shadow = this.attachShadow({ mode: 'open' });
@@ -3499,6 +3497,19 @@ document.addEventListener('DOMContentLoaded', () => {
             title: 'Placement History',
         });
     }, 'click-open-history');
+    Events_1.Events.listen(async (event) => {
+        const placementUuid = event.detail;
+        const layers = await LayerRepository_1.layerRepository.getAll();
+        for (const layer of layers) {
+            const index = layer.placements.findIndex(p => p.uuid === placementUuid);
+            if (index !== -1) {
+                layer.placements.splice(index, 1);
+                LayerRepository_1.layerRepository.update(layer);
+                Events_1.Events.emit('layer-update', layer);
+                break;
+            }
+        }
+    }, 'request-placement-deletion');
     window.addEventListener('resize', () => Events_1.Events.emit(events_1.EVENTS.windowResize));
 });
 
