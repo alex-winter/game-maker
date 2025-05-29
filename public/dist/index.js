@@ -1041,6 +1041,7 @@ class CanvasLayer extends Component_1.Component {
         const loadedImage = await Dom_1.Dom.image(image.src);
         LoadedPlacement_1.loadedPlacementRepository.add({
             uuid: placement.uuid,
+            layerUuid: this.layer.uuid,
             image: loadedImage,
             x: placement.coordinate.x,
             y: placement.coordinate.y,
@@ -1106,7 +1107,6 @@ class CanvasLayer extends Component_1.Component {
         const canvas = this.findOne('canvas-2d');
         if (canvas && this.layer.uuid === layer.uuid) {
             Object.assign(this.layer, layer);
-            console.log(layer.placements);
             canvas.stopAnimation();
             this.patch();
         }
@@ -1114,6 +1114,7 @@ class CanvasLayer extends Component_1.Component {
     frameFn = () => {
         const canvas = this.findOne('canvas-2d');
         const visible = LoadedPlacement_1.loadedPlacementRepository.get()
+            .filter(loadedPlacement => loadedPlacement.layerUuid === this.layer.uuid)
             .filter(loadedPlacement => {
             return canvas.isRectVisible(this.viewCoordinates, loadedPlacement);
         });
@@ -2923,6 +2924,12 @@ class LoadedPlacementRepository {
     getByUuid(uuid) {
         return this.data.find(p => p.uuid === uuid);
     }
+    removeByUuid(uuid) {
+        const index = this.data.findIndex(p => p.uuid === uuid);
+        if (index !== -1) {
+            this.data.splice(index, 1);
+        }
+    }
 }
 exports.loadedPlacementRepository = new LoadedPlacementRepository();
 
@@ -3372,6 +3379,7 @@ const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Reposi
 const UserDataRepository_1 = __webpack_require__(/*! Client/Service/Repository/UserDataRepository */ "./src/Client/Service/Repository/UserDataRepository.ts");
 const CanvasTools_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasTools */ "./src/Client/Component/Canvas/CanvasTools.ts");
 const PlacementHistory_1 = __webpack_require__(/*! Client/Component/PlacementHistory/PlacementHistory */ "./src/Client/Component/PlacementHistory/PlacementHistory.ts");
+const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
@@ -3500,6 +3508,7 @@ document.addEventListener('DOMContentLoaded', () => {
     Events_1.Events.listen(async (event) => {
         const placementUuid = event.detail;
         const layers = await LayerRepository_1.layerRepository.getAll();
+        LoadedPlacement_1.loadedPlacementRepository.removeByUuid(placementUuid);
         for (const layer of layers) {
             const index = layer.placements.findIndex(p => p.uuid === placementUuid);
             if (index !== -1) {

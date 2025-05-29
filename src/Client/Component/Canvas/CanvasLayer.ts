@@ -95,6 +95,7 @@ export class CanvasLayer extends Component {
 
         loadedPlacementRepository.add({
             uuid: placement.uuid,
+            layerUuid: this.layer.uuid,
             image: loadedImage,
             x: placement.coordinate.x,
             y: placement.coordinate.y,
@@ -190,8 +191,6 @@ export class CanvasLayer extends Component {
                 layer,
             )
 
-            console.log(layer.placements)
-
             canvas.stopAnimation()
 
             this.patch()
@@ -202,6 +201,7 @@ export class CanvasLayer extends Component {
         const canvas = this.findOne('canvas-2d')! as Canvas2D
 
         const visible = loadedPlacementRepository.get()
+            .filter(loadedPlacement => loadedPlacement.layerUuid === this.layer.uuid)
             .filter(loadedPlacement => {
                 return canvas.isRectVisible(
                     this.viewCoordinates,

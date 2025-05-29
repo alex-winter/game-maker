@@ -23,6 +23,7 @@ import { WindowConfiguration } from 'Model/UserData'
 import { Coordinates } from 'Model/Coordinates'
 import { CanvasTools } from 'Client/Component/Canvas/CanvasTools'
 import { PlacementHistory } from 'Client/Component/PlacementHistory/PlacementHistory'
+import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -245,11 +246,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const placementUuid = event.detail as string
             const layers = await layerRepository.getAll()
 
+            loadedPlacementRepository.removeByUuid(placementUuid)
+
             for (const layer of layers) {
                 const index = layer.placements.findIndex(p => p.uuid === placementUuid)
                 if (index !== -1) {
                     layer.placements.splice(index, 1)
                     layerRepository.update(layer)
+
                     Events.emit('layer-update', layer)
                     break
                 }
