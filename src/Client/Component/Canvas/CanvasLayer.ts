@@ -125,8 +125,6 @@ export class CanvasLayer extends Component {
         this.currentImage.classList.add('current-image')
 
         canvas.classList.toggle('hide', !this.layer.is_visible)
-        canvas.stopAnimation()
-        canvas.startAnimation(this.frameFn)
 
         container.append(
             canvas,
@@ -147,6 +145,14 @@ export class CanvasLayer extends Component {
                 this.isMoving = false
             }
         })
+
+        this.canvas.stopAnimation()
+        this.canvas.startAnimation(this.frameFn)
+    }
+
+    protected afterPatch(): void {
+        this.canvas.stopAnimation()
+        this.canvas.startAnimation(this.frameFn)
     }
 
     private handleGotUserData(event: CustomEvent) {
@@ -190,8 +196,6 @@ export class CanvasLayer extends Component {
                 this.layer,
                 layer,
             )
-
-            canvas.stopAnimation()
 
             this.patch()
         }

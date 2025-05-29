@@ -910,6 +910,9 @@ class Canvas2D extends Component_1.Component {
     }
     isRectVisible(viewCoordinates, rect) {
         const canvas = this.getCanvas();
+        if (!canvas) {
+            return false;
+        }
         const viewLeft = viewCoordinates.x;
         const viewTop = viewCoordinates.y;
         const viewRight = viewLeft + canvas.width;
@@ -933,28 +936,30 @@ class Canvas2D extends Component_1.Component {
     }
     handleResize() {
         const canvas = this.getCanvas();
-        canvas.width = this.offsetWidth;
-        canvas.height = this.offsetHeight;
+        if (canvas) {
+            canvas.width = this.offsetWidth;
+            canvas.height = this.offsetHeight;
+        }
     }
     frame = () => {
         const ctx = this.getCtx();
+        this.clear();
         if (ctx) {
-            this.clear();
             this.frameFunction(ctx);
-            this.animationTimeout = setTimeout(() => window.requestAnimationFrame(this.frame), this.msPerFrame);
         }
-        else {
-            setTimeout(() => window.requestAnimationFrame(this.frame), this.msPerFrame);
-        }
+        this.animationTimeout = setTimeout(() => window.requestAnimationFrame(this.frame), this.msPerFrame);
     };
     clear() {
-        this.getCtx()?.clearRect(0, 0, this.getCanvas().width, this.getCanvas().height);
+        const canvas = this.getCanvas();
+        if (canvas) {
+            this.getCtx()?.clearRect(0, 0, canvas.width, canvas.height);
+        }
     }
     getCanvas() {
         return this.findOne('canvas');
     }
     getCtx() {
-        return this.getCanvas()?.getContext('2d');
+        return this.getCanvas()?.getContext('2d') ?? null;
     }
 }
 exports.Canvas2D = Canvas2D;
@@ -1063,8 +1068,6 @@ class CanvasLayer extends Component_1.Component {
         this.classList.toggle('active', this.layer.is_active);
         this.currentImage.classList.add('current-image');
         canvas.classList.toggle('hide', !this.layer.is_visible);
-        canvas.stopAnimation();
-        canvas.startAnimation(this.frameFn);
         container.append(canvas, this.currentImage);
         return container;
     }
@@ -1078,6 +1081,12 @@ class CanvasLayer extends Component_1.Component {
                 this.isMoving = false;
             }
         });
+        this.canvas.stopAnimation();
+        this.canvas.startAnimation(this.frameFn);
+    }
+    afterPatch() {
+        this.canvas.stopAnimation();
+        this.canvas.startAnimation(this.frameFn);
     }
     handleGotUserData(event) {
         const userData = event.detail;
@@ -1107,7 +1116,6 @@ class CanvasLayer extends Component_1.Component {
         const canvas = this.findOne('canvas-2d');
         if (canvas && this.layer.uuid === layer.uuid) {
             Object.assign(this.layer, layer);
-            canvas.stopAnimation();
             this.patch();
         }
     }

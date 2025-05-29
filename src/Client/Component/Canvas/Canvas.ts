@@ -83,6 +83,11 @@ export class Canvas2D extends Component {
         rect: Rect,
     ): boolean {
         const canvas = this.getCanvas()
+
+        if (!canvas) {
+            return false
+        }
+
         const viewLeft = viewCoordinates.x
         const viewTop = viewCoordinates.y
         const viewRight = viewLeft + canvas.width
@@ -115,44 +120,44 @@ export class Canvas2D extends Component {
 
     private handleResize(): void {
         const canvas = this.getCanvas()
-        canvas.width = this.offsetWidth
-        canvas.height = this.offsetHeight
+        if (canvas) {
+            canvas.width = this.offsetWidth
+            canvas.height = this.offsetHeight
+        }
     }
 
     private frame = (): void => {
         const ctx = this.getCtx()
 
+        this.clear()
+
         if (ctx) {
-            this.clear()
-
             this.frameFunction(ctx)
+        }
 
-            this.animationTimeout = setTimeout(
-                () => window.requestAnimationFrame(this.frame),
-                this.msPerFrame,
-            ) as unknown as number
-        } else {
-            setTimeout(
-                () => window.requestAnimationFrame(this.frame),
-                this.msPerFrame,
+        this.animationTimeout = setTimeout(
+            () => window.requestAnimationFrame(this.frame),
+            this.msPerFrame,
+        ) as unknown as number
+    }
+
+    private clear(): void {
+        const canvas = this.getCanvas()
+        if (canvas) {
+            this.getCtx()?.clearRect(
+                0,
+                0,
+                canvas.width,
+                canvas.height,
             )
         }
     }
 
-    private clear(): void {
-        this.getCtx()?.clearRect(
-            0,
-            0,
-            this.getCanvas().width,
-            this.getCanvas().height,
-        )
-    }
-
-    private getCanvas(): HTMLCanvasElement {
-        return this.findOne('canvas')!
+    private getCanvas(): HTMLCanvasElement | null {
+        return this.findOne('canvas')
     }
 
     private getCtx(): CanvasRenderingContext2D | null {
-        return this.getCanvas()?.getContext('2d')
+        return this.getCanvas()?.getContext('2d') ?? null
     }
 }

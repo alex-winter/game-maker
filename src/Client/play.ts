@@ -79,6 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             loadedPlacements.push({
                 uuid: crypto.randomUUID(),
+                layerUuid: layer.uuid,
                 image,
                 x: placement.coordinate.x,
                 y: placement.coordinate.y,
