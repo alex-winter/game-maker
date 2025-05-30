@@ -1,7 +1,6 @@
 import { LAYERS } from 'Client/Constants/layers'
 import { LEFT_BUTTON, MIDDLE_BUTTON } from 'Client/Constants/mouse-events'
 import { Coordinates } from 'Model/Coordinates'
-import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { ImagePlacement } from 'Model/Placement'
 import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
@@ -172,6 +171,10 @@ export class CanvasLayer extends Component {
     private handleMovement(event: CustomEvent): void {
         const movement = event.detail as Movement
 
+        this.move(movement)
+    }
+
+    private move(movement: Movement): void {
         const dx = movement.clientX - movement.lastMousePosition.x
         const dy = movement.clientY - movement.lastMousePosition.y
 

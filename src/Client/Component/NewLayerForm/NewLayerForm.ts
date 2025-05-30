@@ -1,11 +1,10 @@
 import { EVENTS } from 'Client/Constants/events'
 import { LAYERS } from 'Client/Constants/layers'
-import { Component } from 'Client/Service/Component'
+import { Component, ExternalListeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 
 export class NewLayerForm extends Component {
-
     private name: string = ''
     private type: string = LAYERS.defaultType
 

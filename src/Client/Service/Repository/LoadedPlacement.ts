@@ -6,8 +6,6 @@ class LoadedPlacementRepository {
 
     public add(...loadedPlacement: LoadedPlacement[]): void {
         this.data.push(...loadedPlacement)
-
-        Events.emit('loaded-placement-added')
     }
 
     public get(): LoadedPlacement[] {

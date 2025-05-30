@@ -1100,6 +1100,9 @@ class CanvasLayer extends Component_1.Component {
     }
     handleMovement(event) {
         const movement = event.detail;
+        this.move(movement);
+    }
+    move(movement) {
         const dx = movement.clientX - movement.lastMousePosition.x;
         const dy = movement.clientY - movement.lastMousePosition.y;
         this.viewCoordinates.x -= dx;
@@ -1852,8 +1855,8 @@ const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/
 const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
 class PlacementHistory extends Component_1.Component {
     externalListners = {
-        'loaded-placement-added': this.patch,
-        'layer-update': this.patch,
+        'built-canvas-layer': this.handleBuiltCanvasLayer,
+        'layer-update': this.handleLayerUpdate,
     };
     listeners = {
         '.placement-row:click': this.handleClickRow,
@@ -1870,10 +1873,11 @@ class PlacementHistory extends Component_1.Component {
         });
         return container;
     }
-    handleLoadedPlacementAdded() {
+    handleBuiltCanvasLayer() {
         this.patch();
     }
     handleLayerUpdate() {
+        console.log('update');
         this.patch();
     }
     buildPlacementRow(placement) {
@@ -2557,8 +2561,8 @@ class Component extends HTMLElement {
     shadow;
     isSingleton = false;
     parameters = {};
-    externalListners;
     listeners = {};
+    externalListerners = {};
     constructor() {
         super();
         this.shadow = this.attachShadow({ mode: 'open' });
@@ -2572,12 +2576,13 @@ class Component extends HTMLElement {
         this.shadow.host.remove();
     }
     connectedCallback() {
+        this.setExternalListners();
+        this.setListeners();
         Object.entries(this.dataset).forEach(([key, value]) => {
             this.parameters[key] = (0, is_json_1.isJSON)(value)
                 ? JSON.parse(value)
                 : value;
         });
-        this.setListners();
         this.setup()
             .then(() => {
             const css = this.css().trim();
@@ -2603,9 +2608,9 @@ class Component extends HTMLElement {
             throw new Error('there should only be one root child of the shadow dom');
         }
         (0, patch_dom_1.patchDOM)(firstChild[0], this.build());
-        this.afterPatch();
+        this.setListeners();
     }
-    afterPatch() {
+    setListeners() {
         Object.entries(this.listeners).forEach(([key, eventFn]) => {
             const [selector, eventType] = key.split(':');
             this.findAll(selector).forEach(element => {
@@ -2613,9 +2618,10 @@ class Component extends HTMLElement {
             });
         });
     }
-    setListners() {
-        if (this.externalListners) {
-            Object.entries(this.externalListners).forEach(([key, listener]) => {
+    setExternalListners() {
+        const listeners = this.externalListners;
+        if (listeners) {
+            Object.entries(listeners).forEach(([key, listener]) => {
                 Events_1.Events.listen(listener.bind(this), key);
             });
         }
@@ -2773,20 +2779,19 @@ class Events {
         throw new Error('Can not construct');
     }
     static emit(key, detail = undefined) {
-        console.log('emit');
         document.dispatchEvent(new CustomEvent(key, {
             detail,
             bubbles: false,
             composed: true
         }));
     }
-    static addListener(key, callback) {
-        document.addEventListener(key, callback);
-    }
     static listen(callback, ...keys) {
         keys.forEach(key => {
             this.addListener(key, callback);
         });
+    }
+    static addListener(key, callback) {
+        document.addEventListener(key, callback);
     }
     static emitFilesUploadSubmitted(files) {
         Events.emit(events_1.EVENTS.uploadFilesSubmission, files);
@@ -2920,17 +2925,15 @@ exports.layerRepository = new LayerRepository();
 /*!**********************************************************!*\
   !*** ./src/Client/Service/Repository/LoadedPlacement.ts ***!
   \**********************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ ((__unused_webpack_module, exports) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.loadedPlacementRepository = void 0;
-const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class LoadedPlacementRepository {
     data = [];
     add(...loadedPlacement) {
         this.data.push(...loadedPlacement);
-        Events_1.Events.emit('loaded-placement-added');
     }
     get() {
         return this.data;

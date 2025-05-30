@@ -3,18 +3,21 @@ import { isJSON } from 'Client/Service/is-json'
 import { patchDOM } from 'Client/Service/patch-dom'
 
 export type EventFn<T = any> = (event: CustomEvent<T>) => void
+
 export type ExternalListeners = {
     [key: string]: EventFn
 }
+
 export type Listeners = {
     [key: string]: (event: any) => void
 }
+
 export abstract class Component extends HTMLElement {
     private readonly shadow: ShadowRoot
     public isSingleton: boolean = false
     protected readonly parameters: { [key: string]: any } = {}
-    protected readonly externalListners!: ExternalListeners
     protected readonly listeners: Listeners = {}
+    protected readonly externalListerners: ExternalListeners = {}
 
     constructor() {
         super()
@@ -34,13 +37,14 @@ export abstract class Component extends HTMLElement {
     }
 
     protected connectedCallback(): void {
+        this.setExternalListners()
+        this.setListeners()
+
         Object.entries(this.dataset).forEach(([key, value]) => {
             this.parameters[key] = isJSON(value)
                 ? JSON.parse(value)
                 : value
         })
-
-        this.setListners()
 
         this.setup()
             .then(() => {
@@ -62,7 +66,6 @@ export abstract class Component extends HTMLElement {
                 this.shadow.appendChild(
                     this.build()
                 )
-
             })
             .then(() => {
                 this.afterBuild()
@@ -79,10 +82,10 @@ export abstract class Component extends HTMLElement {
 
         patchDOM(firstChild[0], this.build())
 
-        this.afterPatch()
+        this.setListeners()
     }
 
-    protected afterPatch(): void {
+    protected setListeners(): void {
         Object.entries(this.listeners).forEach(([key, eventFn]) => {
             const [selector, eventType] = key.split(':')
             this.findAll(selector).forEach(element => {
@@ -91,16 +94,13 @@ export abstract class Component extends HTMLElement {
         })
     }
 
-    protected setListners(): void {
-        if (this.externalListners) {
-            Object.entries(this.externalListners).forEach(([key, listener]) => {
-                Events.listen(
-                    listener.bind(this),
-                    key,
-                )
+    protected setExternalListners(): void {
+        const listeners = (this as any).externalListners as ExternalListeners | undefined
+        if (listeners) {
+            Object.entries(listeners).forEach(([key, listener]) => {
+                Events.listen(listener.bind(this), key)
             })
         }
-
     }
 
     protected findOne<T = HTMLElement>(query: string): T | null {

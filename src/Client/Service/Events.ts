@@ -10,7 +10,6 @@ export class Events {
     }
 
     public static emit<T>(key: string, detail: T | undefined = undefined): void {
-        console.log('emit')
         document.dispatchEvent(
             new CustomEvent<T>(
                 key,
@@ -23,12 +22,7 @@ export class Events {
         )
     }
 
-    private static addListener<T>(key: string, callback: EventFn<T>): void {
-        document.addEventListener(
-            key,
-            callback as EventListener,
-        )
-    }
+
 
     public static listen<T>(
         callback: EventFn<T>,
@@ -38,7 +32,12 @@ export class Events {
             this.addListener(key, callback)
         })
     }
-
+    private static addListener<T>(key: string, callback: EventFn<T>): void {
+        document.addEventListener(
+            key,
+            callback as EventListener,
+        )
+    }
     public static emitFilesUploadSubmitted(files: File[]): void {
         Events.emit<File[]>(
             EVENTS.uploadFilesSubmission,
