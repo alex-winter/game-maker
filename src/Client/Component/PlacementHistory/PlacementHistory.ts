@@ -43,7 +43,6 @@ export class PlacementHistory extends Component {
     }
 
     private handleLayerUpdate(): void {
-        console.log('update')
         this.patch()
     }
 

@@ -998,7 +998,6 @@ class CanvasLayer extends Component_1.Component {
     isCollisionLayer = false;
     toolSelection = 'pencil';
     externalListners = {
-        'got-user-data': this.handleGotUserData,
         'layer-deleted': this.handleDelete,
         'layer-update': this.handleLayerUpdate,
         'moving-in-canvas': this.handleMovement,
@@ -1060,6 +1059,8 @@ class CanvasLayer extends Component_1.Component {
             ? CanvasLayer.COLLISION_IMAGE
             : CanvasLayer.DEFAULT_IMAGE);
         this.layer.placements.forEach(this.loadPlacement.bind(this));
+        this.viewCoordinates.x = this.parameters.userData.lastViewPosition.x;
+        this.viewCoordinates.y = this.parameters.userData.lastViewPosition.y;
     }
     build() {
         const container = Dom_1.Dom.div('container');
@@ -1071,7 +1072,6 @@ class CanvasLayer extends Component_1.Component {
         return container;
     }
     afterBuild() {
-        Events_1.Events.emit('built-canvas-layer');
         this.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
         this.addEventListener('mousedown', this.handleMouseDown.bind(this));
         this.addEventListener('mousemove', this.handleMouseMove.bind(this));
@@ -1084,11 +1084,6 @@ class CanvasLayer extends Component_1.Component {
     }
     afterPatch() {
         this.getCanvas().startAnimation(this.frameFn.bind(this));
-    }
-    handleGotUserData(event) {
-        const userData = event.detail;
-        this.viewCoordinates.x = userData.lastViewPosition.x;
-        this.viewCoordinates.y = userData.lastViewPosition.y;
     }
     handleDelete(event) {
         const canvas = this.findOne('canvas-2d');
@@ -1729,20 +1724,36 @@ const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/C
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class LayerListing extends Component_1.Component {
-    listing;
-    addNewLayerButton;
+    externalListerners = {
+        'new-layer-mapped': this.handleNewLayers,
+    };
+    listeners = {
+        '.add-new:click': this.handleClickAddNew
+    };
+    layers;
+    async setup() {
+        this.layers = this.parameters.layers;
+    }
     build() {
         const container = Dom_1.Dom.div();
-        this.listing = Dom_1.Dom.div();
-        this.addNewLayerButton = Dom_1.Dom.button('Add New Layer');
-        container.append(this.listing, this.addNewLayerButton);
+        const listing = Dom_1.Dom.div('listing');
+        const addNewLayerButton = Dom_1.Dom.button('Add New Layer', 'add-new');
+        container.append(listing, addNewLayerButton);
         return container;
     }
     afterBuild() {
-        this.addNewLayerButton.addEventListener('click', () => Events_1.Events.emit(events_1.EVENTS.openAddNewLayer));
-        Events_1.Events.listen(event => {
-            this.listing.append(...event.detail.map(this.buildLayer.bind(this)));
-        }, events_1.EVENTS.newLayerMapped, events_1.EVENTS.gotLayer);
+        this.addLayers(this.layers);
+    }
+    handleClickAddNew() {
+        Events_1.Events.emit(events_1.EVENTS.openAddNewLayer);
+    }
+    handleNewLayers(event) {
+        const layers = event.detail;
+        this.addLayers(layers);
+    }
+    addLayers(layers) {
+        const listing = this.findOne('.listing');
+        listing.append(...layers.map(this.buildLayer.bind(this)));
     }
     buildLayer(layer) {
         return Dom_1.Dom.makeComponent(LayerItem_1.LayerItem, { layer });
@@ -1877,7 +1888,6 @@ class PlacementHistory extends Component_1.Component {
         this.patch();
     }
     handleLayerUpdate() {
-        console.log('update');
         this.patch();
     }
     buildPlacementRow(placement) {
@@ -2576,8 +2586,6 @@ class Component extends HTMLElement {
         this.shadow.host.remove();
     }
     connectedCallback() {
-        this.setExternalListners();
-        this.setListeners();
         Object.entries(this.dataset).forEach(([key, value]) => {
             this.parameters[key] = (0, is_json_1.isJSON)(value)
                 ? JSON.parse(value)
@@ -2598,6 +2606,8 @@ class Component extends HTMLElement {
             this.shadow.appendChild(this.build());
         })
             .then(() => {
+            this.setListeners();
+            this.setExternalListners();
             this.afterBuild();
         });
     }
@@ -2609,12 +2619,13 @@ class Component extends HTMLElement {
         }
         (0, patch_dom_1.patchDOM)(firstChild[0], this.build());
         this.setListeners();
+        this.setExternalListners();
     }
     setListeners() {
         Object.entries(this.listeners).forEach(([key, eventFn]) => {
             const [selector, eventType] = key.split(':');
             this.findAll(selector).forEach(element => {
-                element.addEventListener(eventType, eventFn);
+                element.addEventListener(eventType, eventFn.bind(this));
             });
         });
     }
@@ -3075,7 +3086,7 @@ exports.sheetRepository = new SheetRepository();
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.UserDataRepsitory = void 0;
+exports.userDataRepository = void 0;
 const Repository_1 = __webpack_require__(/*! Client/Service/Repository/Repository */ "./src/Client/Service/Repository/Repository.ts");
 class UserDataRepsitory extends Repository_1.Repository {
     API_PATH = '/user-data';
@@ -3091,7 +3102,7 @@ class UserDataRepsitory extends Repository_1.Repository {
         return this.data;
     }
 }
-exports.UserDataRepsitory = UserDataRepsitory;
+exports.userDataRepository = new UserDataRepsitory();
 
 
 /***/ }),
@@ -3393,36 +3404,52 @@ const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/Laye
 const CanvasLayer_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasLayer */ "./src/Client/Component/Canvas/CanvasLayer.ts");
 const SheetRepository_1 = __webpack_require__(/*! Client/Service/Repository/SheetRepository */ "./src/Client/Service/Repository/SheetRepository.ts");
 const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Repository/PlacementImageRepository */ "./src/Client/Service/Repository/PlacementImageRepository.ts");
-const UserDataRepository_1 = __webpack_require__(/*! Client/Service/Repository/UserDataRepository */ "./src/Client/Service/Repository/UserDataRepository.ts");
 const CanvasTools_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasTools */ "./src/Client/Component/Canvas/CanvasTools.ts");
 const PlacementHistory_1 = __webpack_require__(/*! Client/Component/PlacementHistory/PlacementHistory */ "./src/Client/Component/PlacementHistory/PlacementHistory.ts");
 const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
+const UserDataRepository_1 = __webpack_require__(/*! Client/Service/Repository/UserDataRepository */ "./src/Client/Service/Repository/UserDataRepository.ts");
+const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */ "./src/Client/Component/SideMenu/SideMenu.ts");
+const LayerListing_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerListing */ "./src/Client/Component/LayerListing/LayerListing.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
 let openSheets = [];
 let windowBoxes = {};
-const userDataRepository = new UserDataRepository_1.UserDataRepsitory();
-document.addEventListener('DOMContentLoaded', () => {
-    LayerRepository_1.layerRepository.getAll().then(layers => {
-        Events_1.Events.emit(events_1.EVENTS.gotLayer, layers);
-    });
-    PlacementImageRepository_1.placementImageRepository.getAll();
-    const getSheets = () => {
-        SheetRepository_1.sheetRepository.getAll().then(sheets => {
-            Events_1.Events.emit(events_1.EVENTS.gotSheets, sheets);
+document.addEventListener('DOMContentLoaded', async () => {
+    const userData = await UserDataRepository_1.userDataRepository.getAll();
+    const layers = await LayerRepository_1.layerRepository.getAll();
+    const sheets = await SheetRepository_1.sheetRepository.getAll();
+    const placementImages = await PlacementImageRepository_1.placementImageRepository.getAll();
+    console.log('here');
+    await new Promise(resolve => {
+        if (layers.length === 0) {
+            resolve(null);
+        }
+        layers.forEach((layer, layerIndex) => {
+            layer.placements.forEach(async (placement, placementIndex) => {
+                const placementImage = await PlacementImageRepository_1.placementImageRepository.getByUuid(placement.imageUuid);
+                if (placementImage) {
+                    const image = await Dom_1.Dom.image(placementImage.src);
+                    LoadedPlacement_1.loadedPlacementRepository.add({
+                        uuid: placement.uuid,
+                        layerUuid: layer.uuid,
+                        image,
+                        x: placement.coordinate.x,
+                        y: placement.coordinate.y,
+                        width: image.width,
+                        height: image.height,
+                    });
+                }
+                if (layerIndex === layers.length - 1 && placementIndex === layer.placements.length - 1) {
+                    resolve(null);
+                }
+            });
+            console.log(layerIndex);
+            if (layerIndex === layers.length - 1 && layer.placements.length === 0) {
+                resolve(null);
+            }
         });
-    };
-    userDataRepository.getAll().then(userData => {
-        Object.entries(userData.windows).forEach(([componentUuid, windowConfiguration]) => {
-            WindowBoxFactory_1.WindowBoxFactory.make(Dom_1.Dom.makeComponent(components_1.COMPONENT_UUID_LOOKUP.get(componentUuid), windowConfiguration.componentConfigration.dataset), windowConfiguration.title, windowConfiguration);
-        });
-        const tools = Dom_1.Dom.makeComponent(CanvasTools_1.CanvasTools, { currentTool: userData.currentTool });
-        document.body.append(tools);
     });
-    Events_1.Events.listen(async (event) => {
-        Events_1.Events.emit('got-user-data', await userDataRepository.getAll());
-    }, 'built-canvas-layer');
     Events_1.Events.listenToFilesUploadSubmitted(files => {
         FileUpload_1.FileUpload.uploadMultiple(files);
     });
@@ -3499,21 +3526,18 @@ document.addEventListener('DOMContentLoaded', () => {
             Events_1.Events.emit('layer-deleted', uuid);
         });
     }, 'layer-delete');
-    Events_1.Events.listen(event => {
-        getSheets();
-    }, events_1.EVENTS.getSheets);
     Events_1.Events.listen(async (event) => {
         const corrdinates = event.detail;
-        const userData = await userDataRepository.getAll();
+        const userData = await UserDataRepository_1.userDataRepository.getAll();
         userData.lastViewPosition.x = corrdinates.x;
         userData.lastViewPosition.y = corrdinates.y;
-        userDataRepository.persist(userData);
+        UserDataRepository_1.userDataRepository.persist(userData);
     }, 'updated-view-coordinates');
     Events_1.Events.listen(async (event) => {
         const windowConfiguration = event.detail;
-        const userData = await userDataRepository.getAll();
+        const userData = await UserDataRepository_1.userDataRepository.getAll();
         userData.windows[windowConfiguration.uuid] = windowConfiguration;
-        userDataRepository.persist(userData);
+        UserDataRepository_1.userDataRepository.persist(userData);
     }, 'window-update');
     Events_1.Events.listen(event => {
         WindowBoxFactory_1.WindowBoxFactory.make(Dom_1.Dom.makeComponent(PlacementHistory_1.PlacementHistory), 'Placement History', {
@@ -3537,6 +3561,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 'request-placement-deletion');
     window.addEventListener('resize', () => Events_1.Events.emit(events_1.EVENTS.windowResize));
+    const sideMenu = Dom_1.Dom.makeComponent(SideMenu_1.SideMenu);
+    const layerListing = Dom_1.Dom.makeComponent(LayerListing_1.LayerListing, { layers });
+    sideMenu.append(layerListing);
+    const layerElements = layers.map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer, userData }));
+    Object.entries(userData.windows).forEach(([componentUuid, windowConfiguration]) => {
+        WindowBoxFactory_1.WindowBoxFactory.make(Dom_1.Dom.makeComponent(components_1.COMPONENT_UUID_LOOKUP.get(componentUuid), windowConfiguration.componentConfigration.dataset), windowConfiguration.title, windowConfiguration);
+    });
+    const tools = Dom_1.Dom.makeComponent(CanvasTools_1.CanvasTools, { currentTool: userData.currentTool });
+    document.body.append(sideMenu, tools, ...layerElements);
 });
 
 })();

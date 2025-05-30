@@ -18,12 +18,14 @@ import { Layer } from 'Model/Layer'
 import { CanvasLayer } from 'Client/Component/Canvas/CanvasLayer'
 import { sheetRepository } from 'Client/Service/Repository/SheetRepository'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
-import { UserDataRepsitory } from 'Client/Service/Repository/UserDataRepository'
 import { WindowConfiguration } from 'Model/UserData'
 import { Coordinates } from 'Model/Coordinates'
 import { CanvasTools } from 'Client/Component/Canvas/CanvasTools'
 import { PlacementHistory } from 'Client/Component/PlacementHistory/PlacementHistory'
 import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
+import { userDataRepository } from 'Client/Service/Repository/UserDataRepository'
+import { SideMenu } from 'Client/Component/SideMenu/SideMenu'
+import { LayerListing } from 'Client/Component/LayerListing/LayerListing'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -33,41 +35,55 @@ let openSheets: string[] = []
 
 let windowBoxes: { [key: string]: WindowBox } = {}
 
-const userDataRepository = new UserDataRepsitory()
+document.addEventListener('DOMContentLoaded', async () => {
+    const userData = await userDataRepository.getAll()
+    const layers = await layerRepository.getAll()
+    const sheets = await sheetRepository.getAll()
+    const placementImages = await placementImageRepository.getAll()
 
-document.addEventListener('DOMContentLoaded', () => {
-    layerRepository.getAll().then(layers => {
-        Events.emit(EVENTS.gotLayer, layers)
+    console.log('here')
+    await new Promise(resolve => {
+        if (layers.length === 0) {
+            resolve(null)
+        }
+        layers.forEach((layer, layerIndex) => {
+            layer.placements.forEach(async (placement, placementIndex) => {
+                const placementImage = await placementImageRepository.getByUuid(
+                    placement.imageUuid
+                )
+
+                if (placementImage) {
+                    const image = await Dom.image(
+                        placementImage.src
+                    )
+
+                    loadedPlacementRepository.add({
+                        uuid: placement.uuid,
+                        layerUuid: layer.uuid,
+                        image,
+                        x: placement.coordinate.x,
+                        y: placement.coordinate.y,
+                        width: image.width,
+                        height: image.height,
+                    })
+                }
+
+                if (layerIndex === layers.length - 1 && placementIndex === layer.placements.length - 1) {
+                    resolve(null)
+                }
+            })
+
+            console.log(layerIndex)
+
+            if (layerIndex === layers.length - 1 && layer.placements.length === 0) {
+                resolve(null)
+            }
+        })
     })
 
-    placementImageRepository.getAll()
 
-    const getSheets = () => {
-        sheetRepository.getAll().then(sheets => {
-            Events.emit(EVENTS.gotSheets, sheets)
-        })
-    }
 
-    userDataRepository.getAll().then(userData => {
-        Object.entries(userData.windows).forEach(([componentUuid, windowConfiguration]) => {
-            WindowBoxFactory.make(
-                Dom.makeComponent(
-                    COMPONENT_UUID_LOOKUP.get(componentUuid)!,
-                    windowConfiguration.componentConfigration.dataset
-                ),
-                windowConfiguration.title,
-                windowConfiguration,
-            )
-        })
 
-        const tools = Dom.makeComponent(CanvasTools, { currentTool: userData.currentTool })
-
-        document.body.append(tools)
-    })
-
-    Events.listen(async event => {
-        Events.emit('got-user-data', await userDataRepository.getAll())
-    }, 'built-canvas-layer')
 
     Events.listenToFilesUploadSubmitted(files => {
         FileUpload.uploadMultiple(files)
@@ -194,13 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
     )
 
     Events.listen(
-        event => {
-            getSheets()
-        },
-        EVENTS.getSheets
-    )
-
-    Events.listen(
         async event => {
             const corrdinates = event.detail as Coordinates
             const userData = await userDataRepository.getAll()
@@ -264,5 +273,31 @@ document.addEventListener('DOMContentLoaded', () => {
     )
 
     window.addEventListener('resize', () => Events.emit(EVENTS.windowResize))
+
+    const sideMenu = Dom.makeComponent(SideMenu)
+    const layerListing = Dom.makeComponent(LayerListing, { layers })
+
+    sideMenu.append(layerListing)
+
+    const layerElements = layers.map(layer => Dom.makeComponent(CanvasLayer, { layer, userData }))
+
+    Object.entries(userData.windows).forEach(([componentUuid, windowConfiguration]) => {
+        WindowBoxFactory.make(
+            Dom.makeComponent(
+                COMPONENT_UUID_LOOKUP.get(componentUuid)!,
+                windowConfiguration.componentConfigration.dataset
+            ),
+            windowConfiguration.title,
+            windowConfiguration,
+        )
+    })
+
+    const tools = Dom.makeComponent(CanvasTools, { currentTool: userData.currentTool })
+
+    document.body.append(
+        sideMenu,
+        tools,
+        ...layerElements
+    )
 })
 

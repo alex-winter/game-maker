@@ -37,9 +37,6 @@ export abstract class Component extends HTMLElement {
     }
 
     protected connectedCallback(): void {
-        this.setExternalListners()
-        this.setListeners()
-
         Object.entries(this.dataset).forEach(([key, value]) => {
             this.parameters[key] = isJSON(value)
                 ? JSON.parse(value)
@@ -68,6 +65,8 @@ export abstract class Component extends HTMLElement {
                 )
             })
             .then(() => {
+                this.setListeners()
+                this.setExternalListners()
                 this.afterBuild()
             })
     }
@@ -83,13 +82,14 @@ export abstract class Component extends HTMLElement {
         patchDOM(firstChild[0], this.build())
 
         this.setListeners()
+        this.setExternalListners()
     }
 
     protected setListeners(): void {
         Object.entries(this.listeners).forEach(([key, eventFn]) => {
             const [selector, eventType] = key.split(':')
             this.findAll(selector).forEach(element => {
-                element.addEventListener(eventType, eventFn)
+                element.addEventListener(eventType, eventFn.bind(this))
             })
         })
     }

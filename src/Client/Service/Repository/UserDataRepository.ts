@@ -1,7 +1,7 @@
 import { Repository } from 'Client/Service/Repository/Repository'
 import { UserData } from 'Model/UserData'
 
-export class UserDataRepsitory extends Repository {
+class UserDataRepsitory extends Repository {
     private readonly API_PATH: string = '/user-data'
     private data!: UserData
 
@@ -19,3 +19,5 @@ export class UserDataRepsitory extends Repository {
         return this.data
     }
 }
+
+export const userDataRepository = new UserDataRepsitory()

@@ -42,7 +42,6 @@ export class CanvasLayer extends Component {
     private toolSelection: string = 'pencil'
 
     protected readonly externalListners: ExternalListeners = {
-        'got-user-data': this.handleGotUserData,
         'layer-deleted': this.handleDelete,
         'layer-update': this.handleLayerUpdate,
         'moving-in-canvas': this.handleMovement,
@@ -112,6 +111,9 @@ export class CanvasLayer extends Component {
         )
 
         this.layer.placements.forEach(this.loadPlacement.bind(this))
+
+        this.viewCoordinates.x = this.parameters.userData.lastViewPosition.x
+        this.viewCoordinates.y = this.parameters.userData.lastViewPosition.y
     }
 
     protected build(): HTMLElement {
@@ -133,8 +135,6 @@ export class CanvasLayer extends Component {
     }
 
     protected afterBuild(): void {
-        Events.emit('built-canvas-layer')
-
         this.addEventListener('mouseleave', this.handleMouseLeave.bind(this))
         this.addEventListener('mousedown', this.handleMouseDown.bind(this))
         this.addEventListener('mousemove', this.handleMouseMove.bind(this))
@@ -149,13 +149,6 @@ export class CanvasLayer extends Component {
 
     protected afterPatch(): void {
         this.getCanvas().startAnimation(this.frameFn.bind(this))
-    }
-
-    private handleGotUserData(event: CustomEvent) {
-        const userData = event.detail as UserData
-
-        this.viewCoordinates.x = userData.lastViewPosition.x
-        this.viewCoordinates.y = userData.lastViewPosition.y
     }
 
     private handleDelete(event: CustomEvent) {

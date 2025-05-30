@@ -1,35 +1,58 @@
 import { LayerItem } from 'Client/Component/LayerListing/LayerItem'
 import { EVENTS } from 'Client/Constants/events'
-import { Component } from 'Client/Service/Component'
+import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 import { Layer } from 'Model/Layer'
 
 export class LayerListing extends Component {
-    private listing!: HTMLDivElement
-    private addNewLayerButton!: HTMLButtonElement
+
+    protected externalListerners: ExternalListeners = {
+        'new-layer-mapped': this.handleNewLayers,
+    }
+
+    protected listeners: Listeners = {
+        '.add-new:click': this.handleClickAddNew
+    }
+
+    private layers!: Layer[]
+
+    protected async setup(): Promise<void> {
+        this.layers = this.parameters.layers
+    }
 
     protected build(): HTMLElement {
         const container = Dom.div()
-        this.listing = Dom.div()
-        this.addNewLayerButton = Dom.button('Add New Layer')
+        const listing = Dom.div('listing')
+        const addNewLayerButton = Dom.button('Add New Layer', 'add-new')
 
-        container.append(this.listing, this.addNewLayerButton)
+        container.append(
+            listing,
+            addNewLayerButton,
+        )
 
         return container
     }
 
     protected afterBuild(): void {
-        this.addNewLayerButton.addEventListener('click', () => Events.emit(EVENTS.openAddNewLayer))
+        this.addLayers(this.layers)
+    }
 
-        Events.listen(
-            event => {
-                this.listing.append(
-                    ...(event.detail as Layer[]).map(this.buildLayer.bind(this))
-                )
-            },
-            EVENTS.newLayerMapped,
-            EVENTS.gotLayer,
+    private handleClickAddNew(): void {
+        Events.emit(EVENTS.openAddNewLayer)
+    }
+
+    private handleNewLayers(event: CustomEvent): void {
+        const layers = event.detail as Layer[]
+
+        this.addLayers(layers)
+    }
+
+    private addLayers(layers: Layer[]): void {
+        const listing = this.findOne('.listing') as HTMLDivElement
+
+        listing.append(
+            ...layers.map(this.buildLayer.bind(this))
         )
     }
 
