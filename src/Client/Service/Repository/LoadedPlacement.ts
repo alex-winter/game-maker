@@ -1,5 +1,6 @@
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { Events } from 'Client/Service/Events'
+import { Coordinates } from 'Model/Coordinates'
 
 class LoadedPlacementRepository {
     private readonly data: LoadedPlacement[] = []

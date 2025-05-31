@@ -997,6 +997,7 @@ class CanvasLayer extends Component_1.Component {
     viewCoordinates = { x: 0, y: 0 };
     isCollisionLayer = false;
     toolSelection = 'pencil';
+    placementBufferMs = 1000;
     externalListeners = {
         'layer-deleted': this.handleDelete,
         'layer-update': this.handleLayerUpdate,
@@ -1056,6 +1057,7 @@ class CanvasLayer extends Component_1.Component {
             width: loadedImage.width,
             height: loadedImage.height,
         });
+        Events_1.Events.emit('placement-added');
     }
     async setup() {
         this.layer = this.parameters.layer;
@@ -1169,7 +1171,7 @@ class CanvasLayer extends Component_1.Component {
         if (this.getCurrentImage().src === CanvasLayer.DEFAULT_IMAGE) {
             return;
         }
-        const placement = {
+        const newPlacement = {
             uuid: crypto.randomUUID(),
             coordinate: {
                 x: this.mouseCoordinates.x,
@@ -1177,11 +1179,16 @@ class CanvasLayer extends Component_1.Component {
             },
             imageUuid: (await PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(this.getCurrentImage().src)).uuid,
         };
-        const lastPlacement = this.layer.placements[this.layer.placements.length - 1];
-        if (JSON.stringify(lastPlacement) === JSON.stringify(placement))
+        const isAlreadyPlaced = this.layer.placements.find(placement => {
+            return this.snap(placement.coordinate.x) === this.snap(newPlacement.coordinate.x)
+                && this.snap(placement.coordinate.y) === this.snap(newPlacement.coordinate.y)
+                && placement.imageUuid === newPlacement.imageUuid;
+        });
+        if (isAlreadyPlaced) {
             return;
-        this.layer.placements.push(placement);
-        this.loadPlacement(placement);
+        }
+        this.layer.placements.push(newPlacement);
+        this.loadPlacement(newPlacement);
     }
     handleMouseDown(event) {
         if (event.button === mouse_events_1.LEFT_BUTTON && this.getCurrentImage()) {
@@ -1876,9 +1883,9 @@ class PlacementHistory extends Component_1.Component {
     externalListeners = {
         'built-canvas-layer': this.handleBuiltCanvasLayer,
         'layer-update': this.handleLayerUpdate,
+        'placement-added': this.handlePlacementAdded,
     };
     listeners = {
-        '.placement-row:click': this.handleClickRow,
         '.view-btn:click': this.handleViewClick,
         '.delete-btn:click': this.handleDeleteClick,
     };
@@ -1891,6 +1898,9 @@ class PlacementHistory extends Component_1.Component {
             container.append(this.buildPlacementRow(placement));
         });
         return container;
+    }
+    handlePlacementAdded() {
+        this.patch();
     }
     handleBuiltCanvasLayer() {
         this.patch();
@@ -1920,8 +1930,6 @@ class PlacementHistory extends Component_1.Component {
         row.append(coordsCol, dimsCol, imageCol, toolsCol);
         return row;
     }
-    handleClickRow(event) {
-    }
     handleViewClick(event) {
         event.stopPropagation();
         const row = event.target.closest('.placement-row');
@@ -1945,6 +1953,7 @@ class PlacementHistory extends Component_1.Component {
                 background: #fafafa;
                 border: 1px solid #ccc;
                 border-radius: 8px;
+                max-height: 400px;
             }
 
             .placement-history-header,

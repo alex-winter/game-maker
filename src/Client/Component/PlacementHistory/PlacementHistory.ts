@@ -9,10 +9,10 @@ export class PlacementHistory extends Component {
     protected externalListeners: ExternalListeners = {
         'built-canvas-layer': this.handleBuiltCanvasLayer,
         'layer-update': this.handleLayerUpdate,
+        'placement-added': this.handlePlacementAdded,
     }
 
     protected listeners: Listeners = {
-        '.placement-row:click': this.handleClickRow,
         '.view-btn:click': this.handleViewClick,
         '.delete-btn:click': this.handleDeleteClick,
     }
@@ -36,6 +36,10 @@ export class PlacementHistory extends Component {
         })
 
         return container
+    }
+
+    private handlePlacementAdded(): void {
+        this.patch()
     }
 
     private handleBuiltCanvasLayer(): void {
@@ -81,9 +85,6 @@ export class PlacementHistory extends Component {
         return row
     }
 
-    private handleClickRow(event: Event): void {
-    }
-
     private handleViewClick(event: Event): void {
         event.stopPropagation()
         const row = (event.target as HTMLElement).closest('.placement-row') as HTMLElement
@@ -111,6 +112,7 @@ export class PlacementHistory extends Component {
                 background: #fafafa;
                 border: 1px solid #ccc;
                 border-radius: 8px;
+                max-height: 400px;
             }
 
             .placement-history-header,

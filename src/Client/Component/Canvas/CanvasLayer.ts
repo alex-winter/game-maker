@@ -41,6 +41,7 @@ export class CanvasLayer extends Component {
     private viewCoordinates: Coordinates = { x: 0, y: 0 }
     private isCollisionLayer: boolean = false
     private toolSelection: string = 'pencil'
+    private placementBufferMs: number = 1000
 
     protected readonly externalListeners: ExternalListeners = {
         'layer-deleted': this.handleDelete,
@@ -106,6 +107,7 @@ export class CanvasLayer extends Component {
             width: loadedImage.width,
             height: loadedImage.height,
         })
+        Events.emit('placement-added')
     }
 
     protected async setup(): Promise<void> {
@@ -276,7 +278,7 @@ export class CanvasLayer extends Component {
         if (this.getCurrentImage().src === CanvasLayer.DEFAULT_IMAGE) {
             return
         }
-        const placement: ImagePlacement = {
+        const newPlacement: ImagePlacement = {
             uuid: crypto.randomUUID(),
             coordinate: {
                 x: this.mouseCoordinates.x,
@@ -285,11 +287,18 @@ export class CanvasLayer extends Component {
             imageUuid: (await placementImageRepository.findOrCreateBySrc(this.getCurrentImage().src)).uuid,
         }
 
-        const lastPlacement = this.layer.placements[this.layer.placements.length - 1]
-        if (JSON.stringify(lastPlacement) === JSON.stringify(placement)) return
+        const isAlreadyPlaced = this.layer.placements.find(placement => {
+            return this.snap(placement.coordinate.x) === this.snap(newPlacement.coordinate.x)
+                && this.snap(placement.coordinate.y) === this.snap(newPlacement.coordinate.y)
+                && placement.imageUuid === newPlacement.imageUuid
+        })
 
-        this.layer.placements.push(placement)
-        this.loadPlacement(placement)
+        if (isAlreadyPlaced) {
+            return
+        }
+
+        this.layer.placements.push(newPlacement)
+        this.loadPlacement(newPlacement)
     }
 
     private handleMouseDown(event: MouseEvent): void {
