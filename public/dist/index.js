@@ -860,7 +860,7 @@ class Canvas2D extends Component_1.Component {
     animationTimeout;
     frameFunction;
     msPerFrame = 100;
-    externalListners = {
+    externalListeners = {
         'window-resize': this.handleResize
     };
     css() {
@@ -997,7 +997,7 @@ class CanvasLayer extends Component_1.Component {
     viewCoordinates = { x: 0, y: 0 };
     isCollisionLayer = false;
     toolSelection = 'pencil';
-    externalListners = {
+    externalListeners = {
         'layer-deleted': this.handleDelete,
         'layer-update': this.handleLayerUpdate,
         'moving-in-canvas': this.handleMovement,
@@ -1523,7 +1523,7 @@ class BasicModal extends Component_1.Component {
     listeners = {
         '.backdrop:click': this.handleClickBackdrop,
     };
-    externalListners = {
+    externalListeners = {
         'close-modal': this.handleCloseModal,
     };
     css() {
@@ -1624,7 +1624,7 @@ const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Servic
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class LayerItem extends Component_1.Component {
     layer;
-    externalListners = {
+    externalListeners = {
         'layer-update': this.handleLayerUpdate,
         'layer-deleted': this.handleLayerDeleted,
     };
@@ -1725,8 +1725,9 @@ const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Clien
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
+const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
 class LayerListing extends Component_1.Component {
-    externalListerners = {
+    externalListeners = {
         'new-layer-mapped': this.handleNewLayers,
     };
     listeners = {
@@ -1734,28 +1735,24 @@ class LayerListing extends Component_1.Component {
     };
     layers;
     async setup() {
-        this.layers = this.parameters.layers;
+        this.layers = await LayerRepository_1.layerRepository.getAll();
     }
     build() {
         const container = Dom_1.Dom.div();
         const listing = Dom_1.Dom.div('listing');
         const addNewLayerButton = Dom_1.Dom.button('Add New Layer', 'add-new');
+        listing.append(...this.layers.map(this.buildLayer.bind(this)));
         container.append(listing, addNewLayerButton);
         return container;
-    }
-    afterBuild() {
-        this.addLayers(this.layers);
     }
     handleClickAddNew() {
         Events_1.Events.emit(events_1.EVENTS.openAddNewLayer);
     }
-    handleNewLayers(event) {
-        const layers = event.detail;
-        this.addLayers(layers);
-    }
-    addLayers(layers) {
-        const listing = this.findOne('.listing');
-        listing.append(...layers.map(this.buildLayer.bind(this)));
+    handleNewLayers() {
+        LayerRepository_1.layerRepository.getAll().then(layers => {
+            this.layers = layers;
+            this.patch();
+        });
     }
     buildLayer(layer) {
         return Dom_1.Dom.makeComponent(LayerItem_1.LayerItem, { layer });
@@ -1783,6 +1780,11 @@ const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/
 class NewLayerForm extends Component_1.Component {
     name = '';
     type = layers_1.LAYERS.defaultType;
+    listeners = {
+        '.layer-name-input:keyup': this.handleNameChange,
+        '.submit-button:click': this.handleSubmit,
+        'select:change': this.handleSelectChange,
+    };
     css() {
         return /*css*/ `
             .form-container {
@@ -1820,11 +1822,9 @@ class NewLayerForm extends Component_1.Component {
         const container = Dom_1.Dom.div('form-container');
         const formGroup = Dom_1.Dom.div('form-group');
         const label = Dom_1.Dom.label('Layer Name', 'form-label');
-        const input = Dom_1.Dom.inputText('text-input');
+        const input = Dom_1.Dom.inputText('text-input', 'layer-name-input');
         input.placeholder = 'Enter layer name';
-        input.addEventListener('keyup', () => this.name = input.value);
-        const submitButton = Dom_1.Dom.button('Save');
-        submitButton.addEventListener('click', this.handleSubmit.bind(this));
+        const submitButton = Dom_1.Dom.button('Save', 'submit-button');
         formGroup.appendChild(label);
         formGroup.appendChild(input);
         const layerTypeOptions = document.createElement('select');
@@ -1834,14 +1834,19 @@ class NewLayerForm extends Component_1.Component {
             option.innerText = type.toUpperCase();
             layerTypeOptions.append(option);
         });
-        layerTypeOptions.addEventListener('change', () => {
-            this.type = layerTypeOptions.value;
-        });
         container.append(formGroup, layerTypeOptions, submitButton);
         return container;
     }
+    handleSelectChange(event) {
+        const layerTypeOptions = event.target;
+        this.type = layerTypeOptions.value;
+    }
+    handleNameChange(event) {
+        const input = event.target;
+        this.name = input.value;
+    }
     handleSubmit() {
-        Events_1.Events.emit(events_1.EVENTS.closeModal, this);
+        Events_1.Events.emit('close-modal', this);
         Events_1.Events.emit(events_1.EVENTS.newLayerSubmit, {
             name: this.name,
             type: this.type,
@@ -1867,7 +1872,7 @@ const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Servic
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
 class PlacementHistory extends Component_1.Component {
-    externalListners = {
+    externalListeners = {
         'built-canvas-layer': this.handleBuiltCanvasLayer,
         'layer-update': this.handleLayerUpdate,
     };
@@ -2018,11 +2023,17 @@ exports.PlacementHistory = PlacementHistory;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.FileListing = void 0;
-const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
+const SheetRepository_1 = __webpack_require__(/*! Client/Service/Repository/SheetRepository */ "./src/Client/Service/Repository/SheetRepository.ts");
 class FileListing extends Component_1.Component {
+    externalListeners = {
+        'upload-files-submission': this.handleFilesUploadSubmitted
+    };
+    listeners = {
+        '.open-sheet-button:click': this.handleOpenSheetButtonClick
+    };
     css() {
         return /*css*/ `
             :host {
@@ -2041,17 +2052,20 @@ class FileListing extends Component_1.Component {
         `;
     }
     build() {
-        const container = Dom_1.Dom.div();
-        Events_1.Events.listenToFilesUploadSubmitted(async (fileList) => {
-            const sheets = await Promise.all(fileList.map(this.mapToSheet.bind(this)));
+        const container = Dom_1.Dom.div('container');
+        SheetRepository_1.sheetRepository.getAll().then(sheets => {
             container.append(...sheets.map(this.buildSheet.bind(this)));
         });
-        Events_1.Events.listen(event => {
-            container.append(...event.detail
-                .map(this.buildSheet.bind(this)));
-        }, events_1.EVENTS.gotSheets);
-        Events_1.Events.emit(events_1.EVENTS.getSheets);
         return container;
+    }
+    getContainer() {
+        return this.findOne('.container');
+    }
+    handleFilesUploadSubmitted(event) {
+        const files = event.detail;
+        Promise.all(files.map(this.mapToSheet.bind(this))).then(sheets => {
+            this.getContainer().append(...sheets.map(this.buildSheet.bind(this)));
+        });
     }
     mapToSheet(file) {
         return new Promise((resolve, reject) => {
@@ -2073,12 +2087,16 @@ class FileListing extends Component_1.Component {
         const container = Dom_1.Dom.div('file');
         const name = Dom_1.Dom.div();
         const options = Dom_1.Dom.div();
-        const openButton = Dom_1.Dom.button('Open');
+        const openButton = Dom_1.Dom.button('Open', 'open-sheet-button');
         name.innerText = sheet.name;
-        openButton.addEventListener('click', (e) => Events_1.Events.emitOpenSheet(sheet));
+        openButton.dataset.sheetName = sheet.name;
         options.append(openButton);
         container.append(name, options);
         return container;
+    }
+    handleOpenSheetButtonClick(event) {
+        const button = event.target;
+        Events_1.Events.emitOpenSheet(button.dataset.sheetName);
     }
 }
 exports.FileListing = FileListing;
@@ -2573,7 +2591,7 @@ class Component extends HTMLElement {
     isSingleton = false;
     parameters = {};
     listeners = {};
-    externalListerners = {};
+    externalListeners = {};
     externalHandlers = [];
     attachedListeners = [];
     constructor() {
@@ -2610,7 +2628,7 @@ class Component extends HTMLElement {
         })
             .then(() => {
             this.setListeners();
-            this.setExternalListners();
+            this.setExternalListeners();
             this.afterBuild();
         });
     }
@@ -2624,32 +2642,32 @@ class Component extends HTMLElement {
         }
         (0, patch_dom_1.patchDOM)(firstChild[0], this.build());
         this.setListeners();
-        this.setExternalListners();
+        this.setExternalListeners();
         this.afterPatch();
     }
     setListeners() {
-        // Step 1: Remove previous listeners
         this.attachedListeners.forEach(({ element, type, handler }) => {
             element.removeEventListener(type, handler);
         });
         this.attachedListeners = [];
-        // Step 2: Attach new listeners and store references
-        Object.entries(this.listeners).forEach(([key, eventFn]) => {
-            const [selector, eventType] = key.split(':');
-            this.findAll(selector).forEach(element => {
-                const boundHandler = eventFn.bind(this);
-                element.addEventListener(eventType, boundHandler);
-                this.attachedListeners.push({ element, type: eventType, handler: boundHandler });
+        const listeners = this.listeners;
+        if (listeners) {
+            Object.entries(listeners).forEach(([key, eventFn]) => {
+                const [selector, eventType] = key.split(':');
+                this.findAll(selector).forEach(element => {
+                    const boundHandler = eventFn.bind(this);
+                    element.addEventListener(eventType, boundHandler);
+                    this.attachedListeners.push({ element, type: eventType, handler: boundHandler });
+                });
             });
-        });
+        }
     }
-    setExternalListners() {
-        // Unbind old handlers
+    setExternalListeners() {
         this.externalHandlers.forEach(({ key, handler }) => {
             Events_1.Events.unlisten(handler, key);
         });
         this.externalHandlers = [];
-        const listeners = this.externalListners;
+        const listeners = this.externalListeners;
         if (listeners) {
             Object.entries(listeners).forEach(([key, listener]) => {
                 const boundHandler = listener.bind(this);
@@ -2702,6 +2720,9 @@ class Dom {
     static inputText(...classList) {
         const element = document.createElement('input');
         element.type = 'text';
+        if (classList.length) {
+            element.classList.add(...classList);
+        }
         return element;
     }
     static canvas(width = 0, height = 0) {
@@ -2846,8 +2867,8 @@ class Events {
             callback(event.detail);
         }, events_1.EVENTS.uploadFilesSubmission);
     }
-    static emitOpenSheet(sheet) {
-        this.emit(events_1.EVENTS.openSheet, sheet);
+    static emitOpenSheet(sheetName) {
+        this.emit(events_1.EVENTS.openSheet, sheetName);
     }
     static listenToOpenSheet(callback) {
         Events.listen(event => {
@@ -3103,8 +3124,15 @@ exports.sheetRepository = void 0;
 const Repository_1 = __webpack_require__(/*! Client/Service/Repository/Repository */ "./src/Client/Service/Repository/Repository.ts");
 class SheetRepository extends Repository_1.Repository {
     API_PATH = '/sheets';
+    data;
     async getAll() {
-        return await this.get(this.API_PATH);
+        if (!this.data) {
+            this.data = await this.get(this.API_PATH);
+        }
+        return this.data;
+    }
+    getByName(name) {
+        return this.data.find(sheet => sheet.name === name);
     }
 }
 exports.sheetRepository = new SheetRepository();
@@ -3485,7 +3513,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     Events_1.Events.listenToFilesUploadSubmitted(files => {
         FileUpload_1.FileUpload.uploadMultiple(files);
     });
-    Events_1.Events.listenToOpenSheet(async (sheet) => {
+    Events_1.Events.listenToOpenSheet(async (sheetName) => {
+        const sheet = SheetRepository_1.sheetRepository.getByName(sheetName);
         if (openSheets.includes(sheet.name)) {
             windowBoxes[sheet.name].flash();
             return;
@@ -3597,9 +3626,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const layerListing = Dom_1.Dom.makeComponent(LayerListing_1.LayerListing, { layers });
     sideMenu.append(layerListing);
     const layerElements = layers.map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer, userData }));
-    Object.entries(userData.windows).forEach(([componentUuid, windowConfiguration]) => {
-        WindowBoxFactory_1.WindowBoxFactory.make(Dom_1.Dom.makeComponent(components_1.COMPONENT_UUID_LOOKUP.get(componentUuid), windowConfiguration.componentConfigration.dataset), windowConfiguration.title, windowConfiguration);
-    });
+    // Object.entries(userData.windows).forEach(([componentUuid, windowConfiguration]) => {
+    //     WindowBoxFactory.make(
+    //         Dom.makeComponent(
+    //             COMPONENT_UUID_LOOKUP.get(componentUuid)!,
+    //             windowConfiguration.componentConfigration.dataset
+    //         ),
+    //         windowConfiguration.title,
+    //         windowConfiguration,
+    //     )
+    // })
     const tools = Dom_1.Dom.makeComponent(CanvasTools_1.CanvasTools, { currentTool: userData.currentTool });
     document.body.append(sideMenu, tools, ...layerElements);
 });

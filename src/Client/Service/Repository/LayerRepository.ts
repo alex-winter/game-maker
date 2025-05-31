@@ -15,8 +15,6 @@ class LayerRepository extends Repository {
     }
 
     public async persist(...layers: Layer[]): Promise<void> {
-
-
         layers.forEach((layer) => {
             const lastOrder = this.getLastOrder()
 

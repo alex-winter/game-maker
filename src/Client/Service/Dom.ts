@@ -33,6 +33,10 @@ export class Dom {
 
         element.type = 'text'
 
+        if (classList.length) {
+            element.classList.add(...classList)
+        }
+
         return element
     }
 

@@ -3,11 +3,12 @@ import { EVENTS } from 'Client/Constants/events'
 import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
+import { layerRepository } from 'Client/Service/Repository/LayerRepository'
 import { Layer } from 'Model/Layer'
 
 export class LayerListing extends Component {
 
-    protected externalListerners: ExternalListeners = {
+    protected externalListeners: ExternalListeners = {
         'new-layer-mapped': this.handleNewLayers,
     }
 
@@ -18,13 +19,17 @@ export class LayerListing extends Component {
     private layers!: Layer[]
 
     protected async setup(): Promise<void> {
-        this.layers = this.parameters.layers
+        this.layers = await layerRepository.getAll()
     }
 
     protected build(): HTMLElement {
         const container = Dom.div()
         const listing = Dom.div('listing')
         const addNewLayerButton = Dom.button('Add New Layer', 'add-new')
+
+        listing.append(
+            ...this.layers.map(this.buildLayer.bind(this))
+        )
 
         container.append(
             listing,
@@ -34,26 +39,15 @@ export class LayerListing extends Component {
         return container
     }
 
-    protected afterBuild(): void {
-        this.addLayers(this.layers)
-    }
-
     private handleClickAddNew(): void {
         Events.emit(EVENTS.openAddNewLayer)
     }
 
-    private handleNewLayers(event: CustomEvent): void {
-        const layers = event.detail as Layer[]
-
-        this.addLayers(layers)
-    }
-
-    private addLayers(layers: Layer[]): void {
-        const listing = this.findOne('.listing') as HTMLDivElement
-
-        listing.append(
-            ...layers.map(this.buildLayer.bind(this))
-        )
+    private handleNewLayers(): void {
+        layerRepository.getAll().then(layers => {
+            this.layers = layers
+            this.patch()
+        })
     }
 
     private buildLayer(layer: Layer): HTMLElement {

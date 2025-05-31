@@ -8,7 +8,7 @@ export class BasicModal extends Component {
         '.backdrop:click': this.handleClickBackdrop,
     }
 
-    protected externalListners: ExternalListeners = {
+    protected externalListeners: ExternalListeners = {
         'close-modal': this.handleCloseModal,
     }
 

@@ -1,12 +1,18 @@
 import { EVENTS } from 'Client/Constants/events'
 import { LAYERS } from 'Client/Constants/layers'
-import { Component, ExternalListeners } from 'Client/Service/Component'
+import { Component, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 
 export class NewLayerForm extends Component {
     private name: string = ''
     private type: string = LAYERS.defaultType
+
+    protected listeners: Listeners = {
+        '.layer-name-input:keyup': this.handleNameChange,
+        '.submit-button:click': this.handleSubmit,
+        'select:change': this.handleSelectChange,
+    }
 
     protected css(): string {
         return /*css*/`
@@ -47,12 +53,10 @@ export class NewLayerForm extends Component {
         const formGroup = Dom.div('form-group')
 
         const label = Dom.label('Layer Name', 'form-label')
-        const input = Dom.inputText('text-input')
+        const input = Dom.inputText('text-input', 'layer-name-input')
         input.placeholder = 'Enter layer name'
-        input.addEventListener('keyup', () => this.name = input.value)
 
-        const submitButton = Dom.button('Save')
-        submitButton.addEventListener('click', this.handleSubmit.bind(this))
+        const submitButton = Dom.button('Save', 'submit-button')
 
         formGroup.appendChild(label)
         formGroup.appendChild(input)
@@ -66,10 +70,6 @@ export class NewLayerForm extends Component {
             layerTypeOptions.append(option)
         })
 
-        layerTypeOptions.addEventListener('change', () => {
-            this.type = layerTypeOptions.value
-        })
-
         container.append(
             formGroup,
             layerTypeOptions,
@@ -79,11 +79,20 @@ export class NewLayerForm extends Component {
         return container
     }
 
+    private handleSelectChange(event: Event): void {
+        const layerTypeOptions = event.target as HTMLSelectElement
+
+        this.type = layerTypeOptions.value
+    }
+
+    private handleNameChange(event: Event): void {
+        const input = event.target as HTMLInputElement
+
+        this.name = input.value
+    }
+
     private handleSubmit(): void {
-        Events.emit(
-            EVENTS.closeModal,
-            this
-        )
+        Events.emit('close-modal', this)
         Events.emit(
             EVENTS.newLayerSubmit,
             {

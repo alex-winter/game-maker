@@ -1,4 +1,4 @@
-import { Component, ExternalListeners } from 'Client/Service/Component'
+import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Coordinates, Rect } from 'Model/Coordinates'
 
@@ -7,7 +7,7 @@ export class Canvas2D extends Component {
     private frameFunction!: Function
     private msPerFrame: number = 100
 
-    protected externalListners: ExternalListeners = {
+    protected externalListeners: ExternalListeners = {
         'window-resize': this.handleResize
     }
 

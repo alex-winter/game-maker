@@ -71,12 +71,12 @@ export class Events {
         )
     }
 
-    public static emitOpenSheet(sheet: Sheet): void {
-        this.emit(EVENTS.openSheet, sheet)
+    public static emitOpenSheet(sheetName: string): void {
+        this.emit(EVENTS.openSheet, sheetName)
     }
 
-    public static listenToOpenSheet(callback: (sheet: Sheet) => void): void {
-        Events.listen<Sheet>(
+    public static listenToOpenSheet(callback: (sheetName: string) => void): void {
+        Events.listen<string>(
             event => {
                 callback(event.detail)
             },

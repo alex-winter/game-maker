@@ -6,7 +6,7 @@ import { Layer } from 'Model/Layer'
 export class LayerItem extends Component {
     private layer!: Layer
 
-    protected externalListners: ExternalListeners = {
+    protected externalListeners: ExternalListeners = {
         'layer-update': this.handleLayerUpdate,
         'layer-deleted': this.handleLayerDeleted,
     }

@@ -83,7 +83,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         FileUpload.uploadMultiple(files)
     })
 
-    Events.listenToOpenSheet(async sheet => {
+    Events.listenToOpenSheet(async sheetName => {
+        const sheet = sheetRepository.getByName(sheetName)
         if (openSheets.includes(sheet.name)) {
             windowBoxes[sheet.name].flash()
             return
@@ -275,16 +276,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const layerElements = layers.map(layer => Dom.makeComponent(CanvasLayer, { layer, userData }))
 
-    Object.entries(userData.windows).forEach(([componentUuid, windowConfiguration]) => {
-        WindowBoxFactory.make(
-            Dom.makeComponent(
-                COMPONENT_UUID_LOOKUP.get(componentUuid)!,
-                windowConfiguration.componentConfigration.dataset
-            ),
-            windowConfiguration.title,
-            windowConfiguration,
-        )
-    })
+    // Object.entries(userData.windows).forEach(([componentUuid, windowConfiguration]) => {
+    //     WindowBoxFactory.make(
+    //         Dom.makeComponent(
+    //             COMPONENT_UUID_LOOKUP.get(componentUuid)!,
+    //             windowConfiguration.componentConfigration.dataset
+    //         ),
+    //         windowConfiguration.title,
+    //         windowConfiguration,
+    //     )
+    // })
 
     const tools = Dom.makeComponent(CanvasTools, { currentTool: userData.currentTool })
 

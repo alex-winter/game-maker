@@ -6,7 +6,7 @@ import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlace
 
 export class PlacementHistory extends Component {
 
-    protected externalListners: ExternalListeners = {
+    protected externalListeners: ExternalListeners = {
         'built-canvas-layer': this.handleBuiltCanvasLayer,
         'layer-update': this.handleLayerUpdate,
     }

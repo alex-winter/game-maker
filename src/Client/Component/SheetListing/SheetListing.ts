@@ -1,10 +1,19 @@
 import { EVENTS } from 'Client/Constants/events'
 import { Sheet } from 'Client/Model/Sheet'
-import { Component } from 'Client/Service/Component'
+import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
+import { sheetRepository } from 'Client/Service/Repository/SheetRepository'
 
 export class FileListing extends Component {
+    protected externalListeners: ExternalListeners = {
+        'upload-files-submission': this.handleFilesUploadSubmitted
+    }
+
+    protected listeners: Listeners = {
+        '.open-sheet-button:click': this.handleOpenSheetButtonClick
+    }
+
     protected css(): string {
         return /*css*/`
             :host {
@@ -24,30 +33,31 @@ export class FileListing extends Component {
     }
 
     protected build(): HTMLElement {
-        const container = Dom.div()
+        const container = Dom.div('container')
 
-        Events.listenToFilesUploadSubmitted(async fileList => {
-            const sheets = await Promise.all(
-                fileList.map(this.mapToSheet.bind(this))
-            )
+        sheetRepository.getAll().then(sheets => {
             container.append(
                 ...sheets.map(this.buildSheet.bind(this))
             )
         })
 
-        Events.listen(
-            event => {
-                container.append(
-                    ...(event.detail as Sheet[])
-                        .map(this.buildSheet.bind(this))
-                )
-            },
-            EVENTS.gotSheets,
-        )
-
-        Events.emit(EVENTS.getSheets)
-
         return container
+    }
+
+    private getContainer(): HTMLDivElement {
+        return this.findOne('.container')!
+    }
+
+    private handleFilesUploadSubmitted(event: CustomEvent): void {
+        const files = event.detail as File[]
+
+        Promise.all(
+            files.map(this.mapToSheet.bind(this))
+        ).then(sheets => {
+            this.getContainer().append(
+                ...sheets.map(this.buildSheet.bind(this))
+            )
+        })
     }
 
     private mapToSheet(file: File): Promise<Sheet> {
@@ -74,16 +84,22 @@ export class FileListing extends Component {
         const container = Dom.div('file')
         const name = Dom.div()
         const options = Dom.div()
-        const openButton = Dom.button('Open')
+        const openButton = Dom.button('Open', 'open-sheet-button')
 
         name.innerText = sheet.name
 
-        openButton.addEventListener('click', (e) => Events.emitOpenSheet(sheet))
+        openButton.dataset.sheetName = sheet.name
 
         options.append(openButton)
 
         container.append(name, options)
 
         return container
+    }
+
+    private handleOpenSheetButtonClick(event: Event): void {
+        const button = event.target as HTMLButtonElement
+
+        Events.emitOpenSheet(button.dataset.sheetName as string)
     }
 }

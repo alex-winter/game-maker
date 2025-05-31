@@ -17,7 +17,7 @@ export abstract class Component extends HTMLElement {
     public isSingleton: boolean = false
     protected readonly parameters: { [key: string]: any } = {}
     protected readonly listeners: Listeners = {}
-    protected readonly externalListerners: ExternalListeners = {}
+    protected readonly externalListeners: ExternalListeners = {}
     private externalHandlers: Array<{
         key: string
         handler: EventListener
@@ -75,7 +75,7 @@ export abstract class Component extends HTMLElement {
             })
             .then(() => {
                 this.setListeners()
-                this.setExternalListners()
+                this.setExternalListeners()
                 this.afterBuild()
             })
     }
@@ -94,37 +94,37 @@ export abstract class Component extends HTMLElement {
         patchDOM(firstChild[0], this.build())
 
         this.setListeners()
-        this.setExternalListners()
+        this.setExternalListeners()
 
         this.afterPatch()
     }
 
     protected setListeners(): void {
-        // Step 1: Remove previous listeners
         this.attachedListeners.forEach(({ element, type, handler }) => {
             element.removeEventListener(type, handler)
         })
         this.attachedListeners = []
 
-        // Step 2: Attach new listeners and store references
-        Object.entries(this.listeners).forEach(([key, eventFn]) => {
-            const [selector, eventType] = key.split(':')
-            this.findAll(selector).forEach(element => {
-                const boundHandler = eventFn.bind(this)
-                element.addEventListener(eventType, boundHandler)
-                this.attachedListeners.push({ element, type: eventType, handler: boundHandler })
+        const listeners = (this as any).listeners as Listeners | undefined
+        if (listeners) {
+            Object.entries(listeners).forEach(([key, eventFn]) => {
+                const [selector, eventType] = key.split(':')
+                this.findAll(selector).forEach(element => {
+                    const boundHandler = eventFn.bind(this)
+                    element.addEventListener(eventType, boundHandler)
+                    this.attachedListeners.push({ element, type: eventType, handler: boundHandler })
+                })
             })
-        })
+        }
     }
 
-    protected setExternalListners(): void {
-        // Unbind old handlers
+    protected setExternalListeners(): void {
         this.externalHandlers.forEach(({ key, handler }) => {
             Events.unlisten(handler, key)
         })
         this.externalHandlers = []
 
-        const listeners = (this as any).externalListners as ExternalListeners | undefined
+        const listeners = (this as any).externalListeners as ExternalListeners | undefined
         if (listeners) {
             Object.entries(listeners).forEach(([key, listener]) => {
                 const boundHandler = listener.bind(this) as EventListener

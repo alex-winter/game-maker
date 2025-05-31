@@ -40,7 +40,7 @@ export class CanvasLayer extends Component {
     private isCollisionLayer: boolean = false
     private toolSelection: string = 'pencil'
 
-    protected readonly externalListners: ExternalListeners = {
+    protected readonly externalListeners: ExternalListeners = {
         'layer-deleted': this.handleDelete,
         'layer-update': this.handleLayerUpdate,
         'moving-in-canvas': this.handleMovement,
@@ -50,7 +50,7 @@ export class CanvasLayer extends Component {
         'request-focus-on-placement': this.handleRequestFocusOnPlacement,
     }
 
-    protected listeners: Listeners = {
+    protected readonly listeners: Listeners = {
         '.container:mouseleave': this.handleMouseLeave,
         '.container:mousedown': this.handleMouseDown,
         '.container:mousemove': this.handleMouseMove,
