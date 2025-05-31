@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         event => {
             layerRepository.update(event.detail as Layer)
         },
-        EVENTS.layerPlacementMade,
+        'layer-placement-made',
     )
 
     Events.listen(

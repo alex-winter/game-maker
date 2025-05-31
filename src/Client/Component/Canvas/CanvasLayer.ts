@@ -93,21 +93,23 @@ export class CanvasLayer extends Component {
         `
     }
 
-    private async loadPlacement(placement: ImagePlacement): Promise<void> {
-        const image = (await placementImageRepository.getByUuid(placement.imageUuid))!
-
-        const loadedImage = await Dom.image(image.src)
-
-        loadedPlacementRepository.add({
-            uuid: placement.uuid,
-            layerUuid: this.layer.uuid,
-            image: loadedImage,
-            x: placement.coordinate.x,
-            y: placement.coordinate.y,
-            width: loadedImage.width,
-            height: loadedImage.height,
-        })
-        Events.emit('placement-added')
+    private loadPlacement(placement: ImagePlacement): void {
+        placementImageRepository.getByUuid(placement.imageUuid)
+            .then(image => {
+                if (image) {
+                    Dom.image(image.src).then(htmlImage => {
+                        loadedPlacementRepository.add({
+                            uuid: placement.uuid,
+                            layerUuid: this.layer.uuid,
+                            image: htmlImage,
+                            x: placement.coordinate.x,
+                            y: placement.coordinate.y,
+                            width: htmlImage.width,
+                            height: htmlImage.height,
+                        })
+                    })
+                }
+            })
     }
 
     protected async setup(): Promise<void> {
@@ -313,6 +315,8 @@ export class CanvasLayer extends Component {
 
                 const mouseUp = (event: MouseEvent) => {
                     Events.emit('layer-placement-made', this.layer)
+                    Events.emit('placement-added')
+
                     document.removeEventListener('mouseup', mouseUp)
                     document.removeEventListener('mousemove', mouseMove)
                 }

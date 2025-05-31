@@ -1045,19 +1045,23 @@ class CanvasLayer extends Component_1.Component {
             }
         `;
     }
-    async loadPlacement(placement) {
-        const image = (await PlacementImageRepository_1.placementImageRepository.getByUuid(placement.imageUuid));
-        const loadedImage = await Dom_1.Dom.image(image.src);
-        LoadedPlacement_1.loadedPlacementRepository.add({
-            uuid: placement.uuid,
-            layerUuid: this.layer.uuid,
-            image: loadedImage,
-            x: placement.coordinate.x,
-            y: placement.coordinate.y,
-            width: loadedImage.width,
-            height: loadedImage.height,
+    loadPlacement(placement) {
+        PlacementImageRepository_1.placementImageRepository.getByUuid(placement.imageUuid)
+            .then(image => {
+            if (image) {
+                Dom_1.Dom.image(image.src).then(htmlImage => {
+                    LoadedPlacement_1.loadedPlacementRepository.add({
+                        uuid: placement.uuid,
+                        layerUuid: this.layer.uuid,
+                        image: htmlImage,
+                        x: placement.coordinate.x,
+                        y: placement.coordinate.y,
+                        width: htmlImage.width,
+                        height: htmlImage.height,
+                    });
+                });
+            }
         });
-        Events_1.Events.emit('placement-added');
     }
     async setup() {
         this.layer = this.parameters.layer;
@@ -1198,6 +1202,7 @@ class CanvasLayer extends Component_1.Component {
                 };
                 const mouseUp = (event) => {
                     Events_1.Events.emit('layer-placement-made', this.layer);
+                    Events_1.Events.emit('placement-added');
                     document.removeEventListener('mouseup', mouseUp);
                     document.removeEventListener('mousemove', mouseMove);
                 };
@@ -3579,7 +3584,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, events_1.EVENTS.gotLayer, events_1.EVENTS.newLayerMapped);
     Events_1.Events.listen(event => {
         LayerRepository_1.layerRepository.update(event.detail);
-    }, events_1.EVENTS.layerPlacementMade);
+    }, 'layer-placement-made');
     Events_1.Events.listen(event => {
         LayerRepository_1.layerRepository.setActive(event.detail.uuid);
     }, 'layer-active');
