@@ -1003,7 +1003,6 @@ class CanvasLayer extends Component_1.Component {
         'moving-in-canvas': this.handleMovement,
         'sheet-selection-made': this.handleCurrentImageChange,
         'tool-selection': this.handleToolSelection,
-        'click-placement-history-row': this.handleClickPlacementHistoryRow,
         'request-focus-on-placement': this.handleRequestFocusOnPlacement,
     };
     listeners = {
@@ -1083,6 +1082,7 @@ class CanvasLayer extends Component_1.Component {
     handleMouseUp(event) {
         if (event.button === mouse_events_1.MIDDLE_BUTTON) {
             this.isMoving = false;
+            Events_1.Events.emit('updated-view-coordinates', this.viewCoordinates);
         }
     }
     afterPatch() {
@@ -1098,7 +1098,9 @@ class CanvasLayer extends Component_1.Component {
     }
     handleMovement(event) {
         const movement = event.detail;
-        this.move(movement);
+        if (movement.layerUuid !== this.layer.uuid) {
+            this.move(movement);
+        }
     }
     move(movement) {
         const dx = movement.clientX - movement.lastMousePosition.x;
@@ -1107,7 +1109,6 @@ class CanvasLayer extends Component_1.Component {
         this.viewCoordinates.y -= dy;
         this.lastMousePosition.x = movement.clientX;
         this.lastMousePosition.y = movement.clientY;
-        Events_1.Events.emit('updated-view-coordinates', this.viewCoordinates);
     }
     getCanvas() {
         return this.findOne('canvas-2d');
@@ -1154,11 +1155,13 @@ class CanvasLayer extends Component_1.Component {
         }
         if (this.isMoving) {
             const movement = {
+                layerUuid: this.layer.uuid,
                 clientX: event.clientX,
                 clientY: event.clientY,
                 viewCoordinates: { ...this.viewCoordinates },
                 lastMousePosition: { ...this.lastMousePosition },
             };
+            this.move(movement);
             Events_1.Events.emit('moving-in-canvas', movement);
         }
     }
@@ -1291,8 +1294,6 @@ class CanvasLayer extends Component_1.Component {
     }
     getCurrentImage() {
         return this.findOne('.current-image');
-    }
-    handleClickPlacementHistoryRow() {
     }
     handleRequestFocusOnPlacement(event) {
         const uuid = event.detail;

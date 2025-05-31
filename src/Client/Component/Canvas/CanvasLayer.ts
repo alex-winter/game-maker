@@ -12,6 +12,8 @@ import { Canvas2D } from 'Client/Component/Canvas/Canvas'
 import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
 
 type Movement = {
+    layerUuid: string
+
     clientX: number
 
     clientY: number
@@ -46,7 +48,6 @@ export class CanvasLayer extends Component {
         'moving-in-canvas': this.handleMovement,
         'sheet-selection-made': this.handleCurrentImageChange,
         'tool-selection': this.handleToolSelection,
-        'click-placement-history-row': this.handleClickPlacementHistoryRow,
         'request-focus-on-placement': this.handleRequestFocusOnPlacement,
     }
 
@@ -147,6 +148,7 @@ export class CanvasLayer extends Component {
     private handleMouseUp(event: MouseEvent): void {
         if (event.button === MIDDLE_BUTTON) {
             this.isMoving = false
+            Events.emit('updated-view-coordinates', this.viewCoordinates)
         }
     }
 
@@ -167,7 +169,9 @@ export class CanvasLayer extends Component {
     private handleMovement(event: CustomEvent): void {
         const movement = event.detail as Movement
 
-        this.move(movement)
+        if (movement.layerUuid !== this.layer.uuid) {
+            this.move(movement)
+        }
     }
 
     private move(movement: Movement): void {
@@ -179,8 +183,6 @@ export class CanvasLayer extends Component {
 
         this.lastMousePosition.x = movement.clientX
         this.lastMousePosition.y = movement.clientY
-
-        Events.emit('updated-view-coordinates', this.viewCoordinates)
     }
 
     private getCanvas(): Canvas2D {
@@ -256,11 +258,14 @@ export class CanvasLayer extends Component {
 
         if (this.isMoving) {
             const movement: Movement = {
+                layerUuid: this.layer.uuid,
                 clientX: event.clientX,
                 clientY: event.clientY,
                 viewCoordinates: { ...this.viewCoordinates },
                 lastMousePosition: { ...this.lastMousePosition },
             }
+
+            this.move(movement)
 
             Events.emit('moving-in-canvas', movement)
         }
@@ -450,9 +455,6 @@ export class CanvasLayer extends Component {
 
     private getCurrentImage(): HTMLImageElement {
         return this.findOne('.current-image')!
-    }
-
-    private handleClickPlacementHistoryRow(): void {
     }
 
     private handleRequestFocusOnPlacement(event: CustomEvent): void {
