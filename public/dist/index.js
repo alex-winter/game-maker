@@ -1006,6 +1006,12 @@ class CanvasLayer extends Component_1.Component {
         'click-placement-history-row': this.handleClickPlacementHistoryRow,
         'request-focus-on-placement': this.handleRequestFocusOnPlacement,
     };
+    listeners = {
+        '.container:mouseleave': this.handleMouseLeave,
+        '.container:mousedown': this.handleMouseDown,
+        '.container:mousemove': this.handleMouseMove,
+        '.container:mouseup': this.handleMouseUp,
+    };
     css() {
         return /*css*/ `
             :host {
@@ -1072,15 +1078,12 @@ class CanvasLayer extends Component_1.Component {
         return container;
     }
     afterBuild() {
-        this.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
-        this.addEventListener('mousedown', this.handleMouseDown.bind(this));
-        this.addEventListener('mousemove', this.handleMouseMove.bind(this));
-        this.addEventListener('mouseup', (event) => {
-            if (event.button === mouse_events_1.MIDDLE_BUTTON) {
-                this.isMoving = false;
-            }
-        });
         this.getCanvas().startAnimation(this.frameFn.bind(this));
+    }
+    handleMouseUp(event) {
+        if (event.button === mouse_events_1.MIDDLE_BUTTON) {
+            this.isMoving = false;
+        }
     }
     afterPatch() {
         this.getCanvas().startAnimation(this.frameFn.bind(this));
@@ -1290,7 +1293,6 @@ class CanvasLayer extends Component_1.Component {
         return this.findOne('.current-image');
     }
     handleClickPlacementHistoryRow() {
-        console.log('clicked');
     }
     handleRequestFocusOnPlacement(event) {
         const uuid = event.detail;
@@ -1913,7 +1915,6 @@ class PlacementHistory extends Component_1.Component {
         return row;
     }
     handleClickRow(event) {
-        console.log('emit');
     }
     handleViewClick(event) {
         event.stopPropagation();
@@ -2573,6 +2574,8 @@ class Component extends HTMLElement {
     parameters = {};
     listeners = {};
     externalListerners = {};
+    externalHandlers = [];
+    attachedListeners = [];
     constructor() {
         super();
         this.shadow = this.attachShadow({ mode: 'open' });
@@ -2611,6 +2614,8 @@ class Component extends HTMLElement {
             this.afterBuild();
         });
     }
+    afterPatch() {
+    }
     patch() {
         const firstChild = Array.from(this.shadow.children)
             .filter(child => child.tagName !== 'LINK');
@@ -2620,20 +2625,36 @@ class Component extends HTMLElement {
         (0, patch_dom_1.patchDOM)(firstChild[0], this.build());
         this.setListeners();
         this.setExternalListners();
+        this.afterPatch();
     }
     setListeners() {
+        // Step 1: Remove previous listeners
+        this.attachedListeners.forEach(({ element, type, handler }) => {
+            element.removeEventListener(type, handler);
+        });
+        this.attachedListeners = [];
+        // Step 2: Attach new listeners and store references
         Object.entries(this.listeners).forEach(([key, eventFn]) => {
             const [selector, eventType] = key.split(':');
             this.findAll(selector).forEach(element => {
-                element.addEventListener(eventType, eventFn.bind(this));
+                const boundHandler = eventFn.bind(this);
+                element.addEventListener(eventType, boundHandler);
+                this.attachedListeners.push({ element, type: eventType, handler: boundHandler });
             });
         });
     }
     setExternalListners() {
+        // Unbind old handlers
+        this.externalHandlers.forEach(({ key, handler }) => {
+            Events_1.Events.unlisten(handler, key);
+        });
+        this.externalHandlers = [];
         const listeners = this.externalListners;
         if (listeners) {
             Object.entries(listeners).forEach(([key, listener]) => {
-                Events_1.Events.listen(listener.bind(this), key);
+                const boundHandler = listener.bind(this);
+                Events_1.Events.listen(boundHandler, key);
+                this.externalHandlers.push({ key, handler: boundHandler });
             });
         }
     }
@@ -2789,6 +2810,7 @@ class Events {
     constructor() {
         throw new Error('Can not construct');
     }
+    static listenersMap = new Map();
     static emit(key, detail = undefined) {
         document.dispatchEvent(new CustomEvent(key, {
             detail,
@@ -2798,11 +2820,23 @@ class Events {
     }
     static listen(callback, ...keys) {
         keys.forEach(key => {
-            this.addListener(key, callback);
+            const wrapped = callback;
+            this.addListener(key, wrapped);
+            if (!this.listenersMap.has(key)) {
+                this.listenersMap.set(key, new Set());
+            }
+            this.listenersMap.get(key).add(wrapped);
         });
     }
     static addListener(key, callback) {
         document.addEventListener(key, callback);
+    }
+    static unlisten(callback, ...keys) {
+        keys.forEach(key => {
+            const wrapped = callback;
+            document.removeEventListener(key, wrapped);
+            this.listenersMap.get(key)?.delete(wrapped);
+        });
     }
     static emitFilesUploadSubmitted(files) {
         Events.emit(events_1.EVENTS.uploadFilesSubmission, files);
@@ -3420,7 +3454,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const layers = await LayerRepository_1.layerRepository.getAll();
     const sheets = await SheetRepository_1.sheetRepository.getAll();
     const placementImages = await PlacementImageRepository_1.placementImageRepository.getAll();
-    console.log('here');
     await new Promise(resolve => {
         if (layers.length === 0) {
             resolve(null);
@@ -3444,7 +3477,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     resolve(null);
                 }
             });
-            console.log(layerIndex);
             if (layerIndex === layers.length - 1 && layer.placements.length === 0) {
                 resolve(null);
             }

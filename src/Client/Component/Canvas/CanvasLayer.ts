@@ -8,7 +8,6 @@ import { Events } from 'Client/Service/Events'
 import { generateImageDataURL } from 'Client/Service/generate-image'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { Layer } from 'Model/Layer'
-import { UserData } from 'Model/UserData'
 import { Canvas2D } from 'Client/Component/Canvas/Canvas'
 import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
 
@@ -49,6 +48,13 @@ export class CanvasLayer extends Component {
         'tool-selection': this.handleToolSelection,
         'click-placement-history-row': this.handleClickPlacementHistoryRow,
         'request-focus-on-placement': this.handleRequestFocusOnPlacement,
+    }
+
+    protected listeners: Listeners = {
+        '.container:mouseleave': this.handleMouseLeave,
+        '.container:mousedown': this.handleMouseDown,
+        '.container:mousemove': this.handleMouseMove,
+        '.container:mouseup': this.handleMouseUp,
     }
 
     protected css(): string {
@@ -135,16 +141,13 @@ export class CanvasLayer extends Component {
     }
 
     protected afterBuild(): void {
-        this.addEventListener('mouseleave', this.handleMouseLeave.bind(this))
-        this.addEventListener('mousedown', this.handleMouseDown.bind(this))
-        this.addEventListener('mousemove', this.handleMouseMove.bind(this))
-        this.addEventListener('mouseup', (event: MouseEvent) => {
-            if (event.button === MIDDLE_BUTTON) {
-                this.isMoving = false
-            }
-        })
-
         this.getCanvas().startAnimation(this.frameFn.bind(this))
+    }
+
+    private handleMouseUp(event: MouseEvent): void {
+        if (event.button === MIDDLE_BUTTON) {
+            this.isMoving = false
+        }
     }
 
     protected afterPatch(): void {
@@ -450,7 +453,6 @@ export class CanvasLayer extends Component {
     }
 
     private handleClickPlacementHistoryRow(): void {
-        console.log('clicked')
     }
 
     private handleRequestFocusOnPlacement(event: CustomEvent): void {

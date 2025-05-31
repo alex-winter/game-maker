@@ -41,7 +41,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sheets = await sheetRepository.getAll()
     const placementImages = await placementImageRepository.getAll()
 
-    console.log('here')
     await new Promise(resolve => {
         if (layers.length === 0) {
             resolve(null)
@@ -73,16 +72,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             })
 
-            console.log(layerIndex)
-
             if (layerIndex === layers.length - 1 && layer.placements.length === 0) {
                 resolve(null)
             }
         })
     })
-
-
-
 
 
     Events.listenToFilesUploadSubmitted(files => {

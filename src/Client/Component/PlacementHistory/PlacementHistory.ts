@@ -82,7 +82,6 @@ export class PlacementHistory extends Component {
     }
 
     private handleClickRow(event: Event): void {
-        console.log('emit')
     }
 
     private handleViewClick(event: Event): void {

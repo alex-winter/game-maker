@@ -9,6 +9,8 @@ export class Events {
         throw new Error('Can not construct')
     }
 
+    private static listenersMap: Map<string, Set<EventListener>> = new Map()
+
     public static emit<T>(key: string, detail: T | undefined = undefined): void {
         document.dispatchEvent(
             new CustomEvent<T>(
@@ -23,21 +25,36 @@ export class Events {
     }
 
 
-
     public static listen<T>(
         callback: EventFn<T>,
         ...keys: string[]
     ): void {
         keys.forEach(key => {
-            this.addListener(key, callback)
+            const wrapped = callback as EventListener
+            this.addListener(key, wrapped)
+
+            if (!this.listenersMap.has(key)) {
+                this.listenersMap.set(key, new Set())
+            }
+            this.listenersMap.get(key)!.add(wrapped)
         })
     }
+
     private static addListener<T>(key: string, callback: EventFn<T>): void {
-        document.addEventListener(
-            key,
-            callback as EventListener,
-        )
+        document.addEventListener(key, callback as EventListener)
     }
+
+    public static unlisten<T>(
+        callback: EventFn<T>,
+        ...keys: string[]
+    ): void {
+        keys.forEach(key => {
+            const wrapped = callback as EventListener
+            document.removeEventListener(key, wrapped)
+            this.listenersMap.get(key)?.delete(wrapped)
+        })
+    }
+
     public static emitFilesUploadSubmitted(files: File[]): void {
         Events.emit<File[]>(
             EVENTS.uploadFilesSubmission,
