@@ -1059,8 +1059,8 @@ class CanvasLayer extends Component_1.Component {
             ? CanvasLayer.COLLISION_IMAGE
             : CanvasLayer.DEFAULT_IMAGE);
         this.layer.placements.forEach(this.loadPlacement.bind(this));
-        this.viewCoordinates.x = this.parameters.userData.lastViewPosition.x;
-        this.viewCoordinates.y = this.parameters.userData.lastViewPosition.y;
+        this.viewCoordinates.x = this.parameters.userData?.lastViewPosition?.x || 0;
+        this.viewCoordinates.y = this.parameters.userData?.lastViewPosition?.y || 0;
     }
     build() {
         const container = Dom_1.Dom.div('container');

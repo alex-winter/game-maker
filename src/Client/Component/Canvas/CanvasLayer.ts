@@ -112,8 +112,8 @@ export class CanvasLayer extends Component {
 
         this.layer.placements.forEach(this.loadPlacement.bind(this))
 
-        this.viewCoordinates.x = this.parameters.userData.lastViewPosition.x
-        this.viewCoordinates.y = this.parameters.userData.lastViewPosition.y
+        this.viewCoordinates.x = this.parameters.userData?.lastViewPosition?.x || 0
+        this.viewCoordinates.y = this.parameters.userData?.lastViewPosition?.y || 0
     }
 
     protected build(): HTMLElement {
