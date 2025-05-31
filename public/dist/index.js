@@ -1179,12 +1179,10 @@ class CanvasLayer extends Component_1.Component {
             },
             imageUuid: (await PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(this.getCurrentImage().src)).uuid,
         };
-        const isAlreadyPlaced = this.layer.placements.find(placement => {
-            return this.snap(placement.coordinate.x) === this.snap(newPlacement.coordinate.x)
-                && this.snap(placement.coordinate.y) === this.snap(newPlacement.coordinate.y)
-                && placement.imageUuid === newPlacement.imageUuid;
-        });
-        if (isAlreadyPlaced) {
+        const lastPlacement = this.layer.placements[this.layer.placements.length - 1];
+        if (this.snap(lastPlacement.coordinate.x) === this.snap(newPlacement.coordinate.x)
+            && this.snap(lastPlacement.coordinate.y) === this.snap(newPlacement.coordinate.y)
+            && lastPlacement.imageUuid === newPlacement.imageUuid) {
             return;
         }
         this.layer.placements.push(newPlacement);
