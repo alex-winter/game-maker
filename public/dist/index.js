@@ -997,7 +997,6 @@ class CanvasLayer extends Component_1.Component {
     viewCoordinates = { x: 0, y: 0 };
     isCollisionLayer = false;
     toolSelection = 'pencil';
-    placementBufferMs = 1000;
     externalListeners = {
         'layer-deleted': this.handleDelete,
         'layer-update': this.handleLayerUpdate,
@@ -1885,8 +1884,6 @@ const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/
 const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
 class PlacementHistory extends Component_1.Component {
     externalListeners = {
-        'built-canvas-layer': this.handleBuiltCanvasLayer,
-        'layer-update': this.handleLayerUpdate,
         'placement-added': this.handlePlacementAdded,
     };
     listeners = {
@@ -1904,12 +1901,6 @@ class PlacementHistory extends Component_1.Component {
         return container;
     }
     handlePlacementAdded() {
-        this.patch();
-    }
-    handleBuiltCanvasLayer() {
-        this.patch();
-    }
-    handleLayerUpdate() {
         this.patch();
     }
     buildPlacementRow(placement) {
@@ -2965,12 +2956,13 @@ class LayerRepository extends Repository_1.Repository {
         });
         await this.post(this.API_PATH, layers);
     }
-    async update(layer) {
+    update(layer) {
         const found = this.layers.find(l => l.uuid === layer.uuid);
         if (found) {
             Object.assign(found, layer);
         }
-        await this.patch(this.API_PATH, layer);
+        this.patch(this.API_PATH, layer);
+        Events_1.Events.emit('layer-update', layer);
     }
     async getAll() {
         if (!this.layers) {
@@ -2984,7 +2976,7 @@ class LayerRepository extends Repository_1.Repository {
     setActive(uuid) {
         for (const layer of this.layers) {
             layer.is_active = layer.uuid === uuid;
-            Events_1.Events.emit('layer-update', layer);
+            this.update(layer);
         }
     }
     toggleVisible(uuid) {
@@ -2992,7 +2984,7 @@ class LayerRepository extends Repository_1.Repository {
             if (layer.uuid === uuid) {
                 layer.is_visible = !layer.is_visible;
             }
-            Events_1.Events.emit('layer-update', layer);
+            this.update(layer);
         }
     }
 }
@@ -3592,9 +3584,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         LayerRepository_1.layerRepository.toggleVisible(event.detail.uuid);
     }, 'layer-visible-toggle');
     Events_1.Events.listen(event => {
-        LayerRepository_1.layerRepository.update(event.detail);
-    }, 'layer-update');
-    Events_1.Events.listen(event => {
         const uuid = event.detail;
         LayerRepository_1.layerRepository.remove(uuid)
             .then(() => {
@@ -3630,7 +3619,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (index !== -1) {
                 layer.placements.splice(index, 1);
                 LayerRepository_1.layerRepository.update(layer);
-                Events_1.Events.emit('layer-update', layer);
                 break;
             }
         }

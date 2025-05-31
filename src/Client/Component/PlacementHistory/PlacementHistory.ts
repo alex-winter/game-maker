@@ -7,8 +7,6 @@ import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlace
 export class PlacementHistory extends Component {
 
     protected externalListeners: ExternalListeners = {
-        'built-canvas-layer': this.handleBuiltCanvasLayer,
-        'layer-update': this.handleLayerUpdate,
         'placement-added': this.handlePlacementAdded,
     }
 
@@ -39,14 +37,6 @@ export class PlacementHistory extends Component {
     }
 
     private handlePlacementAdded(): void {
-        this.patch()
-    }
-
-    private handleBuiltCanvasLayer(): void {
-        this.patch()
-    }
-
-    private handleLayerUpdate(): void {
         this.patch()
     }
 

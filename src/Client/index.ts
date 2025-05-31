@@ -187,13 +187,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     Events.listen(
         event => {
-            layerRepository.update(event.detail as Layer)
-        },
-        'layer-update',
-    )
-
-    Events.listen(
-        event => {
             const uuid = event.detail as string
 
             layerRepository.remove(uuid)
@@ -257,8 +250,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (index !== -1) {
                     layer.placements.splice(index, 1)
                     layerRepository.update(layer)
-
-                    Events.emit('layer-update', layer)
                     break
                 }
             }

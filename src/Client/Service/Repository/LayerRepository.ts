@@ -29,7 +29,7 @@ class LayerRepository extends Repository {
         )
     }
 
-    public async update(layer: Layer): Promise<void> {
+    public update(layer: Layer): void {
         const found = this.layers.find(l => l.uuid === layer.uuid)
 
         if (found) {
@@ -39,10 +39,12 @@ class LayerRepository extends Repository {
             )
         }
 
-        await this.patch(
+        this.patch(
             this.API_PATH,
             layer,
         )
+
+        Events.emit('layer-update', layer)
     }
 
     public async getAll(): Promise<Layer[]> {
@@ -60,7 +62,7 @@ class LayerRepository extends Repository {
     public setActive(uuid: string) {
         for (const layer of this.layers) {
             layer.is_active = layer.uuid === uuid
-            Events.emit('layer-update', layer)
+            this.update(layer)
         }
     }
 
@@ -69,7 +71,7 @@ class LayerRepository extends Repository {
             if (layer.uuid === uuid) {
                 layer.is_visible = !layer.is_visible
             }
-            Events.emit('layer-update', layer)
+            this.update(layer)
         }
     }
 }

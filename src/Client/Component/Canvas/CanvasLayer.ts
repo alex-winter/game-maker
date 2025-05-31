@@ -41,7 +41,6 @@ export class CanvasLayer extends Component {
     private viewCoordinates: Coordinates = { x: 0, y: 0 }
     private isCollisionLayer: boolean = false
     private toolSelection: string = 'pencil'
-    private placementBufferMs: number = 1000
 
     protected readonly externalListeners: ExternalListeners = {
         'layer-deleted': this.handleDelete,
