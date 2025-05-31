@@ -290,7 +290,8 @@ export class CanvasLayer extends Component {
         const lastPlacement = this.layer.placements[this.layer.placements.length - 1]
 
         if (
-            this.snap(lastPlacement.coordinate.x) === this.snap(newPlacement.coordinate.x)
+            lastPlacement
+            && this.snap(lastPlacement.coordinate.x) === this.snap(newPlacement.coordinate.x)
             && this.snap(lastPlacement.coordinate.y) === this.snap(newPlacement.coordinate.y)
             && lastPlacement.imageUuid === newPlacement.imageUuid
         ) {
@@ -302,7 +303,7 @@ export class CanvasLayer extends Component {
     }
 
     private handleMouseDown(event: MouseEvent): void {
-        if (event.button === LEFT_BUTTON && this.getCurrentImage()) {
+        if (event.button === LEFT_BUTTON) {
             if (this.toolSelection === 'pencil') {
                 this.generatePlacement()
 

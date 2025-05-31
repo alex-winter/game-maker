@@ -1180,7 +1180,8 @@ class CanvasLayer extends Component_1.Component {
             imageUuid: (await PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(this.getCurrentImage().src)).uuid,
         };
         const lastPlacement = this.layer.placements[this.layer.placements.length - 1];
-        if (this.snap(lastPlacement.coordinate.x) === this.snap(newPlacement.coordinate.x)
+        if (lastPlacement
+            && this.snap(lastPlacement.coordinate.x) === this.snap(newPlacement.coordinate.x)
             && this.snap(lastPlacement.coordinate.y) === this.snap(newPlacement.coordinate.y)
             && lastPlacement.imageUuid === newPlacement.imageUuid) {
             return;
@@ -1189,7 +1190,7 @@ class CanvasLayer extends Component_1.Component {
         this.loadPlacement(newPlacement);
     }
     handleMouseDown(event) {
-        if (event.button === mouse_events_1.LEFT_BUTTON && this.getCurrentImage()) {
+        if (event.button === mouse_events_1.LEFT_BUTTON) {
             if (this.toolSelection === 'pencil') {
                 this.generatePlacement();
                 const mouseMove = (event) => {
