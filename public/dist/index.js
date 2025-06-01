@@ -845,6 +845,28 @@ exports["default"] = version;
 
 /***/ }),
 
+/***/ "./src/Client/Component/Animation/AnimationMaker.ts":
+/*!**********************************************************!*\
+  !*** ./src/Client/Component/Animation/AnimationMaker.ts ***!
+  \**********************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.AnimationMaker = void 0;
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+class AnimationMaker extends Component_1.Component {
+    build() {
+        const container = Dom_1.Dom.div('container');
+        return container;
+    }
+}
+exports.AnimationMaker = AnimationMaker;
+
+
+/***/ }),
+
 /***/ "./src/Client/Component/Canvas/Canvas.ts":
 /*!***********************************************!*\
   !*** ./src/Client/Component/Canvas/Canvas.ts ***!
@@ -1355,8 +1377,8 @@ class CanvasTools extends Component_1.Component {
     currentTool = 'pencil';
     isSingleton = true;
     listeners = {
-        'pencil-button:click': this.handlePencilToolClick,
-        'fill-button:click': this.handleFillToolClick,
+        '.pencil-button:click': this.handlePencilToolClick,
+        '.fill-button:click': this.handleFillToolClick,
     };
     css() {
         return /*css*/ `
@@ -1409,6 +1431,7 @@ class CanvasTools extends Component_1.Component {
         this.patch();
     }
     handleFillToolClick(event) {
+        console.log('here');
         Events_1.Events.emit('tool-selection', this.currentTool = 'fill');
         this.patch();
     }
@@ -2479,6 +2502,7 @@ const Canvas_1 = __webpack_require__(/*! Client/Component/Canvas/Canvas */ "./sr
 const uuid_1 = __webpack_require__(/*! uuid */ "./node_modules/uuid/dist/cjs-browser/index.js");
 const CanvasTools_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasTools */ "./src/Client/Component/Canvas/CanvasTools.ts");
 const PlacementHistory_1 = __webpack_require__(/*! Client/Component/PlacementHistory/PlacementHistory */ "./src/Client/Component/PlacementHistory/PlacementHistory.ts");
+const AnimationMaker_1 = __webpack_require__(/*! Client/Component/Animation/AnimationMaker */ "./src/Client/Component/Animation/AnimationMaker.ts");
 const UUID_NAMESPACE = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
 exports.COMPONENTS = new Map([
     [SideMenu_1.SideMenu, 'side-menu'],
@@ -2495,6 +2519,7 @@ exports.COMPONENTS = new Map([
     [Canvas_1.Canvas2D, 'canvas-2d'],
     [CanvasTools_1.CanvasTools, 'canvas-tools'],
     [PlacementHistory_1.PlacementHistory, 'placement-history'],
+    [AnimationMaker_1.AnimationMaker, 'animation-maker'],
 ]);
 exports.COMPONENT_UUID_LOOKUP = new Map(Array.from(exports.COMPONENTS).map(([component, tag]) => [
     (0, uuid_1.v5)(tag, UUID_NAMESPACE),
@@ -3478,6 +3503,7 @@ const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/Load
 const UserDataRepository_1 = __webpack_require__(/*! Client/Service/Repository/UserDataRepository */ "./src/Client/Service/Repository/UserDataRepository.ts");
 const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */ "./src/Client/Component/SideMenu/SideMenu.ts");
 const LayerListing_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerListing */ "./src/Client/Component/LayerListing/LayerListing.ts");
+const AnimationMaker_1 = __webpack_require__(/*! Client/Component/Animation/AnimationMaker */ "./src/Client/Component/Animation/AnimationMaker.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
@@ -3619,6 +3645,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (index !== -1) {
                 layer.placements.splice(index, 1);
                 LayerRepository_1.layerRepository.update(layer);
+                Events_1.Events.emit('placement-removed', placementUuid);
                 break;
             }
         }
@@ -3639,7 +3666,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     //     )
     // })
     const tools = Dom_1.Dom.makeComponent(CanvasTools_1.CanvasTools, { currentTool: userData.currentTool });
-    document.body.append(sideMenu, tools, ...layerElements);
+    document.body.append(
+    // sideMenu,
+    // tools,
+    // ...layerElements
+    Dom_1.Dom.makeComponent(AnimationMaker_1.AnimationMaker));
 });
 
 })();

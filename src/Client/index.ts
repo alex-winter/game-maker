@@ -26,6 +26,7 @@ import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlace
 import { userDataRepository } from 'Client/Service/Repository/UserDataRepository'
 import { SideMenu } from 'Client/Component/SideMenu/SideMenu'
 import { LayerListing } from 'Client/Component/LayerListing/LayerListing'
+import { AnimationMaker } from 'Client/Component/Animation/AnimationMaker'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -250,6 +251,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (index !== -1) {
                     layer.placements.splice(index, 1)
                     layerRepository.update(layer)
+                    Events.emit('placement-removed', placementUuid)
                     break
                 }
             }
@@ -281,9 +283,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tools = Dom.makeComponent(CanvasTools, { currentTool: userData.currentTool })
 
     document.body.append(
-        sideMenu,
-        tools,
-        ...layerElements
+        // sideMenu,
+        // tools,
+        // ...layerElements
+        Dom.makeComponent(AnimationMaker)
     )
+
 })
 

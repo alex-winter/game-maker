@@ -5,9 +5,9 @@ import { Events } from 'Client/Service/Events'
 export class CanvasTools extends Component {
     private currentTool: string = 'pencil'
     public isSingleton: boolean = true
-    protected listeners: Listeners = {
-        'pencil-button:click': this.handlePencilToolClick,
-        'fill-button:click': this.handleFillToolClick,
+    protected readonly listeners: Listeners = {
+        '.pencil-button:click': this.handlePencilToolClick,
+        '.fill-button:click': this.handleFillToolClick,
     }
 
     protected css(): string {
@@ -73,6 +73,7 @@ export class CanvasTools extends Component {
     }
 
     private handleFillToolClick(event: Event): void {
+        console.log('here')
         Events.emit('tool-selection', this.currentTool = 'fill')
         this.patch()
     }
