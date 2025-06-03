@@ -41,42 +41,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sheets = await sheetRepository.getAll()
     const placementImages = await placementImageRepository.getAll()
 
-    await new Promise(resolve => {
-        if (layers.length === 0) {
-            resolve(null)
-        }
-        layers.forEach((layer, layerIndex) => {
-            layer.placements.forEach(async (placement, placementIndex) => {
-                const placementImage = await placementImageRepository.getByUuid(
-                    placement.imageUuid
-                )
+    for (const layer of layers) {
+        for (const placement of layer.placements) {
+            const placementImage = await placementImageRepository.getByUuid(placement.imageUuid)
 
-                if (placementImage) {
-                    const image = await Dom.image(
-                        placementImage.src
-                    )
+            if (placementImage) {
+                const image = await Dom.image(placementImage.src)
 
-                    loadedPlacementRepository.add({
-                        uuid: placement.uuid,
-                        layerUuid: layer.uuid,
-                        image,
-                        x: placement.coordinate.x,
-                        y: placement.coordinate.y,
-                        width: image.width,
-                        height: image.height,
-                    })
-                }
-
-                if (layerIndex === layers.length - 1 && placementIndex === layer.placements.length - 1) {
-                    resolve(null)
-                }
-            })
-
-            if (layerIndex === layers.length - 1 && layer.placements.length === 0) {
-                resolve(null)
+                loadedPlacementRepository.add({
+                    uuid: placement.uuid,
+                    layerUuid: layer.uuid,
+                    image,
+                    x: placement.coordinate.x,
+                    y: placement.coordinate.y,
+                    width: image.width,
+                    height: image.height,
+                })
             }
-        })
-    })
+        }
+    }
 
     Events.listen('upload-files-submission', (event: CustomEvent) => {
         const files = event.detail as File[]

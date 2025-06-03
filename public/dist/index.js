@@ -3569,34 +3569,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     const layers = await LayerRepository_1.layerRepository.getAll();
     const sheets = await SheetRepository_1.sheetRepository.getAll();
     const placementImages = await PlacementImageRepository_1.placementImageRepository.getAll();
-    await new Promise(resolve => {
-        if (layers.length === 0) {
-            resolve(null);
-        }
-        layers.forEach((layer, layerIndex) => {
-            layer.placements.forEach(async (placement, placementIndex) => {
-                const placementImage = await PlacementImageRepository_1.placementImageRepository.getByUuid(placement.imageUuid);
-                if (placementImage) {
-                    const image = await Dom_1.Dom.image(placementImage.src);
-                    LoadedPlacement_1.loadedPlacementRepository.add({
-                        uuid: placement.uuid,
-                        layerUuid: layer.uuid,
-                        image,
-                        x: placement.coordinate.x,
-                        y: placement.coordinate.y,
-                        width: image.width,
-                        height: image.height,
-                    });
-                }
-                if (layerIndex === layers.length - 1 && placementIndex === layer.placements.length - 1) {
-                    resolve(null);
-                }
-            });
-            if (layerIndex === layers.length - 1 && layer.placements.length === 0) {
-                resolve(null);
+    for (const layer of layers) {
+        for (const placement of layer.placements) {
+            const placementImage = await PlacementImageRepository_1.placementImageRepository.getByUuid(placement.imageUuid);
+            if (placementImage) {
+                const image = await Dom_1.Dom.image(placementImage.src);
+                LoadedPlacement_1.loadedPlacementRepository.add({
+                    uuid: placement.uuid,
+                    layerUuid: layer.uuid,
+                    image,
+                    x: placement.coordinate.x,
+                    y: placement.coordinate.y,
+                    width: image.width,
+                    height: image.height,
+                });
             }
-        });
-    });
+        }
+    }
     Events_1.Events.listen('upload-files-submission', (event) => {
         const files = event.detail;
         FileUpload_1.FileUpload.uploadMultiple(files);
