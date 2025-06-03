@@ -2,18 +2,18 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./node_modules/event-driven-web-components/dist/src/Component.js":
-/*!************************************************************************!*\
-  !*** ./node_modules/event-driven-web-components/dist/src/Component.js ***!
-  \************************************************************************/
+/***/ "./node_modules/event-driven-web-components/dist/Component.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/event-driven-web-components/dist/Component.js ***!
+  \********************************************************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Component = void 0;
-const Events_1 = __webpack_require__(/*! ./Events */ "./node_modules/event-driven-web-components/dist/src/Events.js");
-const is_json_1 = __webpack_require__(/*! ./is-json */ "./node_modules/event-driven-web-components/dist/src/is-json.js");
-const patch_dom_1 = __webpack_require__(/*! ./patch-dom */ "./node_modules/event-driven-web-components/dist/src/patch-dom.js");
+const Events_1 = __webpack_require__(/*! ./Events */ "./node_modules/event-driven-web-components/dist/Events.js");
+const is_json_1 = __webpack_require__(/*! ./is-json */ "./node_modules/event-driven-web-components/dist/is-json.js");
+const patch_dom_1 = __webpack_require__(/*! ./patch-dom */ "./node_modules/event-driven-web-components/dist/patch-dom.js");
 class Component extends HTMLElement {
     globalStylesheets = undefined;
     parsedDataset = {};
@@ -26,6 +26,7 @@ class Component extends HTMLElement {
         super();
         this.shadow = this.attachShadow({ mode: 'open' });
     }
+    async setup() { }
     afterBuild() { }
     afterPatch() { }
     css() {
@@ -35,8 +36,6 @@ class Component extends HTMLElement {
         this.shadow.host.remove();
     }
     connectedCallback() {
-        console.log(typeof this.setup === 'function');
-        console.log(this.setup);
         const datasetKeys = Object.keys(this.dataset);
         for (let key of datasetKeys) {
             const value = this.dataset[key];
@@ -45,7 +44,6 @@ class Component extends HTMLElement {
                 : value;
         }
         const build = async () => {
-            console.log('start build function');
             if (this.globalStylesheets) {
                 for (let href of this.globalStylesheets) {
                     const link = document.createElement('link');
@@ -54,17 +52,13 @@ class Component extends HTMLElement {
                     this.shadow.append(link);
                 }
             }
-            if (typeof this.setup === 'function') {
-                await this.setup();
-            }
-            console.log('end setup');
+            await this.setup();
             const css = this.css().trim();
             if (css.length) {
                 const sheet = new CSSStyleSheet();
                 sheet.replaceSync(css);
                 this.shadow.adoptedStyleSheets = [sheet];
             }
-            console.log('start build and append');
             this.shadow.appendChild(this.build());
             this.setListeners();
             this.setExternalListeners();
@@ -84,29 +78,21 @@ class Component extends HTMLElement {
         this.afterPatch();
     }
     async setListeners() {
-        this.attachedListeners.forEach(({ element, type, handler }) => {
-            element.removeEventListener(type, handler);
-        });
+        for (const listener of this.attachedListeners) {
+            listener.element.removeEventListener(listener.type, listener.handler);
+        }
         this.attachedListeners = [];
-        console.log('removed listeners');
         const listeners = this.listeners;
-        console.log(listeners);
         if (listeners) {
             const listenerKeys = Object.keys(listeners);
             for (let key of listenerKeys) {
                 const eventFn = listeners[key];
                 const [selector, eventType] = key.split(':');
                 const elements = this.findAll(selector);
-                console.log(elements);
                 for (let element of elements) {
                     const boundHandler = eventFn.bind(this);
                     element.addEventListener(eventType, boundHandler);
                     this.attachedListeners.push({
-                        element,
-                        type: eventType,
-                        handler: boundHandler,
-                    });
-                    console.log({
                         element,
                         type: eventType,
                         handler: boundHandler,
@@ -146,10 +132,10 @@ exports.Component = Component;
 
 /***/ }),
 
-/***/ "./node_modules/event-driven-web-components/dist/src/Events.js":
-/*!*********************************************************************!*\
-  !*** ./node_modules/event-driven-web-components/dist/src/Events.js ***!
-  \*********************************************************************/
+/***/ "./node_modules/event-driven-web-components/dist/Events.js":
+/*!*****************************************************************!*\
+  !*** ./node_modules/event-driven-web-components/dist/Events.js ***!
+  \*****************************************************************/
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -189,10 +175,10 @@ exports.Events = Events;
 
 /***/ }),
 
-/***/ "./node_modules/event-driven-web-components/dist/src/is-json.js":
-/*!**********************************************************************!*\
-  !*** ./node_modules/event-driven-web-components/dist/src/is-json.js ***!
-  \**********************************************************************/
+/***/ "./node_modules/event-driven-web-components/dist/is-json.js":
+/*!******************************************************************!*\
+  !*** ./node_modules/event-driven-web-components/dist/is-json.js ***!
+  \******************************************************************/
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -214,10 +200,10 @@ function isJSON(value) {
 
 /***/ }),
 
-/***/ "./node_modules/event-driven-web-components/dist/src/patch-dom.js":
-/*!************************************************************************!*\
-  !*** ./node_modules/event-driven-web-components/dist/src/patch-dom.js ***!
-  \************************************************************************/
+/***/ "./node_modules/event-driven-web-components/dist/patch-dom.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/event-driven-web-components/dist/patch-dom.js ***!
+  \********************************************************************/
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -2907,8 +2893,8 @@ exports.MIDDLE_BUTTON = 1;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Component = void 0;
-const Component_js_1 = __webpack_require__(/*! event-driven-web-components/dist/src/Component.js */ "./node_modules/event-driven-web-components/dist/src/Component.js");
-class Component extends Component_js_1.Component {
+const Component_1 = __webpack_require__(/*! event-driven-web-components/dist/Component */ "./node_modules/event-driven-web-components/dist/Component.js");
+class Component extends Component_1.Component {
     isSingleton = false;
     globalStylesheets = [
         '/dist/index.css'
@@ -3057,7 +3043,7 @@ exports.Dom = Dom;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Events = void 0;
-const Events_1 = __webpack_require__(/*! event-driven-web-components/dist/src/Events */ "./node_modules/event-driven-web-components/dist/src/Events.js");
+const Events_1 = __webpack_require__(/*! event-driven-web-components/dist/Events */ "./node_modules/event-driven-web-components/dist/Events.js");
 class Events extends Events_1.Events {
 }
 exports.Events = Events;

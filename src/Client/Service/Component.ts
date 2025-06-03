@@ -1,4 +1,4 @@
-import { Component as BaseComponent } from 'event-driven-web-components/dist/src/Component.js'
+import { Component as BaseComponent } from 'event-driven-web-components/dist/Component'
 
 export type EventFn<T = any> = (event: CustomEvent<T>) => void
 
