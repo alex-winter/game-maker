@@ -26,6 +26,7 @@ import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlace
 import { userDataRepository } from 'Client/Service/Repository/UserDataRepository'
 import { SideMenu } from 'Client/Component/SideMenu/SideMenu'
 import { LayerListing } from 'Client/Component/LayerListing/LayerListing'
+import { FileListing } from 'Client/Component/SheetListing/SheetListing'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -252,20 +253,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const layerElements = layers.map(layer => Dom.makeComponent(CanvasLayer, { layer, userData }))
 
-    // Object.entries(userData.windows).forEach(([componentUuid, windowConfiguration]) => {
-    //     WindowBoxFactory.make(
-    //         Dom.makeComponent(
-    //             COMPONENT_UUID_LOOKUP.get(componentUuid)!,
-    //             windowConfiguration.componentConfigration.dataset
-    //         ),
-    //         windowConfiguration.title,
-    //         windowConfiguration,
-    //     )
-    // })
+    // // Object.entries(userData.windows).forEach(([componentUuid, windowConfiguration]) => {
+    // //     WindowBoxFactory.make(
+    // //         Dom.makeComponent(
+    // //             COMPONENT_UUID_LOOKUP.get(componentUuid)!,
+    // //             windowConfiguration.componentConfigration.dataset
+    // //         ),
+    // //         windowConfiguration.title,
+    // //         windowConfiguration,
+    // //     )
+    // // })
 
     const tools = Dom.makeComponent(CanvasTools, { currentTool: userData.currentTool })
-
-    console.log(sideMenu)
 
     document.body.append(
         sideMenu,

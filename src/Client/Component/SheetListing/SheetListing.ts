@@ -13,6 +13,8 @@ export class FileListing extends Component {
         '.open-sheet-button:click': this.handleOpenSheetButtonClick
     }
 
+    private sheets!: Sheet[]
+
     protected css(): string {
         return /*css*/`
             :host {
@@ -31,14 +33,16 @@ export class FileListing extends Component {
         `
     }
 
+    protected async setup(): Promise<void> {
+        this.sheets = await sheetRepository.getAll()
+    }
+
     protected build(): HTMLElement {
         const container = Dom.div('container')
 
-        sheetRepository.getAll().then(sheets => {
-            container.append(
-                ...sheets.map(this.buildSheet.bind(this))
-            )
-        })
+        container.append(
+            ...this.sheets.map(this.buildSheet.bind(this))
+        )
 
         return container
     }
@@ -98,7 +102,6 @@ export class FileListing extends Component {
 
     private handleOpenSheetButtonClick(event: Event): void {
         const button = event.target as HTMLButtonElement
-
         Events.emit('open-sheet', button.dataset.sheetName as string)
     }
 }

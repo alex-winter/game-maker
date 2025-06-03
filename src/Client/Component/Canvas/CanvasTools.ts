@@ -73,7 +73,6 @@ export class CanvasTools extends Component {
     }
 
     private handleFillToolClick(event: Event): void {
-        console.log('here')
         Events.emit('tool-selection', this.currentTool = 'fill')
         this.patch()
     }

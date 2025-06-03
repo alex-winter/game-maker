@@ -6,40 +6,25 @@
 /*!************************************************************************!*\
   !*** ./node_modules/event-driven-web-components/dist/src/Component.js ***!
   \************************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   Component: () => (/* binding */ Component)
-/* harmony export */ });
-/* harmony import */ var _Events__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Events */ "./node_modules/event-driven-web-components/dist/src/Events.js");
-/* harmony import */ var _is_json__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./is-json */ "./node_modules/event-driven-web-components/dist/src/is-json.js");
-/* harmony import */ var _patch_dom__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./patch-dom */ "./node_modules/event-driven-web-components/dist/src/patch-dom.js");
-var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Component = void 0;
+const Events_1 = __webpack_require__(/*! ./Events */ "./node_modules/event-driven-web-components/dist/src/Events.js");
+const is_json_1 = __webpack_require__(/*! ./is-json */ "./node_modules/event-driven-web-components/dist/src/is-json.js");
+const patch_dom_1 = __webpack_require__(/*! ./patch-dom */ "./node_modules/event-driven-web-components/dist/src/patch-dom.js");
 class Component extends HTMLElement {
+    globalStylesheets = undefined;
+    parsedDataset = {};
+    listeners = {};
+    externalListeners = {};
+    shadow;
+    externalHandlers = [];
+    attachedListeners = [];
     constructor() {
         super();
-        this.globalStylesheets = undefined;
-        this.parsedDataset = {};
-        this.listeners = {};
-        this.externalListeners = {};
-        this.externalHandlers = [];
-        this.attachedListeners = [];
         this.shadow = this.attachShadow({ mode: 'open' });
-    }
-    setup() {
-        return __awaiter(this, void 0, void 0, function* () { });
     }
     afterBuild() { }
     afterPatch() { }
@@ -50,14 +35,17 @@ class Component extends HTMLElement {
         this.shadow.host.remove();
     }
     connectedCallback() {
+        console.log(typeof this.setup === 'function');
+        console.log(this.setup);
         const datasetKeys = Object.keys(this.dataset);
         for (let key of datasetKeys) {
             const value = this.dataset[key];
-            this.parsedDataset[key] = (0,_is_json__WEBPACK_IMPORTED_MODULE_1__.isJSON)(value)
+            this.parsedDataset[key] = (0, is_json_1.isJSON)(value)
                 ? JSON.parse(value)
                 : value;
         }
-        const build = () => __awaiter(this, void 0, void 0, function* () {
+        const build = async () => {
+            console.log('start build function');
             if (this.globalStylesheets) {
                 for (let href of this.globalStylesheets) {
                     const link = document.createElement('link');
@@ -66,18 +54,22 @@ class Component extends HTMLElement {
                     this.shadow.append(link);
                 }
             }
-            yield this.setup();
+            if (typeof this.setup === 'function') {
+                await this.setup();
+            }
+            console.log('end setup');
             const css = this.css().trim();
             if (css.length) {
                 const sheet = new CSSStyleSheet();
                 sheet.replaceSync(css);
                 this.shadow.adoptedStyleSheets = [sheet];
             }
+            console.log('start build and append');
             this.shadow.appendChild(this.build());
             this.setListeners();
             this.setExternalListeners();
             this.afterBuild();
-        });
+        };
         build();
     }
     patch() {
@@ -86,57 +78,61 @@ class Component extends HTMLElement {
         if (firstChild.length > 1) {
             throw new Error('There should only be one root child of the shadow dom');
         }
-        (0,_patch_dom__WEBPACK_IMPORTED_MODULE_2__.patchDOM)(firstChild[0], this.build());
+        (0, patch_dom_1.patchDOM)(firstChild[0], this.build());
         this.setListeners();
         this.setExternalListeners();
         this.afterPatch();
     }
-    setListeners() {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.attachedListeners.forEach(({ element, type, handler }) => {
-                element.removeEventListener(type, handler);
-            });
-            this.attachedListeners = [];
-            const listeners = this.listeners;
-            if (listeners) {
-                const listenerKeys = Object.keys(listeners);
-                for (let key of listenerKeys) {
-                    const eventFn = listeners[key];
-                    const [selector, eventType] = key.split(':');
-                    const elements = this.findAll(selector);
-                    for (let element of elements) {
-                        const boundHandler = eventFn.bind(this);
-                        element.addEventListener(eventType, boundHandler);
-                        this.attachedListeners.push({
-                            element,
-                            type: eventType,
-                            handler: boundHandler,
-                        });
-                    }
-                }
-            }
+    async setListeners() {
+        this.attachedListeners.forEach(({ element, type, handler }) => {
+            element.removeEventListener(type, handler);
         });
-    }
-    setExternalListeners() {
-        return __awaiter(this, void 0, void 0, function* () {
-            for (let handler of this.externalHandlers) {
-                _Events__WEBPACK_IMPORTED_MODULE_0__.Events.unlisten(handler.key, handler.handler);
-            }
-            this.externalHandlers = [];
-            const listeners = this.externalListeners;
-            if (listeners) {
-                const listenerKeys = Object.keys(listeners);
-                for (let key of listenerKeys) {
-                    const eventFn = listeners[key];
+        this.attachedListeners = [];
+        console.log('removed listeners');
+        const listeners = this.listeners;
+        console.log(listeners);
+        if (listeners) {
+            const listenerKeys = Object.keys(listeners);
+            for (let key of listenerKeys) {
+                const eventFn = listeners[key];
+                const [selector, eventType] = key.split(':');
+                const elements = this.findAll(selector);
+                console.log(elements);
+                for (let element of elements) {
                     const boundHandler = eventFn.bind(this);
-                    _Events__WEBPACK_IMPORTED_MODULE_0__.Events.listen(key, boundHandler);
-                    this.externalHandlers.push({
-                        key,
+                    element.addEventListener(eventType, boundHandler);
+                    this.attachedListeners.push({
+                        element,
+                        type: eventType,
+                        handler: boundHandler,
+                    });
+                    console.log({
+                        element,
+                        type: eventType,
                         handler: boundHandler,
                     });
                 }
             }
-        });
+        }
+    }
+    async setExternalListeners() {
+        for (let handler of this.externalHandlers) {
+            Events_1.Events.unlisten(handler.key, handler.handler);
+        }
+        this.externalHandlers = [];
+        const listeners = this.externalListeners;
+        if (listeners) {
+            const listenerKeys = Object.keys(listeners);
+            for (let key of listenerKeys) {
+                const eventFn = listeners[key];
+                const boundHandler = eventFn.bind(this);
+                Events_1.Events.listen(key, boundHandler);
+                this.externalHandlers.push({
+                    key,
+                    handler: boundHandler,
+                });
+            }
+        }
     }
     findOne(query) {
         return this.shadow.querySelector(query);
@@ -145,6 +141,7 @@ class Component extends HTMLElement {
         return Array.from(this.shadow.querySelectorAll(query));
     }
 }
+exports.Component = Component;
 //# sourceMappingURL=Component.js.map
 
 /***/ }),
@@ -153,16 +150,16 @@ class Component extends HTMLElement {
 /*!*********************************************************************!*\
   !*** ./node_modules/event-driven-web-components/dist/src/Events.js ***!
   \*********************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+/***/ ((__unused_webpack_module, exports) => {
 
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   Events: () => (/* binding */ Events)
-/* harmony export */ });
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Events = void 0;
 class Events {
     constructor() {
         throw new Error('This service is static only, can not be constructed');
     }
+    static listenersMap = new Map();
     static emit(key, detail = undefined) {
         document.dispatchEvent(new CustomEvent(key, {
             detail,
@@ -182,13 +179,12 @@ class Events {
         document.addEventListener(key, callback);
     }
     static unlisten(key, callback) {
-        var _a;
         const eventListener = callback;
         document.removeEventListener(key, eventListener);
-        (_a = this.listenersMap.get(key)) === null || _a === void 0 ? void 0 : _a.delete(eventListener);
+        this.listenersMap.get(key)?.delete(eventListener);
     }
 }
-Events.listenersMap = new Map();
+exports.Events = Events;
 //# sourceMappingURL=Events.js.map
 
 /***/ }),
@@ -197,12 +193,11 @@ Events.listenersMap = new Map();
 /*!**********************************************************************!*\
   !*** ./node_modules/event-driven-web-components/dist/src/is-json.js ***!
   \**********************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+/***/ ((__unused_webpack_module, exports) => {
 
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   isJSON: () => (/* binding */ isJSON)
-/* harmony export */ });
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.isJSON = isJSON;
 function isJSON(value) {
     if (typeof value !== 'string') {
         return false;
@@ -211,7 +206,7 @@ function isJSON(value) {
         const parsed = JSON.parse(value);
         return typeof parsed === 'object' && parsed !== null;
     }
-    catch (_a) {
+    catch {
         return false;
     }
 }
@@ -223,12 +218,11 @@ function isJSON(value) {
 /*!************************************************************************!*\
   !*** ./node_modules/event-driven-web-components/dist/src/patch-dom.js ***!
   \************************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+/***/ ((__unused_webpack_module, exports) => {
 
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   patchDOM: () => (/* binding */ patchDOM)
-/* harmony export */ });
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.patchDOM = patchDOM;
 function patchDOM(oldNode, newNode) {
     if (!oldNode || !newNode)
         // Replace if node types or node names differ
@@ -1730,7 +1724,6 @@ class CanvasTools extends Component_1.Component {
         this.patch();
     }
     handleFillToolClick(event) {
-        console.log('here');
         Events_1.Events.emit('tool-selection', this.currentTool = 'fill');
         this.patch();
     }
@@ -2361,6 +2354,7 @@ class FileListing extends Component_1.Component {
     listeners = {
         '.open-sheet-button:click': this.handleOpenSheetButtonClick
     };
+    sheets;
     css() {
         return /*css*/ `
             :host {
@@ -2378,11 +2372,12 @@ class FileListing extends Component_1.Component {
             }
         `;
     }
+    async setup() {
+        this.sheets = await SheetRepository_1.sheetRepository.getAll();
+    }
     build() {
         const container = Dom_1.Dom.div('container');
-        SheetRepository_1.sheetRepository.getAll().then(sheets => {
-            container.append(...sheets.map(this.buildSheet.bind(this)));
-        });
+        container.append(...this.sheets.map(this.buildSheet.bind(this)));
         return container;
     }
     getContainer() {
@@ -3498,23 +3493,6 @@ exports.LayerFactory = LayerFactory;
 /******/ 	}
 /******/ 	
 /************************************************************************/
-/******/ 	/* webpack/runtime/define property getters */
-/******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
-/******/ 		__webpack_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 				}
-/******/ 			}
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
-/******/ 	(() => {
-/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/make namespace object */
 /******/ 	(() => {
 /******/ 		// define __esModule on exports
@@ -3702,18 +3680,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const layerListing = Dom_1.Dom.makeComponent(LayerListing_1.LayerListing, { layers });
     sideMenu.append(layerListing);
     const layerElements = layers.map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer, userData }));
-    // Object.entries(userData.windows).forEach(([componentUuid, windowConfiguration]) => {
-    //     WindowBoxFactory.make(
-    //         Dom.makeComponent(
-    //             COMPONENT_UUID_LOOKUP.get(componentUuid)!,
-    //             windowConfiguration.componentConfigration.dataset
-    //         ),
-    //         windowConfiguration.title,
-    //         windowConfiguration,
-    //     )
-    // })
+    // // Object.entries(userData.windows).forEach(([componentUuid, windowConfiguration]) => {
+    // //     WindowBoxFactory.make(
+    // //         Dom.makeComponent(
+    // //             COMPONENT_UUID_LOOKUP.get(componentUuid)!,
+    // //             windowConfiguration.componentConfigration.dataset
+    // //         ),
+    // //         windowConfiguration.title,
+    // //         windowConfiguration,
+    // //     )
+    // // })
     const tools = Dom_1.Dom.makeComponent(CanvasTools_1.CanvasTools, { currentTool: userData.currentTool });
-    console.log(sideMenu);
     document.body.append(sideMenu, tools, ...layerElements);
 });
 
