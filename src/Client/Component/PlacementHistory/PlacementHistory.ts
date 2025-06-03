@@ -27,11 +27,13 @@ export class PlacementHistory extends Component {
         )
         container.appendChild(header)
 
-        loadedPlacementRepository.get().forEach(placement => {
+        const loadedPlacements = loadedPlacementRepository.get()
+
+        for (const loadedPlacement of loadedPlacements) {
             container.append(
-                this.buildPlacementRow(placement)
+                this.buildPlacementRow(loadedPlacement)
             )
-        })
+        }
 
         return container
     }
@@ -87,6 +89,8 @@ export class PlacementHistory extends Component {
         event.stopPropagation()
         const row = (event.target as HTMLElement).closest('.placement-row') as HTMLElement
         const uuid = row?.dataset.uuid
+
+        // row.remove()
 
         Events.emit('request-placement-deletion', uuid)
     }

@@ -2196,9 +2196,10 @@ class PlacementHistory extends Component_1.Component {
         const header = Dom_1.Dom.div('placement-history-header');
         header.append(Dom_1.Dom.div('column', 'coords-col', 'header-cell').appendChild(document.createTextNode('Coordinates')), Dom_1.Dom.div('column', 'dims-col', 'header-cell').appendChild(document.createTextNode('Dimensions')), Dom_1.Dom.div('column', 'image-col', 'header-cell').appendChild(document.createTextNode('Image')), Dom_1.Dom.div('column', 'tools-col', 'header-cell').appendChild(document.createTextNode('Tools')));
         container.appendChild(header);
-        LoadedPlacement_1.loadedPlacementRepository.get().forEach(placement => {
-            container.append(this.buildPlacementRow(placement));
-        });
+        const loadedPlacements = LoadedPlacement_1.loadedPlacementRepository.get();
+        for (const loadedPlacement of loadedPlacements) {
+            container.append(this.buildPlacementRow(loadedPlacement));
+        }
         return container;
     }
     handlePlacementAdded() {
@@ -2236,6 +2237,7 @@ class PlacementHistory extends Component_1.Component {
         event.stopPropagation();
         const row = event.target.closest('.placement-row');
         const uuid = row?.dataset.uuid;
+        // row.remove()
         Events_1.Events.emit('request-placement-deletion', uuid);
     }
     css() {
