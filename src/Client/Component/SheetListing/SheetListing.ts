@@ -1,4 +1,3 @@
-import { EVENTS } from 'Client/Constants/events'
 import { Sheet } from 'Client/Model/Sheet'
 import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
@@ -100,6 +99,6 @@ export class FileListing extends Component {
     private handleOpenSheetButtonClick(event: Event): void {
         const button = event.target as HTMLButtonElement
 
-        Events.emitOpenSheet(button.dataset.sheetName as string)
+        Events.emit('open-sheet', button.dataset.sheetName as string)
     }
 }

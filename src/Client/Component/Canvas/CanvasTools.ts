@@ -1,4 +1,4 @@
-import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
+import { Component, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 
@@ -42,7 +42,7 @@ export class CanvasTools extends Component {
     }
 
     protected async setup(): Promise<void> {
-        this.currentTool = this.parameters.currentTool
+        this.currentTool = this.parsedDataset.currentTool
     }
 
     protected build(): HTMLElement {

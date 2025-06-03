@@ -37,7 +37,7 @@ export class SideMenu extends Component {
         const option = Dom.button()
         const icon = Dom.i('fa-solid', 'fa-images')
 
-        option.addEventListener('click', () => Events.emitSheetImportOpen())
+        option.addEventListener('click', () => Events.emit('open-sheet-importer'))
 
         option.append(icon)
 

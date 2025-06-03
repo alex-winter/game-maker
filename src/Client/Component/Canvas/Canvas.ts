@@ -102,7 +102,7 @@ export class Canvas2D extends Component {
     }
 
     protected async setup(): Promise<void> {
-        this.msPerFrame = 1000 / this.parameters.fps | 30
+        this.msPerFrame = 1000 / this.parsedDataset.fps | 30
     }
 
     protected build(): HTMLElement {

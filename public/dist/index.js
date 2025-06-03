@@ -2,6 +2,296 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
+/***/ "./node_modules/event-driven-web-components/dist/src/Component.js":
+/*!************************************************************************!*\
+  !*** ./node_modules/event-driven-web-components/dist/src/Component.js ***!
+  \************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Component: () => (/* binding */ Component)
+/* harmony export */ });
+/* harmony import */ var _Events__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Events */ "./node_modules/event-driven-web-components/dist/src/Events.js");
+/* harmony import */ var _is_json__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./is-json */ "./node_modules/event-driven-web-components/dist/src/is-json.js");
+/* harmony import */ var _patch_dom__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./patch-dom */ "./node_modules/event-driven-web-components/dist/src/patch-dom.js");
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+
+
+
+class Component extends HTMLElement {
+    constructor() {
+        super();
+        this.globalStylesheets = undefined;
+        this.parsedDataset = {};
+        this.listeners = {};
+        this.externalListeners = {};
+        this.externalHandlers = [];
+        this.attachedListeners = [];
+        this.shadow = this.attachShadow({ mode: 'open' });
+    }
+    setup() {
+        return __awaiter(this, void 0, void 0, function* () { });
+    }
+    afterBuild() { }
+    afterPatch() { }
+    css() {
+        return '';
+    }
+    destroy() {
+        this.shadow.host.remove();
+    }
+    connectedCallback() {
+        const datasetKeys = Object.keys(this.dataset);
+        for (let key of datasetKeys) {
+            const value = this.dataset[key];
+            this.parsedDataset[key] = (0,_is_json__WEBPACK_IMPORTED_MODULE_1__.isJSON)(value)
+                ? JSON.parse(value)
+                : value;
+        }
+        const build = () => __awaiter(this, void 0, void 0, function* () {
+            if (this.globalStylesheets) {
+                for (let href of this.globalStylesheets) {
+                    const link = document.createElement('link');
+                    link.rel = 'stylesheet';
+                    link.href = href;
+                    this.shadow.append(link);
+                }
+            }
+            yield this.setup();
+            const css = this.css().trim();
+            if (css.length) {
+                const sheet = new CSSStyleSheet();
+                sheet.replaceSync(css);
+                this.shadow.adoptedStyleSheets = [sheet];
+            }
+            this.shadow.appendChild(this.build());
+            this.setListeners();
+            this.setExternalListeners();
+            this.afterBuild();
+        });
+        build();
+    }
+    patch() {
+        const firstChild = Array.from(this.shadow.children)
+            .filter(child => child.tagName !== 'LINK');
+        if (firstChild.length > 1) {
+            throw new Error('There should only be one root child of the shadow dom');
+        }
+        (0,_patch_dom__WEBPACK_IMPORTED_MODULE_2__.patchDOM)(firstChild[0], this.build());
+        this.setListeners();
+        this.setExternalListeners();
+        this.afterPatch();
+    }
+    setListeners() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.attachedListeners.forEach(({ element, type, handler }) => {
+                element.removeEventListener(type, handler);
+            });
+            this.attachedListeners = [];
+            const listeners = this.listeners;
+            if (listeners) {
+                const listenerKeys = Object.keys(listeners);
+                for (let key of listenerKeys) {
+                    const eventFn = listeners[key];
+                    const [selector, eventType] = key.split(':');
+                    const elements = this.findAll(selector);
+                    for (let element of elements) {
+                        const boundHandler = eventFn.bind(this);
+                        element.addEventListener(eventType, boundHandler);
+                        this.attachedListeners.push({
+                            element,
+                            type: eventType,
+                            handler: boundHandler,
+                        });
+                    }
+                }
+            }
+        });
+    }
+    setExternalListeners() {
+        return __awaiter(this, void 0, void 0, function* () {
+            for (let handler of this.externalHandlers) {
+                _Events__WEBPACK_IMPORTED_MODULE_0__.Events.unlisten(handler.key, handler.handler);
+            }
+            this.externalHandlers = [];
+            const listeners = this.externalListeners;
+            if (listeners) {
+                const listenerKeys = Object.keys(listeners);
+                for (let key of listenerKeys) {
+                    const eventFn = listeners[key];
+                    const boundHandler = eventFn.bind(this);
+                    _Events__WEBPACK_IMPORTED_MODULE_0__.Events.listen(key, boundHandler);
+                    this.externalHandlers.push({
+                        key,
+                        handler: boundHandler,
+                    });
+                }
+            }
+        });
+    }
+    findOne(query) {
+        return this.shadow.querySelector(query);
+    }
+    findAll(query) {
+        return Array.from(this.shadow.querySelectorAll(query));
+    }
+}
+//# sourceMappingURL=Component.js.map
+
+/***/ }),
+
+/***/ "./node_modules/event-driven-web-components/dist/src/Events.js":
+/*!*********************************************************************!*\
+  !*** ./node_modules/event-driven-web-components/dist/src/Events.js ***!
+  \*********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Events: () => (/* binding */ Events)
+/* harmony export */ });
+class Events {
+    constructor() {
+        throw new Error('This service is static only, can not be constructed');
+    }
+    static emit(key, detail = undefined) {
+        document.dispatchEvent(new CustomEvent(key, {
+            detail,
+            bubbles: false,
+            composed: true,
+        }));
+    }
+    static listen(key, callback) {
+        const eventListener = callback;
+        this.addListener(key, eventListener);
+        if (!this.listenersMap.has(key)) {
+            this.listenersMap.set(key, new Set());
+        }
+        this.listenersMap.get(key).add(eventListener);
+    }
+    static addListener(key, callback) {
+        document.addEventListener(key, callback);
+    }
+    static unlisten(key, callback) {
+        var _a;
+        const eventListener = callback;
+        document.removeEventListener(key, eventListener);
+        (_a = this.listenersMap.get(key)) === null || _a === void 0 ? void 0 : _a.delete(eventListener);
+    }
+}
+Events.listenersMap = new Map();
+//# sourceMappingURL=Events.js.map
+
+/***/ }),
+
+/***/ "./node_modules/event-driven-web-components/dist/src/is-json.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/event-driven-web-components/dist/src/is-json.js ***!
+  \**********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   isJSON: () => (/* binding */ isJSON)
+/* harmony export */ });
+function isJSON(value) {
+    if (typeof value !== 'string') {
+        return false;
+    }
+    try {
+        const parsed = JSON.parse(value);
+        return typeof parsed === 'object' && parsed !== null;
+    }
+    catch (_a) {
+        return false;
+    }
+}
+//# sourceMappingURL=is-json.js.map
+
+/***/ }),
+
+/***/ "./node_modules/event-driven-web-components/dist/src/patch-dom.js":
+/*!************************************************************************!*\
+  !*** ./node_modules/event-driven-web-components/dist/src/patch-dom.js ***!
+  \************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   patchDOM: () => (/* binding */ patchDOM)
+/* harmony export */ });
+function patchDOM(oldNode, newNode) {
+    if (!oldNode || !newNode)
+        // Replace if node types or node names differ
+        if (oldNode.nodeType !== newNode.nodeType || oldNode.nodeName !== newNode.nodeName) {
+            if (oldNode.nodeType === Node.ELEMENT_NODE ||
+                oldNode.nodeType === Node.TEXT_NODE) {
+                oldNode.replaceWith(newNode.cloneNode(true));
+            }
+            return;
+        }
+    // Update text content for text nodes
+    if (oldNode.nodeType === Node.TEXT_NODE && newNode.nodeType === Node.TEXT_NODE) {
+        const oldText = oldNode;
+        const newText = newNode;
+        if (oldText.nodeValue !== newText.nodeValue) {
+            oldText.nodeValue = newText.nodeValue;
+        }
+        return;
+    }
+    // If we're here, assume ELEMENT_NODEs
+    if (oldNode.nodeType === Node.ELEMENT_NODE && newNode.nodeType === Node.ELEMENT_NODE) {
+        const oldEl = oldNode;
+        const newEl = newNode;
+        // Update attributes
+        const oldAttrs = oldEl.attributes;
+        const newAttrs = newEl.attributes;
+        // Add or update attributes
+        for (let i = 0; i < newAttrs.length; i++) {
+            const attr = newAttrs[i];
+            if (oldEl.getAttribute(attr.name) !== attr.value) {
+                oldEl.setAttribute(attr.name, attr.value);
+            }
+        }
+        // Remove old attributes not present in new
+        for (let i = 0; i < oldAttrs.length; i++) {
+            const attr = oldAttrs[i];
+            if (!newEl.hasAttribute(attr.name)) {
+                oldEl.removeAttribute(attr.name);
+            }
+        }
+        // Recursively patch children, skipping custom elements
+        const oldChildren = Array.from(oldEl.childNodes);
+        const newChildren = Array.from(newEl.childNodes);
+        const max = Math.max(oldChildren.length, newChildren.length);
+        for (let i = 0; i < max; i++) {
+            const oldChild = oldChildren[i];
+            const newChild = newChildren[i];
+            if (!oldChild && newChild) {
+                oldEl.appendChild(newChild.cloneNode(true));
+            }
+            else if (oldChild && !newChild) {
+                oldEl.removeChild(oldChild);
+            }
+            else if (oldChild && newChild) {
+                patchDOM(oldChild, newChild);
+            }
+        }
+    }
+}
+//# sourceMappingURL=patch-dom.js.map
+
+/***/ }),
+
 /***/ "./node_modules/uuid/dist/cjs-browser/index.js":
 /*!*****************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/index.js ***!
@@ -857,6 +1147,15 @@ exports.AnimationMaker = void 0;
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 class AnimationMaker extends Component_1.Component {
+    listeners = {};
+    css() {
+        return /*css*/ `
+            .container {
+                background: white;
+                padding: 20px;
+            }
+        `;
+    }
     build() {
         const container = Dom_1.Dom.div('container');
         return container;
@@ -945,7 +1244,7 @@ class Canvas2D extends Component_1.Component {
             rect.y > viewBottom);
     }
     async setup() {
-        this.msPerFrame = 1000 / this.parameters.fps | 30;
+        this.msPerFrame = 1000 / this.parsedDataset.fps | 30;
     }
     build() {
         const canvas = Dom_1.Dom.canvas();
@@ -1085,14 +1384,14 @@ class CanvasLayer extends Component_1.Component {
         });
     }
     async setup() {
-        this.layer = this.parameters.layer;
+        this.layer = this.parsedDataset.layer;
         this.isCollisionLayer = this.layer.type === layers_1.LAYERS.typeCollision;
         this.currentImage = await Dom_1.Dom.image(this.isCollisionLayer
             ? CanvasLayer.COLLISION_IMAGE
             : CanvasLayer.DEFAULT_IMAGE);
         this.layer.placements.forEach(this.loadPlacement.bind(this));
-        this.viewCoordinates.x = this.parameters.userData?.lastViewPosition?.x || 0;
-        this.viewCoordinates.y = this.parameters.userData?.lastViewPosition?.y || 0;
+        this.viewCoordinates.x = this.parsedDataset.userData?.lastViewPosition?.x || 0;
+        this.viewCoordinates.y = this.parsedDataset.userData?.lastViewPosition?.y || 0;
     }
     build() {
         const container = Dom_1.Dom.div('container');
@@ -1411,7 +1710,7 @@ class CanvasTools extends Component_1.Component {
         `;
     }
     async setup() {
-        this.currentTool = this.parameters.currentTool;
+        this.currentTool = this.parsedDataset.currentTool;
     }
     build() {
         const container = Dom_1.Dom.div('container');
@@ -1534,7 +1833,7 @@ class FileUploader extends Component_1.Component {
         }
     }
     handleFiles(files) {
-        Events_1.Events.emitFilesUploadSubmitted(Array.from(files));
+        Events_1.Events.emit('upload-files-submission', Array.from(files));
     }
 }
 exports.FileUploader = FileUploader;
@@ -1699,7 +1998,7 @@ class LayerItem extends Component_1.Component {
         `;
     }
     async setup() {
-        this.layer = this.parameters.layer;
+        this.layer = this.parsedDataset.layer;
     }
     build() {
         const container = Dom_1.Dom.div('container');
@@ -2124,7 +2423,7 @@ class FileListing extends Component_1.Component {
     }
     handleOpenSheetButtonClick(event) {
         const button = event.target;
-        Events_1.Events.emitOpenSheet(button.dataset.sheetName);
+        Events_1.Events.emit('open-sheet', button.dataset.sheetName);
     }
 }
 exports.FileListing = FileListing;
@@ -2169,7 +2468,7 @@ class SideMenu extends Component_1.Component {
     buildSheetImportOption() {
         const option = Dom_1.Dom.button();
         const icon = Dom_1.Dom.i('fa-solid', 'fa-images');
-        option.addEventListener('click', () => Events_1.Events.emitSheetImportOpen());
+        option.addEventListener('click', () => Events_1.Events.emit('open-sheet-importer'));
         option.append(icon);
         return option;
     }
@@ -2423,13 +2722,13 @@ class WindowBox extends Component_1.Component {
         `;
     }
     async setup() {
-        this.configuration = this.parameters.configuration;
+        this.configuration = this.parsedDataset.configuration;
     }
     build() {
         const container = Dom_1.Dom.div('window-box');
         const content = Dom_1.Dom.div('content');
         const slot = Dom_1.Dom.slot();
-        container.addEventListener('mousedown', (e) => Events_1.Events.emitMouseDownOnWindowBox(this));
+        container.addEventListener('mousedown', (e) => Events_1.Events.emit('mouse-down-window-box', this));
         content.append(slot);
         container.append(this.buildHeader(), content);
         return container;
@@ -2613,105 +2912,12 @@ exports.MIDDLE_BUTTON = 1;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Component = void 0;
-const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
-const is_json_1 = __webpack_require__(/*! Client/Service/is-json */ "./src/Client/Service/is-json.ts");
-const patch_dom_1 = __webpack_require__(/*! Client/Service/patch-dom */ "./src/Client/Service/patch-dom.ts");
-class Component extends HTMLElement {
-    shadow;
+const Component_js_1 = __webpack_require__(/*! event-driven-web-components/dist/src/Component.js */ "./node_modules/event-driven-web-components/dist/src/Component.js");
+class Component extends Component_js_1.Component {
     isSingleton = false;
-    parameters = {};
-    listeners = {};
-    externalListeners = {};
-    externalHandlers = [];
-    attachedListeners = [];
-    constructor() {
-        super();
-        this.shadow = this.attachShadow({ mode: 'open' });
-    }
-    async setup() { }
-    afterBuild() { }
-    css() {
-        return '';
-    }
-    destroy() {
-        this.shadow.host.remove();
-    }
-    connectedCallback() {
-        Object.entries(this.dataset).forEach(([key, value]) => {
-            this.parameters[key] = (0, is_json_1.isJSON)(value)
-                ? JSON.parse(value)
-                : value;
-        });
-        this.setup()
-            .then(() => {
-            const css = this.css().trim();
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = '/dist/index.css';
-            this.shadow.append(link);
-            if (css.length) {
-                const sheet = new CSSStyleSheet();
-                sheet.replaceSync(css);
-                this.shadow.adoptedStyleSheets = [sheet];
-            }
-            this.shadow.appendChild(this.build());
-        })
-            .then(() => {
-            this.setListeners();
-            this.setExternalListeners();
-            this.afterBuild();
-        });
-    }
-    afterPatch() {
-    }
-    patch() {
-        const firstChild = Array.from(this.shadow.children)
-            .filter(child => child.tagName !== 'LINK');
-        if (firstChild.length > 1) {
-            throw new Error('there should only be one root child of the shadow dom');
-        }
-        (0, patch_dom_1.patchDOM)(firstChild[0], this.build());
-        this.setListeners();
-        this.setExternalListeners();
-        this.afterPatch();
-    }
-    setListeners() {
-        this.attachedListeners.forEach(({ element, type, handler }) => {
-            element.removeEventListener(type, handler);
-        });
-        this.attachedListeners = [];
-        const listeners = this.listeners;
-        if (listeners) {
-            Object.entries(listeners).forEach(([key, eventFn]) => {
-                const [selector, eventType] = key.split(':');
-                this.findAll(selector).forEach(element => {
-                    const boundHandler = eventFn.bind(this);
-                    element.addEventListener(eventType, boundHandler);
-                    this.attachedListeners.push({ element, type: eventType, handler: boundHandler });
-                });
-            });
-        }
-    }
-    setExternalListeners() {
-        this.externalHandlers.forEach(({ key, handler }) => {
-            Events_1.Events.unlisten(handler, key);
-        });
-        this.externalHandlers = [];
-        const listeners = this.externalListeners;
-        if (listeners) {
-            Object.entries(listeners).forEach(([key, listener]) => {
-                const boundHandler = listener.bind(this);
-                Events_1.Events.listen(boundHandler, key);
-                this.externalHandlers.push({ key, handler: boundHandler });
-            });
-        }
-    }
-    findOne(query) {
-        return this.shadow.querySelector(query);
-    }
-    findAll(query) {
-        return Array.from(this.shadow.querySelectorAll(query));
-    }
+    globalStylesheets = [
+        '/dist/index.css'
+    ];
 }
 exports.Component = Component;
 
@@ -2856,71 +3062,8 @@ exports.Dom = Dom;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Events = void 0;
-const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
-class Events {
-    constructor() {
-        throw new Error('Can not construct');
-    }
-    static listenersMap = new Map();
-    static emit(key, detail = undefined) {
-        document.dispatchEvent(new CustomEvent(key, {
-            detail,
-            bubbles: false,
-            composed: true
-        }));
-    }
-    static listen(callback, ...keys) {
-        keys.forEach(key => {
-            const wrapped = callback;
-            this.addListener(key, wrapped);
-            if (!this.listenersMap.has(key)) {
-                this.listenersMap.set(key, new Set());
-            }
-            this.listenersMap.get(key).add(wrapped);
-        });
-    }
-    static addListener(key, callback) {
-        document.addEventListener(key, callback);
-    }
-    static unlisten(callback, ...keys) {
-        keys.forEach(key => {
-            const wrapped = callback;
-            document.removeEventListener(key, wrapped);
-            this.listenersMap.get(key)?.delete(wrapped);
-        });
-    }
-    static emitFilesUploadSubmitted(files) {
-        Events.emit(events_1.EVENTS.uploadFilesSubmission, files);
-    }
-    static listenToFilesUploadSubmitted(callback) {
-        Events.listen(event => {
-            callback(event.detail);
-        }, events_1.EVENTS.uploadFilesSubmission);
-    }
-    static emitOpenSheet(sheetName) {
-        this.emit(events_1.EVENTS.openSheet, sheetName);
-    }
-    static listenToOpenSheet(callback) {
-        Events.listen(event => {
-            callback(event.detail);
-        }, events_1.EVENTS.openSheet);
-    }
-    static emitMouseDownOnWindowBox(windowBox) {
-        Events.emit(events_1.EVENTS.mouseDownWindowBox, windowBox);
-    }
-    static listenMouseDownOnWindowBox(callback) {
-        Events.listen(event => {
-            callback(event.detail);
-        }, events_1.EVENTS.mouseDownWindowBox);
-    }
-    static emitSheetImportOpen() {
-        Events.emit(events_1.EVENTS.openSheetImporter);
-    }
-    static listenToSheetImportOpen(callback) {
-        Events.listen((event) => {
-            callback();
-        }, events_1.EVENTS.openSheetImporter);
-    }
+const Events_1 = __webpack_require__(/*! event-driven-web-components/dist/src/Events */ "./node_modules/event-driven-web-components/dist/src/Events.js");
+class Events extends Events_1.Events {
 }
 exports.Events = Events;
 
@@ -3288,110 +3431,6 @@ exports.generateImageDataURL = generateImageDataURL;
 
 /***/ }),
 
-/***/ "./src/Client/Service/is-json.ts":
-/*!***************************************!*\
-  !*** ./src/Client/Service/is-json.ts ***!
-  \***************************************/
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isJSON = void 0;
-function isJSON(value) {
-    if (typeof value !== 'string') {
-        return false;
-    }
-    try {
-        const parsed = JSON.parse(value);
-        return typeof parsed === 'object' && parsed !== null;
-    }
-    catch {
-        return false;
-    }
-}
-exports.isJSON = isJSON;
-
-
-/***/ }),
-
-/***/ "./src/Client/Service/patch-dom.ts":
-/*!*****************************************!*\
-  !*** ./src/Client/Service/patch-dom.ts ***!
-  \*****************************************/
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.patchDOM = void 0;
-function patchDOM(oldNode, newNode) {
-    if (!oldNode || !newNode)
-        return;
-    // Replace if node types or node names differ
-    if (oldNode.nodeType !== newNode.nodeType || oldNode.nodeName !== newNode.nodeName) {
-        if (oldNode.nodeType === Node.ELEMENT_NODE ||
-            oldNode.nodeType === Node.TEXT_NODE) {
-            oldNode.replaceWith(newNode.cloneNode(true));
-        }
-        return;
-    }
-    // Update text content for text nodes
-    if (oldNode.nodeType === Node.TEXT_NODE && newNode.nodeType === Node.TEXT_NODE) {
-        const oldText = oldNode;
-        const newText = newNode;
-        if (oldText.nodeValue !== newText.nodeValue) {
-            oldText.nodeValue = newText.nodeValue;
-        }
-        return;
-    }
-    // If we're here, assume ELEMENT_NODEs
-    if (oldNode.nodeType === Node.ELEMENT_NODE && newNode.nodeType === Node.ELEMENT_NODE) {
-        const oldEl = oldNode;
-        const newEl = newNode;
-        // Update attributes
-        const oldAttrs = oldEl.attributes;
-        const newAttrs = newEl.attributes;
-        // Add or update attributes
-        for (let i = 0; i < newAttrs.length; i++) {
-            const attr = newAttrs[i];
-            if (oldEl.getAttribute(attr.name) !== attr.value) {
-                oldEl.setAttribute(attr.name, attr.value);
-            }
-        }
-        // Remove old attributes not present in new
-        for (let i = 0; i < oldAttrs.length; i++) {
-            const attr = oldAttrs[i];
-            if (!newEl.hasAttribute(attr.name)) {
-                oldEl.removeAttribute(attr.name);
-            }
-        }
-        // Recursively patch children, skipping custom elements
-        const oldChildren = Array.from(oldEl.childNodes);
-        const newChildren = Array.from(newEl.childNodes);
-        const max = Math.max(oldChildren.length, newChildren.length);
-        for (let i = 0; i < max; i++) {
-            const oldChild = oldChildren[i];
-            const newChild = newChildren[i];
-            if (!oldChild && newChild) {
-                oldEl.appendChild(newChild.cloneNode(true));
-            }
-            else if (oldChild && !newChild) {
-                oldEl.removeChild(oldChild);
-            }
-            else if (oldChild && newChild) {
-                patchDOM(oldChild, newChild);
-            }
-        }
-    }
-}
-exports.patchDOM = patchDOM;
-function isCustomElement(tagName) {
-    // Either tagName has a hyphen or the custom element is registered
-    return tagName.includes('-') || !!customElements.get(tagName.toLowerCase());
-}
-
-
-/***/ }),
-
 /***/ "./src/Client/styles.css":
 /*!*******************************!*\
   !*** ./src/Client/styles.css ***!
@@ -3459,6 +3498,23 @@ exports.LayerFactory = LayerFactory;
 /******/ 	}
 /******/ 	
 /************************************************************************/
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/make namespace object */
 /******/ 	(() => {
 /******/ 		// define __esModule on exports
@@ -3503,7 +3559,6 @@ const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/Load
 const UserDataRepository_1 = __webpack_require__(/*! Client/Service/Repository/UserDataRepository */ "./src/Client/Service/Repository/UserDataRepository.ts");
 const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */ "./src/Client/Component/SideMenu/SideMenu.ts");
 const LayerListing_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerListing */ "./src/Client/Component/LayerListing/LayerListing.ts");
-const AnimationMaker_1 = __webpack_require__(/*! Client/Component/Animation/AnimationMaker */ "./src/Client/Component/Animation/AnimationMaker.ts");
 components_1.COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor);
 });
@@ -3542,10 +3597,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     });
-    Events_1.Events.listenToFilesUploadSubmitted(files => {
+    Events_1.Events.listen('upload-files-submission', (event) => {
+        const files = event.detail;
         FileUpload_1.FileUpload.uploadMultiple(files);
     });
-    Events_1.Events.listenToOpenSheet(async (sheetName) => {
+    Events_1.Events.listen('open-sheet', async (event) => {
+        const sheetName = event.detail;
         const sheet = SheetRepository_1.sheetRepository.getByName(sheetName);
         if (openSheets.includes(sheet.name)) {
             windowBoxes[sheet.name].flash();
@@ -3560,7 +3617,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             title: sheet.name,
         });
     });
-    Events_1.Events.listen(event => {
+    Events_1.Events.listen('window-destroyed', (event) => {
         const name = event.detail;
         if (openSheets.includes(name)) {
             openSheets = openSheets.filter(item => item !== name);
@@ -3568,14 +3625,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (windowBoxes[name]) {
             delete windowBoxes[name];
         }
-    }, 'window-destroyed');
-    Events_1.Events.listenMouseDownOnWindowBox(windowBox => {
+    });
+    Events_1.Events.listen('mouse-down-window-box', (event) => {
+        const windowBox = event.detail;
         Dom_1.Dom.getAllOfComponent(WindowBox_1.WindowBox).forEach(box => {
             box.zIndexMoveDown();
         });
         windowBox.zIndexMoveUp();
     });
-    Events_1.Events.listenToSheetImportOpen(() => {
+    Events_1.Events.listen('open-sheet-importer', (event) => {
         const component = Dom_1.Dom.makeComponent(SheetImporter_1.SheetImporter);
         WindowBoxFactory_1.WindowBoxFactory.make(component, 'Import Sheets', {
             uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetImporter_1.SheetImporter),
@@ -3583,60 +3641,60 @@ document.addEventListener('DOMContentLoaded', async () => {
             title: 'Import Sheets',
         });
     });
-    Events_1.Events.listen(() => {
+    Events_1.Events.listen(events_1.EVENTS.openAddNewLayer, (event) => {
         const modal = Dom_1.Dom.makeComponent(BasicModal_1.BasicModal);
         const newLayerForm = Dom_1.Dom.makeComponent(NewLayerForm_1.NewLayerForm);
         modal.append(newLayerForm);
         document.body.append(modal);
-    }, events_1.EVENTS.openAddNewLayer);
-    Events_1.Events.listen((event) => {
+    });
+    Events_1.Events.listen(events_1.EVENTS.newLayerSubmit, (event) => {
         const input = event.detail;
         const layer = Object.assign(LayerFactory_1.LayerFactory.make(), input);
         Events_1.Events.emit(events_1.EVENTS.newLayerMapped, [layer]);
         LayerRepository_1.layerRepository.persist(layer);
-    }, events_1.EVENTS.newLayerSubmit);
-    Events_1.Events.listen(event => {
+    });
+    Events_1.Events.listen(events_1.EVENTS.newLayerMapped, (event) => {
         document.body.append(...event.detail
             .sort((a, b) => b.order - a.order)
             .map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer })));
-    }, events_1.EVENTS.gotLayer, events_1.EVENTS.newLayerMapped);
-    Events_1.Events.listen(event => {
+    });
+    Events_1.Events.listen('layer-placement-made', (event) => {
         LayerRepository_1.layerRepository.update(event.detail);
-    }, 'layer-placement-made');
-    Events_1.Events.listen(event => {
+    });
+    Events_1.Events.listen('layer-active', (event) => {
         LayerRepository_1.layerRepository.setActive(event.detail.uuid);
-    }, 'layer-active');
-    Events_1.Events.listen(event => {
+    });
+    Events_1.Events.listen('layer-visible-toggle', (event) => {
         LayerRepository_1.layerRepository.toggleVisible(event.detail.uuid);
-    }, 'layer-visible-toggle');
-    Events_1.Events.listen(event => {
+    });
+    Events_1.Events.listen('layer-delete', (event) => {
         const uuid = event.detail;
         LayerRepository_1.layerRepository.remove(uuid)
             .then(() => {
             Events_1.Events.emit('layer-deleted', uuid);
         });
-    }, 'layer-delete');
-    Events_1.Events.listen(async (event) => {
+    });
+    Events_1.Events.listen('updated-view-coordinates', async (event) => {
         const corrdinates = event.detail;
         const userData = await UserDataRepository_1.userDataRepository.getAll();
         userData.lastViewPosition.x = corrdinates.x;
         userData.lastViewPosition.y = corrdinates.y;
         UserDataRepository_1.userDataRepository.persist(userData);
-    }, 'updated-view-coordinates');
-    Events_1.Events.listen(async (event) => {
+    });
+    Events_1.Events.listen('window-update', async (event) => {
         const windowConfiguration = event.detail;
         const userData = await UserDataRepository_1.userDataRepository.getAll();
         userData.windows[windowConfiguration.uuid] = windowConfiguration;
         UserDataRepository_1.userDataRepository.persist(userData);
-    }, 'window-update');
-    Events_1.Events.listen(event => {
+    });
+    Events_1.Events.listen('click-open-history', async (event) => {
         WindowBoxFactory_1.WindowBoxFactory.make(Dom_1.Dom.makeComponent(PlacementHistory_1.PlacementHistory), 'Placement History', {
             uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(PlacementHistory_1.PlacementHistory),
             componentConfigration: { dataset: {} },
             title: 'Placement History',
         });
-    }, 'click-open-history');
-    Events_1.Events.listen(async (event) => {
+    });
+    Events_1.Events.listen('request-placement-deletion', async (event) => {
         const placementUuid = event.detail;
         const layers = await LayerRepository_1.layerRepository.getAll();
         LoadedPlacement_1.loadedPlacementRepository.removeByUuid(placementUuid);
@@ -3649,7 +3707,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 break;
             }
         }
-    }, 'request-placement-deletion');
+    });
     window.addEventListener('resize', () => Events_1.Events.emit(events_1.EVENTS.windowResize));
     const sideMenu = Dom_1.Dom.makeComponent(SideMenu_1.SideMenu);
     const layerListing = Dom_1.Dom.makeComponent(LayerListing_1.LayerListing, { layers });
@@ -3666,11 +3724,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     //     )
     // })
     const tools = Dom_1.Dom.makeComponent(CanvasTools_1.CanvasTools, { currentTool: userData.currentTool });
-    document.body.append(
-    // sideMenu,
-    // tools,
-    // ...layerElements
-    Dom_1.Dom.makeComponent(AnimationMaker_1.AnimationMaker));
+    console.log(sideMenu);
+    document.body.append(sideMenu, tools, ...layerElements);
 });
 
 })();

@@ -7,7 +7,6 @@ import { layerRepository } from 'Client/Service/Repository/LayerRepository'
 import { Layer } from 'Model/Layer'
 
 export class LayerListing extends Component {
-
     protected externalListeners: ExternalListeners = {
         'new-layer-mapped': this.handleNewLayers,
     }

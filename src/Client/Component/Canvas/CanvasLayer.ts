@@ -112,7 +112,7 @@ export class CanvasLayer extends Component {
     }
 
     protected async setup(): Promise<void> {
-        this.layer = this.parameters.layer
+        this.layer = this.parsedDataset.layer
         this.isCollisionLayer = this.layer.type === LAYERS.typeCollision
         this.currentImage = await Dom.image(
             this.isCollisionLayer
@@ -122,8 +122,8 @@ export class CanvasLayer extends Component {
 
         this.layer.placements.forEach(this.loadPlacement.bind(this))
 
-        this.viewCoordinates.x = this.parameters.userData?.lastViewPosition?.x || 0
-        this.viewCoordinates.y = this.parameters.userData?.lastViewPosition?.y || 0
+        this.viewCoordinates.x = this.parsedDataset.userData?.lastViewPosition?.x || 0
+        this.viewCoordinates.y = this.parsedDataset.userData?.lastViewPosition?.y || 0
     }
 
     protected build(): HTMLElement {

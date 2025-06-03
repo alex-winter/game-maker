@@ -101,7 +101,7 @@ export class WindowBox extends Component implements DraggableHTMLElement {
     }
 
     protected async setup(): Promise<void> {
-        this.configuration = this.parameters.configuration
+        this.configuration = this.parsedDataset.configuration
     }
 
     protected build(): HTMLElement {
@@ -109,8 +109,7 @@ export class WindowBox extends Component implements DraggableHTMLElement {
         const content = Dom.div('content')
         const slot = Dom.slot()
 
-        container.addEventListener('mousedown', (e) => Events.emitMouseDownOnWindowBox(this))
-
+        container.addEventListener('mousedown', (e) => Events.emit('mouse-down-window-box', this))
 
         content.append(slot)
 

@@ -1,6 +1,6 @@
 import 'Client/styles.css'
 
-import { COMPONENT_UUID_LOOKUP, COMPONENT_UUIDS_CONSTRUCT_LOOKUP, COMPONENTS } from 'Client/Constants/components'
+import { COMPONENT_UUIDS_CONSTRUCT_LOOKUP, COMPONENTS } from 'Client/Constants/components'
 import { Events } from 'Client/Service/Events'
 import { FileUpload } from 'Client/Service/FileUpload'
 import { Dom } from 'Client/Service/Dom'
@@ -26,7 +26,6 @@ import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlace
 import { userDataRepository } from 'Client/Service/Repository/UserDataRepository'
 import { SideMenu } from 'Client/Component/SideMenu/SideMenu'
 import { LayerListing } from 'Client/Component/LayerListing/LayerListing'
-import { AnimationMaker } from 'Client/Component/Animation/AnimationMaker'
 
 COMPONENTS.forEach((tagName, constructor) => {
     customElements.define(tagName, constructor)
@@ -79,12 +78,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         })
     })
 
-
-    Events.listenToFilesUploadSubmitted(files => {
+    Events.listen('upload-files-submission', (event: CustomEvent) => {
+        const files = event.detail as File[]
         FileUpload.uploadMultiple(files)
     })
 
-    Events.listenToOpenSheet(async sheetName => {
+    Events.listen('open-sheet', async (event: CustomEvent) => {
+        const sheetName = event.detail as string
         const sheet = sheetRepository.getByName(sheetName)
         if (openSheets.includes(sheet.name)) {
             windowBoxes[sheet.name].flash()
@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         })
     })
 
-    Events.listen(event => {
+    Events.listen('window-destroyed', (event: CustomEvent) => {
         const name = event.detail as string
         if (openSheets.includes(name)) {
             openSheets = openSheets.filter(item => item !== name)
@@ -110,16 +110,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (windowBoxes[name]) {
             delete windowBoxes[name]
         }
-    }, 'window-destroyed')
+    })
 
-    Events.listenMouseDownOnWindowBox(windowBox => {
+    Events.listen('mouse-down-window-box', (event: CustomEvent) => {
+        const windowBox = event.detail as WindowBox
         Dom.getAllOfComponent<WindowBox>(WindowBox).forEach(box => {
             box.zIndexMoveDown()
         })
         windowBox.zIndexMoveUp()
     })
 
-    Events.listenToSheetImportOpen(() => {
+    Events.listen('open-sheet-importer', (event: CustomEvent) => {
         const component = Dom.makeComponent(SheetImporter)
 
         WindowBoxFactory.make(component, 'Import Sheets', {
@@ -129,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         })
     })
 
-    Events.listen(() => {
+    Events.listen(EVENTS.openAddNewLayer, (event: CustomEvent) => {
         const modal = Dom.makeComponent(BasicModal)
         const newLayerForm = Dom.makeComponent(NewLayerForm)
 
@@ -138,9 +139,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.body.append(
             modal
         )
-    }, EVENTS.openAddNewLayer)
+    })
 
-    Events.listen((event) => {
+    Events.listen(EVENTS.newLayerSubmit, (event: CustomEvent) => {
         const input: LayerInput = event.detail as LayerInput
 
         const layer = Object.assign(
@@ -151,43 +152,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         Events.emit(EVENTS.newLayerMapped, [layer])
 
         layerRepository.persist(layer)
-    }, EVENTS.newLayerSubmit)
+    })
 
     Events.listen(
-        event => {
+        EVENTS.newLayerMapped,
+        (event: CustomEvent) => {
             document.body.append(
                 ...(event.detail as Layer[])
                     .sort((a, b) => b.order - a.order)
                     .map(layer => Dom.makeComponent(CanvasLayer, { layer }))
             )
         },
-        EVENTS.gotLayer,
-        EVENTS.newLayerMapped,
     )
 
     Events.listen(
-        event => {
+        'layer-placement-made',
+        (event: CustomEvent) => {
             layerRepository.update(event.detail as Layer)
         },
-        'layer-placement-made',
     )
 
     Events.listen(
-        event => {
+        'layer-active',
+        (event: CustomEvent) => {
             layerRepository.setActive((event.detail as Layer).uuid)
         },
-        'layer-active',
     )
 
     Events.listen(
-        event => {
+        'layer-visible-toggle',
+        (event: CustomEvent) => {
             layerRepository.toggleVisible((event.detail as Layer).uuid)
         },
-        'layer-visible-toggle',
     )
 
     Events.listen(
-        event => {
+        'layer-delete',
+        (event: CustomEvent) => {
             const uuid = event.detail as string
 
             layerRepository.remove(uuid)
@@ -195,11 +196,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     Events.emit('layer-deleted', uuid)
                 })
         },
-        'layer-delete'
     )
 
     Events.listen(
-        async event => {
+        'updated-view-coordinates',
+        async (event: CustomEvent) => {
             const corrdinates = event.detail as Coordinates
             const userData = await userDataRepository.getAll()
 
@@ -208,11 +209,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             userDataRepository.persist(userData)
         },
-        'updated-view-coordinates',
     )
 
     Events.listen(
-        async event => {
+        'window-update',
+        async (event: CustomEvent) => {
             const windowConfiguration = event.detail as WindowConfiguration
 
             const userData = await userDataRepository.getAll()
@@ -221,11 +222,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             userDataRepository.persist(userData)
         },
-        'window-update',
     )
 
     Events.listen(
-        event => {
+        'click-open-history',
+        async (event: CustomEvent) => {
             WindowBoxFactory.make(
                 Dom.makeComponent(PlacementHistory),
                 'Placement History',
@@ -236,11 +237,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             )
         },
-        'click-open-history'
     )
 
     Events.listen(
-        async event => {
+        'request-placement-deletion',
+        async (event: CustomEvent) => {
             const placementUuid = event.detail as string
             const layers = await layerRepository.getAll()
 
@@ -257,7 +258,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
         },
-        'request-placement-deletion'
     )
 
     window.addEventListener('resize', () => Events.emit(EVENTS.windowResize))
@@ -282,11 +282,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const tools = Dom.makeComponent(CanvasTools, { currentTool: userData.currentTool })
 
+    console.log(sideMenu)
+
     document.body.append(
-        // sideMenu,
-        // tools,
-        // ...layerElements
-        Dom.makeComponent(AnimationMaker)
+        sideMenu,
+        tools,
+        ...layerElements
     )
 
 })

@@ -52,7 +52,7 @@ export class LayerItem extends Component {
     }
 
     protected async setup(): Promise<void> {
-        this.layer = this.parameters.layer
+        this.layer = this.parsedDataset.layer
     }
 
     protected build(): HTMLElement {
