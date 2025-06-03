@@ -1,17 +1,15 @@
 import { Component as BaseComponent } from 'event-driven-web-components/dist/Component'
+import { Listeners as BaseListeners } from 'event-driven-web-components/dist/types/Listeners'
+import { ExternalListeners as BaseExternalListeners } from 'event-driven-web-components/dist/types/ExternalListeners'
+import { EventFn as BaseEventFn } from 'event-driven-web-components/dist/types/EventFn'
 
-export type EventFn<T = any> = (event: CustomEvent<T>) => void
-
-export type ExternalListeners = {
-    [key: string]: EventFn
-}
-
-export type Listeners = {
-    [key: string]: (event: any) => void
-}
+export type EventFn = BaseEventFn
+export type ExternalListeners = BaseExternalListeners
+export type Listeners = BaseListeners
 
 export abstract class Component extends BaseComponent {
     public isSingleton: boolean = false
+
     protected globalStylesheets: string[] = [
         '/dist/index.css'
     ]
