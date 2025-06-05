@@ -2155,16 +2155,10 @@ class LayerItem extends Component_1.Component {
         'layer-update': this.handleLayerUpdate,
         'layer-deleted': this.handleLayerDeleted,
     };
-    handleContainerClick = () => {
-        Events_1.Events.emit('layer-active', this.layer);
-    };
-    handleVisibleButtonClick = (e) => {
-        e.stopPropagation();
-        Events_1.Events.emit('layer-visible-toggle', this.layer);
-    };
-    handleClickDelete = (e) => {
-        e.stopPropagation();
-        Events_1.Events.emit('layer-delete', this.layer.uuid);
+    listeners = {
+        '.container:click': this.handleContainerClick,
+        '.visibility-button:click': this.handleVisibleButtonClick,
+        '.delete-button:click': this.handleClickDelete,
     };
     css() {
         return /*css*/ `
@@ -2200,7 +2194,7 @@ class LayerItem extends Component_1.Component {
         const options = Dom_1.Dom.div('options');
         const visibleButton = Dom_1.Dom.button('', 'visibility-button');
         const eyeIcon = Dom_1.Dom.i('fa-solid');
-        const deleteButton = Dom_1.Dom.button();
+        const deleteButton = Dom_1.Dom.button('', 'delete-button');
         const trashIcon = Dom_1.Dom.i('fa-solid', 'fa-trash');
         const collisionIcon = Dom_1.Dom.i('fa-solid', 'fa-road-barrier');
         if (this.layer.type === 'collision') {
@@ -2210,9 +2204,6 @@ class LayerItem extends Component_1.Component {
         eyeIcon.classList.add(this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash');
         container.classList.toggle('active', this.layer.is_active);
         container.classList.toggle('collision-layer', this.layer.type === 'collision');
-        container.addEventListener('click', this.handleContainerClick);
-        visibleButton.addEventListener('click', this.handleVisibleButtonClick);
-        deleteButton.addEventListener('click', this.handleClickDelete);
         deleteButton.append(trashIcon);
         visibleButton.append(eyeIcon);
         options.append(deleteButton, visibleButton);
@@ -2231,6 +2222,17 @@ class LayerItem extends Component_1.Component {
         if (this.layer.uuid === uuid) {
             this.destroy();
         }
+    }
+    handleContainerClick() {
+        Events_1.Events.emit('layer-active', this.layer);
+    }
+    handleVisibleButtonClick(e) {
+        e.stopPropagation();
+        Events_1.Events.emit('layer-visible-toggle', this.layer);
+    }
+    handleClickDelete(e) {
+        e.stopPropagation();
+        Events_1.Events.emit('layer-delete', this.layer.uuid);
     }
 }
 exports.LayerItem = LayerItem;

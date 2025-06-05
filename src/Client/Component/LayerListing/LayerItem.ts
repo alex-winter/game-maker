@@ -11,18 +11,10 @@ export class LayerItem extends Component {
         'layer-deleted': this.handleLayerDeleted,
     }
 
-    private handleContainerClick = () => {
-        Events.emit('layer-active', this.layer)
-    }
-
-    private handleVisibleButtonClick = (e: Event) => {
-        e.stopPropagation()
-        Events.emit('layer-visible-toggle', this.layer)
-    }
-
-    private handleClickDelete = (e: Event) => {
-        e.stopPropagation()
-        Events.emit('layer-delete', this.layer.uuid)
+    protected listeners: Listeners = {
+        '.container:click': this.handleContainerClick,
+        '.visibility-button:click': this.handleVisibleButtonClick,
+        '.delete-button:click': this.handleClickDelete,
     }
 
     protected css(): string {
@@ -61,7 +53,7 @@ export class LayerItem extends Component {
         const options = Dom.div('options')
         const visibleButton = Dom.button('', 'visibility-button')
         const eyeIcon = Dom.i('fa-solid')
-        const deleteButton = Dom.button()
+        const deleteButton = Dom.button('', 'delete-button')
         const trashIcon = Dom.i('fa-solid', 'fa-trash')
         const collisionIcon = Dom.i('fa-solid', 'fa-road-barrier')
 
@@ -78,10 +70,6 @@ export class LayerItem extends Component {
         container.classList.toggle('active', this.layer.is_active)
 
         container.classList.toggle('collision-layer', this.layer.type === 'collision')
-
-        container.addEventListener('click', this.handleContainerClick)
-        visibleButton.addEventListener('click', this.handleVisibleButtonClick)
-        deleteButton.addEventListener('click', this.handleClickDelete)
 
         deleteButton.append(trashIcon)
         visibleButton.append(eyeIcon)
@@ -114,5 +102,19 @@ export class LayerItem extends Component {
         if (this.layer.uuid === uuid) {
             this.destroy()
         }
+    }
+
+    private handleContainerClick(): void {
+        Events.emit('layer-active', this.layer)
+    }
+
+    private handleVisibleButtonClick(e: Event): void {
+        e.stopPropagation()
+        Events.emit('layer-visible-toggle', this.layer)
+    }
+
+    private handleClickDelete(e: Event): void {
+        e.stopPropagation()
+        Events.emit('layer-delete', this.layer.uuid)
     }
 }
