@@ -66,9 +66,7 @@ export class LayerItem extends Component {
         )
 
         eyeIcon.classList.add(this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash')
-
         container.classList.toggle('active', this.layer.is_active)
-
         container.classList.toggle('collision-layer', this.layer.type === 'collision')
 
         deleteButton.append(trashIcon)

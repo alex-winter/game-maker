@@ -160,4 +160,8 @@ export class Canvas2D extends Component {
     private getCtx(): CanvasRenderingContext2D | null {
         return this.getCanvas()?.getContext('2d') ?? null
     }
+
+    protected disconnectedCallback() {
+        this.stopAnimation()
+    }
 }

@@ -1477,6 +1477,9 @@ class Canvas2D extends Component_1.Component {
     getCtx() {
         return this.getCanvas()?.getContext('2d') ?? null;
     }
+    disconnectedCallback() {
+        this.stopAnimation();
+    }
 }
 exports.Canvas2D = Canvas2D;
 
@@ -1625,11 +1628,11 @@ class CanvasLayer extends Component_1.Component {
             return canvas.isRectVisible(this.viewCoordinates, loadedPlacement);
         });
         visible.forEach(loadedPlacement => {
-            canvas.drawImage(loadedPlacement.image, loadedPlacement.x - this.viewCoordinates.x, loadedPlacement.y - this.viewCoordinates.y, loadedPlacement.image.width, loadedPlacement.image.height);
+            canvas.drawImage(loadedPlacement.image, Math.floor(loadedPlacement.x - this.viewCoordinates.x), Math.floor(loadedPlacement.y - this.viewCoordinates.y), loadedPlacement.image.width, loadedPlacement.image.height);
         });
     }
     snap(value) {
-        return Math.floor(value / CanvasLayer.TILE_SIZE) * CanvasLayer.TILE_SIZE;
+        return Math.floor(Math.floor(value / CanvasLayer.TILE_SIZE) * CanvasLayer.TILE_SIZE);
     }
     async generatePlacement() {
         if (this.getCurrentImage().src === CanvasLayer.DEFAULT_IMAGE) {

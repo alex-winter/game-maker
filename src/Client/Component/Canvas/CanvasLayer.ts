@@ -186,8 +186,8 @@ export class CanvasLayer extends Component {
         visible.forEach(loadedPlacement => {
             canvas.drawImage(
                 loadedPlacement.image,
-                loadedPlacement.x - this.viewCoordinates.x,
-                loadedPlacement.y - this.viewCoordinates.y,
+                Math.floor(loadedPlacement.x - this.viewCoordinates.x),
+                Math.floor(loadedPlacement.y - this.viewCoordinates.y),
                 loadedPlacement.image.width,
                 loadedPlacement.image.height,
             )
@@ -195,7 +195,7 @@ export class CanvasLayer extends Component {
     }
 
     private snap(value: number): number {
-        return Math.floor(value / CanvasLayer.TILE_SIZE) * CanvasLayer.TILE_SIZE
+        return Math.floor(Math.floor(value / CanvasLayer.TILE_SIZE) * CanvasLayer.TILE_SIZE)
     }
 
     private async generatePlacement(): Promise<void> {
