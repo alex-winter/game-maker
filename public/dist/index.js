@@ -1600,28 +1600,14 @@ class CanvasLayer extends Component_1.Component {
     afterBuild() {
         this.getCanvas().startAnimation(this.frameFn.bind(this));
     }
-    handleMouseUp(event) {
-        if (event.button === mouse_events_1.MIDDLE_BUTTON) {
-            this.isMoving = false;
-            Events_1.Events.emit('updated-view-coordinates', this.viewCoordinates);
-        }
-    }
     afterPatch() {
         this.getCanvas().startAnimation(this.frameFn.bind(this));
     }
-    handleDelete(event) {
-        const canvas = this.findOne('canvas-2d');
-        if (this.layer.uuid === event.detail) {
-            canvas.stopAnimation();
-            canvas.destroy();
-            this.destroy();
-        }
+    getCanvas() {
+        return this.findOne('canvas-2d');
     }
-    handleMovement(event) {
-        const movement = event.detail;
-        if (movement.layerUuid !== this.layer.uuid) {
-            this.move(movement);
-        }
+    getCurrentImage() {
+        return this.findOne('.current-image');
     }
     move(movement) {
         const dx = movement.clientX - movement.lastMousePosition.x;
@@ -1630,18 +1616,6 @@ class CanvasLayer extends Component_1.Component {
         this.viewCoordinates.y -= dy;
         this.lastMousePosition.x = movement.clientX;
         this.lastMousePosition.y = movement.clientY;
-    }
-    getCanvas() {
-        return this.findOne('canvas-2d');
-    }
-    handleLayerUpdate(event) {
-        const layer = event.detail;
-        const canvas = this.getCanvas();
-        if (canvas && this.layer.uuid === layer.uuid) {
-            Object.assign(this.layer, layer);
-            canvas.stopAnimation();
-            this.patch();
-        }
     }
     frameFn() {
         const canvas = this.getCanvas();
@@ -1656,6 +1630,57 @@ class CanvasLayer extends Component_1.Component {
     }
     snap(value) {
         return Math.floor(value / CanvasLayer.TILE_SIZE) * CanvasLayer.TILE_SIZE;
+    }
+    async generatePlacement() {
+        if (this.getCurrentImage().src === CanvasLayer.DEFAULT_IMAGE) {
+            return;
+        }
+        const newPlacement = {
+            uuid: crypto.randomUUID(),
+            coordinate: {
+                x: this.mouseCoordinates.x,
+                y: this.mouseCoordinates.y,
+            },
+            imageUuid: (await PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(this.getCurrentImage().src)).uuid,
+        };
+        const lastPlacement = this.layer.placements[this.layer.placements.length - 1];
+        if (lastPlacement
+            && this.snap(lastPlacement.coordinate.x) === this.snap(newPlacement.coordinate.x)
+            && this.snap(lastPlacement.coordinate.y) === this.snap(newPlacement.coordinate.y)
+            && lastPlacement.imageUuid === newPlacement.imageUuid) {
+            return;
+        }
+        this.layer.placements.push(newPlacement);
+        this.loadPlacement(newPlacement);
+    }
+    handleMouseUp(event) {
+        if (event.button === mouse_events_1.MIDDLE_BUTTON) {
+            this.isMoving = false;
+            Events_1.Events.emit('updated-view-coordinates', this.viewCoordinates);
+        }
+    }
+    handleDelete(event) {
+        const canvas = this.getCanvas();
+        if (this.layer.uuid === event.detail) {
+            canvas.stopAnimation();
+            canvas.destroy();
+            this.destroy();
+        }
+    }
+    handleMovement(event) {
+        const movement = event.detail;
+        if (movement.layerUuid !== this.layer.uuid) {
+            this.move(movement);
+        }
+    }
+    handleLayerUpdate(event) {
+        const layer = event.detail;
+        const canvas = this.getCanvas();
+        if (canvas && this.layer.uuid === layer.uuid) {
+            Object.assign(this.layer, layer);
+            canvas.stopAnimation();
+            this.patch();
+        }
     }
     handleMouseMove(event) {
         const rawX = event.clientX;
@@ -1685,28 +1710,6 @@ class CanvasLayer extends Component_1.Component {
             this.move(movement);
             Events_1.Events.emit('moving-in-canvas', movement);
         }
-    }
-    async generatePlacement() {
-        if (this.getCurrentImage().src === CanvasLayer.DEFAULT_IMAGE) {
-            return;
-        }
-        const newPlacement = {
-            uuid: crypto.randomUUID(),
-            coordinate: {
-                x: this.mouseCoordinates.x,
-                y: this.mouseCoordinates.y,
-            },
-            imageUuid: (await PlacementImageRepository_1.placementImageRepository.findOrCreateBySrc(this.getCurrentImage().src)).uuid,
-        };
-        const lastPlacement = this.layer.placements[this.layer.placements.length - 1];
-        if (lastPlacement
-            && this.snap(lastPlacement.coordinate.x) === this.snap(newPlacement.coordinate.x)
-            && this.snap(lastPlacement.coordinate.y) === this.snap(newPlacement.coordinate.y)
-            && lastPlacement.imageUuid === newPlacement.imageUuid) {
-            return;
-        }
-        this.layer.placements.push(newPlacement);
-        this.loadPlacement(newPlacement);
     }
     handleMouseDown(event) {
         if (event.button === mouse_events_1.LEFT_BUTTON) {
@@ -1745,7 +1748,7 @@ class CanvasLayer extends Component_1.Component {
         const targetX = this.snap(startX);
         const targetY = this.snap(startY);
         const startTile = { x: targetX, y: targetY };
-        const canvas = this.findOne('canvas-2d');
+        const canvas = this.getCanvas();
         const canvasWidth = canvas.getBoundingClientRect().width;
         const canvasHeight = canvas.getBoundingClientRect().height;
         const minX = this.snap(this.viewCoordinates.x);
@@ -1818,13 +1821,10 @@ class CanvasLayer extends Component_1.Component {
     handleToolSelection(event) {
         this.toolSelection = event.detail;
     }
-    getCurrentImage() {
-        return this.findOne('.current-image');
-    }
     handleRequestFocusOnPlacement(event) {
         const uuid = event.detail;
         const targetPlacement = LoadedPlacement_1.loadedPlacementRepository.getByUuid(uuid);
-        const canvas = this.findOne('canvas-2d');
+        const canvas = this.getCanvas();
         if (!targetPlacement || !canvas)
             return;
         const canvasRect = canvas.getBoundingClientRect();

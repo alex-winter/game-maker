@@ -148,33 +148,16 @@ export class CanvasLayer extends Component {
         this.getCanvas().startAnimation(this.frameFn.bind(this))
     }
 
-    private handleMouseUp(event: MouseEvent): void {
-        if (event.button === MIDDLE_BUTTON) {
-            this.isMoving = false
-            Events.emit('updated-view-coordinates', this.viewCoordinates)
-        }
-    }
-
     protected afterPatch(): void {
         this.getCanvas().startAnimation(this.frameFn.bind(this))
     }
 
-    private handleDelete(event: CustomEvent) {
-        const canvas = this.findOne('canvas-2d')! as Canvas2D
-
-        if (this.layer.uuid === event.detail as string) {
-            canvas.stopAnimation()
-            canvas.destroy()
-            this.destroy()
-        }
+    private getCanvas(): Canvas2D {
+        return this.findOne('canvas-2d')!
     }
 
-    private handleMovement(event: CustomEvent): void {
-        const movement = event.detail as Movement
-
-        if (movement.layerUuid !== this.layer.uuid) {
-            this.move(movement)
-        }
+    private getCurrentImage(): HTMLImageElement {
+        return this.findOne('.current-image')!
     }
 
     private move(movement: Movement): void {
@@ -186,26 +169,6 @@ export class CanvasLayer extends Component {
 
         this.lastMousePosition.x = movement.clientX
         this.lastMousePosition.y = movement.clientY
-    }
-
-    private getCanvas(): Canvas2D {
-        return this.findOne('canvas-2d')! as Canvas2D
-    }
-
-    private handleLayerUpdate(event: CustomEvent): void {
-        const layer = event.detail as Layer
-        const canvas = this.getCanvas()
-
-        if (canvas && this.layer.uuid === layer.uuid) {
-            Object.assign(
-                this.layer,
-                layer,
-            )
-
-            canvas.stopAnimation()
-
-            this.patch()
-        }
     }
 
     private frameFn(): void {
@@ -233,6 +196,75 @@ export class CanvasLayer extends Component {
 
     private snap(value: number): number {
         return Math.floor(value / CanvasLayer.TILE_SIZE) * CanvasLayer.TILE_SIZE
+    }
+
+    private async generatePlacement(): Promise<void> {
+        if (this.getCurrentImage().src === CanvasLayer.DEFAULT_IMAGE) {
+            return
+        }
+        const newPlacement: ImagePlacement = {
+            uuid: crypto.randomUUID(),
+            coordinate: {
+                x: this.mouseCoordinates.x,
+                y: this.mouseCoordinates.y,
+            },
+            imageUuid: (await placementImageRepository.findOrCreateBySrc(this.getCurrentImage().src)).uuid,
+        }
+
+        const lastPlacement = this.layer.placements[this.layer.placements.length - 1]
+
+        if (
+            lastPlacement
+            && this.snap(lastPlacement.coordinate.x) === this.snap(newPlacement.coordinate.x)
+            && this.snap(lastPlacement.coordinate.y) === this.snap(newPlacement.coordinate.y)
+            && lastPlacement.imageUuid === newPlacement.imageUuid
+        ) {
+            return
+        }
+
+        this.layer.placements.push(newPlacement)
+        this.loadPlacement(newPlacement)
+    }
+
+    private handleMouseUp(event: MouseEvent): void {
+        if (event.button === MIDDLE_BUTTON) {
+            this.isMoving = false
+            Events.emit('updated-view-coordinates', this.viewCoordinates)
+        }
+    }
+
+    private handleDelete(event: CustomEvent) {
+        const canvas = this.getCanvas()
+
+        if (this.layer.uuid === event.detail as string) {
+            canvas.stopAnimation()
+            canvas.destroy()
+            this.destroy()
+        }
+    }
+
+    private handleMovement(event: CustomEvent): void {
+        const movement = event.detail as Movement
+
+        if (movement.layerUuid !== this.layer.uuid) {
+            this.move(movement)
+        }
+    }
+
+    private handleLayerUpdate(event: CustomEvent): void {
+        const layer = event.detail as Layer
+        const canvas = this.getCanvas()
+
+        if (canvas && this.layer.uuid === layer.uuid) {
+            Object.assign(
+                this.layer,
+                layer,
+            )
+
+            canvas.stopAnimation()
+
+            this.patch()
+        }
     }
 
     private handleMouseMove(event: MouseEvent): void {
@@ -272,35 +304,6 @@ export class CanvasLayer extends Component {
 
             Events.emit('moving-in-canvas', movement)
         }
-    }
-
-
-    private async generatePlacement(): Promise<void> {
-        if (this.getCurrentImage().src === CanvasLayer.DEFAULT_IMAGE) {
-            return
-        }
-        const newPlacement: ImagePlacement = {
-            uuid: crypto.randomUUID(),
-            coordinate: {
-                x: this.mouseCoordinates.x,
-                y: this.mouseCoordinates.y,
-            },
-            imageUuid: (await placementImageRepository.findOrCreateBySrc(this.getCurrentImage().src)).uuid,
-        }
-
-        const lastPlacement = this.layer.placements[this.layer.placements.length - 1]
-
-        if (
-            lastPlacement
-            && this.snap(lastPlacement.coordinate.x) === this.snap(newPlacement.coordinate.x)
-            && this.snap(lastPlacement.coordinate.y) === this.snap(newPlacement.coordinate.y)
-            && lastPlacement.imageUuid === newPlacement.imageUuid
-        ) {
-            return
-        }
-
-        this.layer.placements.push(newPlacement)
-        this.loadPlacement(newPlacement)
     }
 
     private handleMouseDown(event: MouseEvent): void {
@@ -351,7 +354,7 @@ export class CanvasLayer extends Component {
         const targetY = this.snap(startY)
         const startTile = { x: targetX, y: targetY }
 
-        const canvas = this.findOne('canvas-2d') as Canvas2D
+        const canvas = this.getCanvas()
 
         const canvasWidth = canvas.getBoundingClientRect().width
         const canvasHeight = canvas.getBoundingClientRect().height
@@ -466,14 +469,10 @@ export class CanvasLayer extends Component {
         this.toolSelection = event.detail as string
     }
 
-    private getCurrentImage(): HTMLImageElement {
-        return this.findOne('.current-image')!
-    }
-
     private handleRequestFocusOnPlacement(event: CustomEvent): void {
         const uuid = event.detail as string
         const targetPlacement = loadedPlacementRepository.getByUuid(uuid)
-        const canvas = this.findOne('canvas-2d') as Canvas2D
+        const canvas = this.getCanvas()
 
         if (!targetPlacement || !canvas) return
 
