@@ -2162,6 +2162,8 @@ class LayerItem extends Component_1.Component {
         '.container:click': this.handleContainerClick,
         '.visibility-button:click': this.handleVisibleButtonClick,
         '.delete-button:click': this.handleClickDelete,
+        '.up-button:click': this.handleClickUp,
+        '.down-button:click': this.handleClickDown,
     };
     css() {
         return /*css*/ `
@@ -2181,6 +2183,7 @@ class LayerItem extends Component_1.Component {
             .options {
                 display: flex;
                 justify-content: end;
+                gap: 4px;
             }
 
             .active {
@@ -2199,6 +2202,10 @@ class LayerItem extends Component_1.Component {
         const eyeIcon = Dom_1.Dom.i('fa-solid');
         const deleteButton = Dom_1.Dom.button('', 'delete-button');
         const trashIcon = Dom_1.Dom.i('fa-solid', 'fa-trash');
+        const upButton = Dom_1.Dom.button('', 'up-button');
+        const upIcon = Dom_1.Dom.i('fa-solid', 'fa-arrow-up');
+        const downButton = Dom_1.Dom.button('', 'down-button');
+        const downIcon = Dom_1.Dom.i('fa-solid', 'fa-arrow-down');
         const collisionIcon = Dom_1.Dom.i('fa-solid', 'fa-road-barrier');
         if (this.layer.type === 'collision') {
             name.append(collisionIcon);
@@ -2209,14 +2216,16 @@ class LayerItem extends Component_1.Component {
         container.classList.toggle('collision-layer', this.layer.type === 'collision');
         deleteButton.append(trashIcon);
         visibleButton.append(eyeIcon);
-        options.append(deleteButton, visibleButton);
+        upButton.append(upIcon);
+        downButton.append(downIcon);
+        options.append(deleteButton, visibleButton, upButton, downButton);
         container.append(name, options);
         return container;
     }
     handleLayerUpdate(event) {
         const update = event.detail;
         if (update.uuid === this.layer.uuid) {
-            this.layer = event.detail;
+            this.layer = update;
             this.patch();
         }
     }
@@ -2236,6 +2245,14 @@ class LayerItem extends Component_1.Component {
     handleClickDelete(e) {
         e.stopPropagation();
         Events_1.Events.emit('layer-delete', this.layer.uuid);
+    }
+    handleClickUp(e) {
+        e.stopPropagation();
+        Events_1.Events.emit('layer-order-up', this.layer.uuid);
+    }
+    handleClickDown(e) {
+        e.stopPropagation();
+        Events_1.Events.emit('layer-order-down', this.layer.uuid);
     }
 }
 exports.LayerItem = LayerItem;

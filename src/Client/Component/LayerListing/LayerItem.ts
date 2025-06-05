@@ -15,6 +15,8 @@ export class LayerItem extends Component {
         '.container:click': this.handleContainerClick,
         '.visibility-button:click': this.handleVisibleButtonClick,
         '.delete-button:click': this.handleClickDelete,
+        '.up-button:click': this.handleClickUp,
+        '.down-button:click': this.handleClickDown,
     }
 
     protected css(): string {
@@ -35,6 +37,7 @@ export class LayerItem extends Component {
             .options {
                 display: flex;
                 justify-content: end;
+                gap: 4px;
             }
 
             .active {
@@ -51,19 +54,26 @@ export class LayerItem extends Component {
         const container = Dom.div('container')
         const name = Dom.div()
         const options = Dom.div('options')
+
         const visibleButton = Dom.button('', 'visibility-button')
         const eyeIcon = Dom.i('fa-solid')
+
         const deleteButton = Dom.button('', 'delete-button')
         const trashIcon = Dom.i('fa-solid', 'fa-trash')
+
+        const upButton = Dom.button('', 'up-button')
+        const upIcon = Dom.i('fa-solid', 'fa-arrow-up')
+
+        const downButton = Dom.button('', 'down-button')
+        const downIcon = Dom.i('fa-solid', 'fa-arrow-down')
+
         const collisionIcon = Dom.i('fa-solid', 'fa-road-barrier')
 
         if (this.layer.type === 'collision') {
             name.append(collisionIcon)
         }
 
-        name.append(
-            document.createTextNode(this.layer.name)
-        )
+        name.append(document.createTextNode(this.layer.name))
 
         eyeIcon.classList.add(this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash')
         container.classList.toggle('active', this.layer.is_active)
@@ -71,16 +81,17 @@ export class LayerItem extends Component {
 
         deleteButton.append(trashIcon)
         visibleButton.append(eyeIcon)
+        upButton.append(upIcon)
+        downButton.append(downIcon)
 
         options.append(
             deleteButton,
             visibleButton,
+            upButton,
+            downButton,
         )
 
-        container.append(
-            name,
-            options,
-        )
+        container.append(name, options)
 
         return container
     }
@@ -89,7 +100,7 @@ export class LayerItem extends Component {
         const update = event.detail as Layer
 
         if (update.uuid === this.layer.uuid) {
-            this.layer = event.detail as Layer
+            this.layer = update
             this.patch()
         }
     }
@@ -114,5 +125,15 @@ export class LayerItem extends Component {
     private handleClickDelete(e: Event): void {
         e.stopPropagation()
         Events.emit('layer-delete', this.layer.uuid)
+    }
+
+    private handleClickUp(e: Event): void {
+        e.stopPropagation()
+        Events.emit('layer-order-up', this.layer.uuid)
+    }
+
+    private handleClickDown(e: Event): void {
+        e.stopPropagation()
+        Events.emit('layer-order-down', this.layer.uuid)
     }
 }
