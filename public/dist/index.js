@@ -1254,6 +1254,7 @@ class App extends Component_1.Component {
         if (windowBox) {
             this.openSheets.push(sheet.name);
             this.windowBoxes[sheet.name] = windowBox;
+            this.shadowRoot?.append(windowBox);
         }
     }
     handleWindowDestroyed(event) {

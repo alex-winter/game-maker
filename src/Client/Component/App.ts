@@ -126,6 +126,8 @@ export class App extends Component {
         if (windowBox) {
             this.openSheets.push(sheet.name)
             this.windowBoxes[sheet.name] = windowBox
+
+            this.shadowRoot?.append(windowBox)
         }
     }
 
