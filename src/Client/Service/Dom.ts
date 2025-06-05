@@ -6,12 +6,16 @@ export class Dom {
         throw new Error('Can not construct')
     }
 
-    public static div(...classList: string[]): HTMLDivElement {
-        const element = document.createElement('div')
-
+    public static addClasses(element: HTMLElement, ...classList: string[]): void {
         if (classList.length) {
             element.classList.add(...classList)
         }
+    }
+
+    public static div(...classList: string[]): HTMLDivElement {
+        const element = document.createElement('div')
+
+        this.addClasses(element, ...classList)
 
         return element
     }
@@ -21,9 +25,7 @@ export class Dom {
 
         element.innerText = text
 
-        if (classList.length) {
-            element.classList.add(...classList)
-        }
+        this.addClasses(element, ...classList)
 
         return element
     }
@@ -33,9 +35,7 @@ export class Dom {
 
         element.type = 'text'
 
-        if (classList.length) {
-            element.classList.add(...classList)
-        }
+        this.addClasses(element, ...classList)
 
         return element
     }
@@ -54,9 +54,7 @@ export class Dom {
 
         element.innerText = text
 
-        if (classList.length) {
-            element.classList.add(...classList)
-        }
+        this.addClasses(element, ...classList)
 
         return element
     }
@@ -70,9 +68,9 @@ export class Dom {
 
         element.type = 'file'
         element.multiple = true
-        if (classList.length) {
-            element.classList.add(...classList)
-        }
+
+        this.addClasses(element, ...classList)
+
         return element
     }
 
@@ -88,7 +86,7 @@ export class Dom {
     public static i(...classList: string[]): HTMLElement {
         const element = document.createElement('i')
 
-        element.classList.add(...classList)
+        this.addClasses(element, ...classList)
 
         return element
     }

@@ -1,9 +1,19 @@
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
+import { Listeners } from 'event-driven-web-components/dist/types/Listeners'
 
 export class SideMenu extends Component {
     public isSingleton: boolean = true
+
+    protected listeners: Listeners = {
+        '.open-sheet-importer:click': function () {
+            Events.emit('open-sheet-importer')
+        },
+        '.open-history:click': function () {
+            Events.emit('click-open-history')
+        }
+    }
 
     protected css(): string {
         return /*css*/`
@@ -21,37 +31,22 @@ export class SideMenu extends Component {
 
     protected build(): HTMLElement {
         const container = Dom.div()
-        const slot = Dom.slot()
-        const sheetImportOption = this.buildSheetImportOption()
 
-        container.append(
-            slot,
-            sheetImportOption,
-            this.buildHistoryOption()
-        )
+        const slot = Dom.slot()
+        container.appendChild(slot)
+
+        const importButton = Dom.button('', 'open-sheet-importer')
+        const importIcon = Dom.i('fa-solid', 'fa-images')
+        importButton.appendChild(importIcon)
+
+        container.appendChild(importButton)
+
+        const historyButton = Dom.button('', 'open-history')
+        const historyIcon = Dom.i('fa-solid', 'fa-clock-rotate-left')
+        historyButton.appendChild(historyIcon)
+
+        container.appendChild(historyButton)
 
         return container
-    }
-
-    protected buildSheetImportOption(): HTMLElement {
-        const option = Dom.button()
-        const icon = Dom.i('fa-solid', 'fa-images')
-
-        option.addEventListener('click', () => Events.emit('open-sheet-importer'))
-
-        option.append(icon)
-
-        return option
-    }
-
-    protected buildHistoryOption(): HTMLElement {
-        const option = Dom.button()
-        const icon = Dom.i('fa-solid', 'fa-clock-rotate-left')
-
-        option.addEventListener('click', () => Events.emit('click-open-history'))
-
-        option.append(icon)
-
-        return option
     }
 }

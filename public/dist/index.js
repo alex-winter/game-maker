@@ -2428,6 +2428,14 @@ const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Servic
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 class SideMenu extends Component_1.Component {
     isSingleton = true;
+    listeners = {
+        '.open-sheet-importer:click': function () {
+            Events_1.Events.emit('open-sheet-importer');
+        },
+        '.open-history:click': function () {
+            Events_1.Events.emit('click-open-history');
+        }
+    };
     css() {
         return /*css*/ `
             :host {
@@ -2444,23 +2452,16 @@ class SideMenu extends Component_1.Component {
     build() {
         const container = Dom_1.Dom.div();
         const slot = Dom_1.Dom.slot();
-        const sheetImportOption = this.buildSheetImportOption();
-        container.append(slot, sheetImportOption, this.buildHistoryOption());
+        container.appendChild(slot);
+        const importButton = Dom_1.Dom.button('', 'open-sheet-importer');
+        const importIcon = Dom_1.Dom.i('fa-solid', 'fa-images');
+        importButton.appendChild(importIcon);
+        container.appendChild(importButton);
+        const historyButton = Dom_1.Dom.button('', 'open-history');
+        const historyIcon = Dom_1.Dom.i('fa-solid', 'fa-clock-rotate-left');
+        historyButton.appendChild(historyIcon);
+        container.appendChild(historyButton);
         return container;
-    }
-    buildSheetImportOption() {
-        const option = Dom_1.Dom.button();
-        const icon = Dom_1.Dom.i('fa-solid', 'fa-images');
-        option.addEventListener('click', () => Events_1.Events.emit('open-sheet-importer'));
-        option.append(icon);
-        return option;
-    }
-    buildHistoryOption() {
-        const option = Dom_1.Dom.button();
-        const icon = Dom_1.Dom.i('fa-solid', 'fa-clock-rotate-left');
-        option.addEventListener('click', () => Events_1.Events.emit('click-open-history'));
-        option.append(icon);
-        return option;
     }
 }
 exports.SideMenu = SideMenu;
@@ -2921,27 +2922,26 @@ class Dom {
     constructor() {
         throw new Error('Can not construct');
     }
-    static div(...classList) {
-        const element = document.createElement('div');
+    static addClasses(element, ...classList) {
         if (classList.length) {
             element.classList.add(...classList);
         }
+    }
+    static div(...classList) {
+        const element = document.createElement('div');
+        this.addClasses(element, ...classList);
         return element;
     }
     static label(text, ...classList) {
         const element = document.createElement('label');
         element.innerText = text;
-        if (classList.length) {
-            element.classList.add(...classList);
-        }
+        this.addClasses(element, ...classList);
         return element;
     }
     static inputText(...classList) {
         const element = document.createElement('input');
         element.type = 'text';
-        if (classList.length) {
-            element.classList.add(...classList);
-        }
+        this.addClasses(element, ...classList);
         return element;
     }
     static canvas(width = 0, height = 0) {
@@ -2953,9 +2953,7 @@ class Dom {
     static button(text = '', ...classList) {
         const element = document.createElement('button');
         element.innerText = text;
-        if (classList.length) {
-            element.classList.add(...classList);
-        }
+        this.addClasses(element, ...classList);
         return element;
     }
     static slot() {
@@ -2965,9 +2963,7 @@ class Dom {
         const element = document.createElement('input');
         element.type = 'file';
         element.multiple = true;
-        if (classList.length) {
-            element.classList.add(...classList);
-        }
+        this.addClasses(element, ...classList);
         return element;
     }
     static async image(src) {
@@ -2980,7 +2976,7 @@ class Dom {
     }
     static i(...classList) {
         const element = document.createElement('i');
-        element.classList.add(...classList);
+        this.addClasses(element, ...classList);
         return element;
     }
     static makeComponent(component, dataset = {}) {
