@@ -1146,6 +1146,211 @@ exports.AnimationMaker = AnimationMaker;
 
 /***/ }),
 
+/***/ "./src/Client/Component/App.ts":
+/*!*************************************!*\
+  !*** ./src/Client/Component/App.ts ***!
+  \*************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.App = void 0;
+const CanvasLayer_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasLayer */ "./src/Client/Component/Canvas/CanvasLayer.ts");
+const CanvasTools_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasTools */ "./src/Client/Component/Canvas/CanvasTools.ts");
+const BasicModal_1 = __webpack_require__(/*! Client/Component/Generic/Modal/BasicModal */ "./src/Client/Component/Generic/Modal/BasicModal.ts");
+const LayerListing_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerListing */ "./src/Client/Component/LayerListing/LayerListing.ts");
+const NewLayerForm_1 = __webpack_require__(/*! Client/Component/NewLayerForm/NewLayerForm */ "./src/Client/Component/NewLayerForm/NewLayerForm.ts");
+const PlacementHistory_1 = __webpack_require__(/*! Client/Component/PlacementHistory/PlacementHistory */ "./src/Client/Component/PlacementHistory/PlacementHistory.ts");
+const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */ "./src/Client/Component/SideMenu/SideMenu.ts");
+const SheetImporter_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetImporter/SheetImporter */ "./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts");
+const SheetViewer_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetViewer/SheetViewer */ "./src/Client/Component/SpriteSheets/SheetViewer/SheetViewer.ts");
+const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
+const components_1 = __webpack_require__(/*! Client/Constants/components */ "./src/Client/Constants/components.ts");
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
+const FileUpload_1 = __webpack_require__(/*! Client/Service/FileUpload */ "./src/Client/Service/FileUpload.ts");
+const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
+const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
+const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Repository/PlacementImageRepository */ "./src/Client/Service/Repository/PlacementImageRepository.ts");
+const SheetRepository_1 = __webpack_require__(/*! Client/Service/Repository/SheetRepository */ "./src/Client/Service/Repository/SheetRepository.ts");
+const UserDataRepository_1 = __webpack_require__(/*! Client/Service/Repository/UserDataRepository */ "./src/Client/Service/Repository/UserDataRepository.ts");
+const WindowBoxFactory_1 = __webpack_require__(/*! Client/Service/WindowBoxFactory */ "./src/Client/Service/WindowBoxFactory.ts");
+const LayerFactory_1 = __webpack_require__(/*! Model/Factory/LayerFactory */ "./src/Model/Factory/LayerFactory.ts");
+class App extends Component_1.Component {
+    openSheets = [];
+    windowBoxes = {};
+    layers = [];
+    userData;
+    externalListeners = {
+        'upload-files-submission': this.handleUploadFilesSubmission,
+        'open-sheet': this.handleOpenSheet,
+        'window-destroyed': this.handleWindowDestroyed,
+        'mouse-down-window-box': this.handleMouseDownWindowBox,
+        'open-sheet-importer': this.handleOpenSheetImporter,
+        'open-add-new-layer': this.handleOpenAddNewLayer,
+        'click-open-history': this.handleOpenHistory,
+        'new-layer-submit': this.handleNewLayerSubmit,
+        'new-layer-mapped': this.handleNewLayerMapped,
+        'layer-placement-made': this.handleLayerPlacementMade,
+        'layer-active': this.handleLayerActive,
+        'layer-visible-toggle': this.handleLayerVisibleToggle,
+        'layer-delete': this.handleLayerDelete,
+        'updated-view-coordinates': this.handleUpdateViewCoordinates,
+        'window-update': this.handleWindowUpdate,
+        'request-placement-deletion': this.handleRequestPlacementDeletion,
+    };
+    async setup() {
+        this.userData = await UserDataRepository_1.userDataRepository.getAll();
+        this.layers = await LayerRepository_1.layerRepository.getAll();
+        const sheets = await SheetRepository_1.sheetRepository.getAll();
+        const placementImages = await PlacementImageRepository_1.placementImageRepository.getAll();
+        for (const layer of this.layers) {
+            for (const placement of layer.placements) {
+                const placementImage = await PlacementImageRepository_1.placementImageRepository.getByUuid(placement.imageUuid);
+                if (placementImage) {
+                    const image = await Dom_1.Dom.image(placementImage.src);
+                    LoadedPlacement_1.loadedPlacementRepository.add({
+                        uuid: placement.uuid,
+                        layerUuid: layer.uuid,
+                        image,
+                        x: placement.coordinate.x,
+                        y: placement.coordinate.y,
+                        width: image.width,
+                        height: image.height,
+                    });
+                }
+            }
+        }
+    }
+    build() {
+        const container = Dom_1.Dom.div();
+        const sideMenu = Dom_1.Dom.makeComponent(SideMenu_1.SideMenu);
+        const layerListing = Dom_1.Dom.makeComponent(LayerListing_1.LayerListing, { layers: this.layers });
+        sideMenu.append(layerListing);
+        const layerElements = this.layers.map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer, userData: this.userData }));
+        const tools = Dom_1.Dom.makeComponent(CanvasTools_1.CanvasTools, { currentTool: this.userData.currentTool });
+        container.append(sideMenu, tools, ...layerElements);
+        return container;
+    }
+    handleUploadFilesSubmission(event) {
+        const files = event.detail;
+        FileUpload_1.FileUpload.uploadMultiple(files);
+    }
+    handleOpenSheet(event) {
+        const sheetName = event.detail;
+        const sheet = SheetRepository_1.sheetRepository.getByName(sheetName);
+        if (this.openSheets.includes(sheet.name)) {
+            this.windowBoxes[sheet.name].flash();
+            return;
+        }
+        const sheetViewerDataset = { imageSrc: sheet.imageSrc };
+        const component = Dom_1.Dom.makeComponent(SheetViewer_1.SheetViewer, sheetViewerDataset);
+        this.openSheets.push(sheet.name);
+        this.windowBoxes[sheet.name] = WindowBoxFactory_1.WindowBoxFactory.make(component, sheet.name, {
+            uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetViewer_1.SheetViewer),
+            componentConfigration: { dataset: sheetViewerDataset },
+            title: sheet.name,
+        });
+    }
+    handleWindowDestroyed(event) {
+        const name = event.detail;
+        if (this.openSheets.includes(name)) {
+            this.openSheets = this.openSheets.filter(item => item !== name);
+        }
+        if (this.windowBoxes[name]) {
+            delete this.windowBoxes[name];
+        }
+    }
+    handleMouseDownWindowBox(event) {
+        const windowBox = event.detail;
+        const all = Dom_1.Dom.getAllOfComponent(WindowBox_1.WindowBox);
+        for (const one of all) {
+            one.zIndexMoveDown();
+        }
+        windowBox.zIndexMoveUp();
+    }
+    handleOpenSheetImporter(event) {
+        const component = Dom_1.Dom.makeComponent(SheetImporter_1.SheetImporter);
+        WindowBoxFactory_1.WindowBoxFactory.make(component, 'Import Sheets', {
+            uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetImporter_1.SheetImporter),
+            componentConfigration: { dataset: {} },
+            title: 'Import Sheets',
+        });
+    }
+    handleOpenAddNewLayer(event) {
+        const modal = Dom_1.Dom.makeComponent(BasicModal_1.BasicModal);
+        const newLayerForm = Dom_1.Dom.makeComponent(NewLayerForm_1.NewLayerForm);
+        modal.append(newLayerForm);
+        this.shadowRoot?.append(modal);
+    }
+    handleNewLayerSubmit(event) {
+        const input = event.detail;
+        const layer = Object.assign(LayerFactory_1.LayerFactory.make(), input);
+        Events_1.Events.emit('new-layer-mapped', [layer]);
+        LayerRepository_1.layerRepository.persist(layer);
+    }
+    handleNewLayerMapped(event) {
+        this.shadowRoot?.append(...event.detail
+            .sort((a, b) => b.order - a.order)
+            .map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer })));
+    }
+    handleLayerPlacementMade(event) {
+        LayerRepository_1.layerRepository.update(event.detail);
+    }
+    handleLayerActive(event) {
+        LayerRepository_1.layerRepository.setActive(event.detail.uuid);
+    }
+    handleLayerVisibleToggle(event) {
+        LayerRepository_1.layerRepository.toggleVisible(event.detail.uuid);
+    }
+    handleLayerDelete(event) {
+        const uuid = event.detail;
+        LayerRepository_1.layerRepository.remove(uuid)
+            .then(() => {
+            Events_1.Events.emit('layer-deleted', uuid);
+        });
+    }
+    async handleUpdateViewCoordinates(event) {
+        const corrdinates = event.detail;
+        const userData = await UserDataRepository_1.userDataRepository.getAll();
+        userData.lastViewPosition.x = corrdinates.x;
+        userData.lastViewPosition.y = corrdinates.y;
+        UserDataRepository_1.userDataRepository.persist(userData);
+    }
+    async handleWindowUpdate(event) {
+        const windowConfiguration = event.detail;
+        const userData = await UserDataRepository_1.userDataRepository.getAll();
+        userData.windows[windowConfiguration.uuid] = windowConfiguration;
+        UserDataRepository_1.userDataRepository.persist(userData);
+    }
+    handleOpenHistory(event) {
+        WindowBoxFactory_1.WindowBoxFactory.make(Dom_1.Dom.makeComponent(PlacementHistory_1.PlacementHistory), 'Placement History', {
+            uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(PlacementHistory_1.PlacementHistory),
+            componentConfigration: { dataset: {} },
+            title: 'Placement History',
+        });
+    }
+    async handleRequestPlacementDeletion(event) {
+        const placementUuid = event.detail;
+        const layers = await LayerRepository_1.layerRepository.getAll();
+        LoadedPlacement_1.loadedPlacementRepository.removeByUuid(placementUuid);
+        for (const layer of layers) {
+            const index = layer.placements.findIndex(p => p.uuid === placementUuid);
+            if (index !== -1) {
+                layer.placements.splice(index, 1);
+                LayerRepository_1.layerRepository.update(layer);
+                Events_1.Events.emit('placement-removed', placementUuid);
+                break;
+            }
+        }
+    }
+}
+exports.App = App;
+
+
+/***/ }),
+
 /***/ "./src/Client/Component/Canvas/Canvas.ts":
 /*!***********************************************!*\
   !*** ./src/Client/Component/Canvas/Canvas.ts ***!
@@ -2786,8 +2991,10 @@ const uuid_1 = __webpack_require__(/*! uuid */ "./node_modules/uuid/dist/cjs-bro
 const CanvasTools_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasTools */ "./src/Client/Component/Canvas/CanvasTools.ts");
 const PlacementHistory_1 = __webpack_require__(/*! Client/Component/PlacementHistory/PlacementHistory */ "./src/Client/Component/PlacementHistory/PlacementHistory.ts");
 const AnimationMaker_1 = __webpack_require__(/*! Client/Component/Animation/AnimationMaker */ "./src/Client/Component/Animation/AnimationMaker.ts");
+const App_1 = __webpack_require__(/*! Client/Component/App */ "./src/Client/Component/App.ts");
 const UUID_NAMESPACE = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
 exports.COMPONENTS = new Map([
+    [App_1.App, 'main-app'],
     [SideMenu_1.SideMenu, 'side-menu'],
     [LayerListing_1.LayerListing, 'layer-listing'],
     [WindowBox_1.WindowBox, 'window-box'],
@@ -3501,181 +3708,15 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 __webpack_require__(/*! Client/styles.css */ "./src/Client/styles.css");
 const components_1 = __webpack_require__(/*! Client/Constants/components */ "./src/Client/Constants/components.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
-const FileUpload_1 = __webpack_require__(/*! Client/Service/FileUpload */ "./src/Client/Service/FileUpload.ts");
-const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
-const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
-const WindowBoxFactory_1 = __webpack_require__(/*! Client/Service/WindowBoxFactory */ "./src/Client/Service/WindowBoxFactory.ts");
-const SheetImporter_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetImporter/SheetImporter */ "./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts");
-const SheetViewer_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetViewer/SheetViewer */ "./src/Client/Component/SpriteSheets/SheetViewer/SheetViewer.ts");
 const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
-const BasicModal_1 = __webpack_require__(/*! Client/Component/Generic/Modal/BasicModal */ "./src/Client/Component/Generic/Modal/BasicModal.ts");
-const NewLayerForm_1 = __webpack_require__(/*! Client/Component/NewLayerForm/NewLayerForm */ "./src/Client/Component/NewLayerForm/NewLayerForm.ts");
-const LayerFactory_1 = __webpack_require__(/*! Model/Factory/LayerFactory */ "./src/Model/Factory/LayerFactory.ts");
-const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
-const CanvasLayer_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasLayer */ "./src/Client/Component/Canvas/CanvasLayer.ts");
-const SheetRepository_1 = __webpack_require__(/*! Client/Service/Repository/SheetRepository */ "./src/Client/Service/Repository/SheetRepository.ts");
-const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Repository/PlacementImageRepository */ "./src/Client/Service/Repository/PlacementImageRepository.ts");
-const CanvasTools_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasTools */ "./src/Client/Component/Canvas/CanvasTools.ts");
-const PlacementHistory_1 = __webpack_require__(/*! Client/Component/PlacementHistory/PlacementHistory */ "./src/Client/Component/PlacementHistory/PlacementHistory.ts");
-const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
-const UserDataRepository_1 = __webpack_require__(/*! Client/Service/Repository/UserDataRepository */ "./src/Client/Service/Repository/UserDataRepository.ts");
-const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */ "./src/Client/Component/SideMenu/SideMenu.ts");
-const LayerListing_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerListing */ "./src/Client/Component/LayerListing/LayerListing.ts");
-components_1.COMPONENTS.forEach((tagName, constructor) => {
-    customElements.define(tagName, constructor);
-});
-let openSheets = [];
-let windowBoxes = {};
+const App_1 = __webpack_require__(/*! Client/Component/App */ "./src/Client/Component/App.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+for (const [constructor, tag] of components_1.COMPONENTS) {
+    customElements.define(tag, constructor);
+}
 document.addEventListener('DOMContentLoaded', async () => {
-    const userData = await UserDataRepository_1.userDataRepository.getAll();
-    const layers = await LayerRepository_1.layerRepository.getAll();
-    const sheets = await SheetRepository_1.sheetRepository.getAll();
-    const placementImages = await PlacementImageRepository_1.placementImageRepository.getAll();
-    for (const layer of layers) {
-        for (const placement of layer.placements) {
-            const placementImage = await PlacementImageRepository_1.placementImageRepository.getByUuid(placement.imageUuid);
-            if (placementImage) {
-                const image = await Dom_1.Dom.image(placementImage.src);
-                LoadedPlacement_1.loadedPlacementRepository.add({
-                    uuid: placement.uuid,
-                    layerUuid: layer.uuid,
-                    image,
-                    x: placement.coordinate.x,
-                    y: placement.coordinate.y,
-                    width: image.width,
-                    height: image.height,
-                });
-            }
-        }
-    }
-    Events_1.Events.listen('upload-files-submission', (event) => {
-        const files = event.detail;
-        FileUpload_1.FileUpload.uploadMultiple(files);
-    });
-    Events_1.Events.listen('open-sheet', async (event) => {
-        const sheetName = event.detail;
-        const sheet = SheetRepository_1.sheetRepository.getByName(sheetName);
-        if (openSheets.includes(sheet.name)) {
-            windowBoxes[sheet.name].flash();
-            return;
-        }
-        const sheetViewerDataset = { imageSrc: sheet.imageSrc };
-        const component = Dom_1.Dom.makeComponent(SheetViewer_1.SheetViewer, sheetViewerDataset);
-        openSheets.push(sheet.name);
-        windowBoxes[sheet.name] = WindowBoxFactory_1.WindowBoxFactory.make(component, sheet.name, {
-            uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetViewer_1.SheetViewer),
-            componentConfigration: { dataset: sheetViewerDataset },
-            title: sheet.name,
-        });
-    });
-    Events_1.Events.listen('window-destroyed', (event) => {
-        const name = event.detail;
-        if (openSheets.includes(name)) {
-            openSheets = openSheets.filter(item => item !== name);
-        }
-        if (windowBoxes[name]) {
-            delete windowBoxes[name];
-        }
-    });
-    Events_1.Events.listen('mouse-down-window-box', (event) => {
-        const windowBox = event.detail;
-        Dom_1.Dom.getAllOfComponent(WindowBox_1.WindowBox).forEach(box => {
-            box.zIndexMoveDown();
-        });
-        windowBox.zIndexMoveUp();
-    });
-    Events_1.Events.listen('open-sheet-importer', (event) => {
-        const component = Dom_1.Dom.makeComponent(SheetImporter_1.SheetImporter);
-        WindowBoxFactory_1.WindowBoxFactory.make(component, 'Import Sheets', {
-            uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetImporter_1.SheetImporter),
-            componentConfigration: { dataset: {} },
-            title: 'Import Sheets',
-        });
-    });
-    Events_1.Events.listen(events_1.EVENTS.openAddNewLayer, (event) => {
-        const modal = Dom_1.Dom.makeComponent(BasicModal_1.BasicModal);
-        const newLayerForm = Dom_1.Dom.makeComponent(NewLayerForm_1.NewLayerForm);
-        modal.append(newLayerForm);
-        document.body.append(modal);
-    });
-    Events_1.Events.listen(events_1.EVENTS.newLayerSubmit, (event) => {
-        const input = event.detail;
-        const layer = Object.assign(LayerFactory_1.LayerFactory.make(), input);
-        Events_1.Events.emit(events_1.EVENTS.newLayerMapped, [layer]);
-        LayerRepository_1.layerRepository.persist(layer);
-    });
-    Events_1.Events.listen(events_1.EVENTS.newLayerMapped, (event) => {
-        document.body.append(...event.detail
-            .sort((a, b) => b.order - a.order)
-            .map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer })));
-    });
-    Events_1.Events.listen('layer-placement-made', (event) => {
-        LayerRepository_1.layerRepository.update(event.detail);
-    });
-    Events_1.Events.listen('layer-active', (event) => {
-        LayerRepository_1.layerRepository.setActive(event.detail.uuid);
-    });
-    Events_1.Events.listen('layer-visible-toggle', (event) => {
-        LayerRepository_1.layerRepository.toggleVisible(event.detail.uuid);
-    });
-    Events_1.Events.listen('layer-delete', (event) => {
-        const uuid = event.detail;
-        LayerRepository_1.layerRepository.remove(uuid)
-            .then(() => {
-            Events_1.Events.emit('layer-deleted', uuid);
-        });
-    });
-    Events_1.Events.listen('updated-view-coordinates', async (event) => {
-        const corrdinates = event.detail;
-        const userData = await UserDataRepository_1.userDataRepository.getAll();
-        userData.lastViewPosition.x = corrdinates.x;
-        userData.lastViewPosition.y = corrdinates.y;
-        UserDataRepository_1.userDataRepository.persist(userData);
-    });
-    Events_1.Events.listen('window-update', async (event) => {
-        const windowConfiguration = event.detail;
-        const userData = await UserDataRepository_1.userDataRepository.getAll();
-        userData.windows[windowConfiguration.uuid] = windowConfiguration;
-        UserDataRepository_1.userDataRepository.persist(userData);
-    });
-    Events_1.Events.listen('click-open-history', async (event) => {
-        WindowBoxFactory_1.WindowBoxFactory.make(Dom_1.Dom.makeComponent(PlacementHistory_1.PlacementHistory), 'Placement History', {
-            uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(PlacementHistory_1.PlacementHistory),
-            componentConfigration: { dataset: {} },
-            title: 'Placement History',
-        });
-    });
-    Events_1.Events.listen('request-placement-deletion', async (event) => {
-        const placementUuid = event.detail;
-        const layers = await LayerRepository_1.layerRepository.getAll();
-        LoadedPlacement_1.loadedPlacementRepository.removeByUuid(placementUuid);
-        for (const layer of layers) {
-            const index = layer.placements.findIndex(p => p.uuid === placementUuid);
-            if (index !== -1) {
-                layer.placements.splice(index, 1);
-                LayerRepository_1.layerRepository.update(layer);
-                Events_1.Events.emit('placement-removed', placementUuid);
-                break;
-            }
-        }
-    });
     window.addEventListener('resize', () => Events_1.Events.emit(events_1.EVENTS.windowResize));
-    const sideMenu = Dom_1.Dom.makeComponent(SideMenu_1.SideMenu);
-    const layerListing = Dom_1.Dom.makeComponent(LayerListing_1.LayerListing, { layers });
-    sideMenu.append(layerListing);
-    const layerElements = layers.map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer, userData }));
-    // // Object.entries(userData.windows).forEach(([componentUuid, windowConfiguration]) => {
-    // //     WindowBoxFactory.make(
-    // //         Dom.makeComponent(
-    // //             COMPONENT_UUID_LOOKUP.get(componentUuid)!,
-    // //             windowConfiguration.componentConfigration.dataset
-    // //         ),
-    // //         windowConfiguration.title,
-    // //         windowConfiguration,
-    // //     )
-    // // })
-    const tools = Dom_1.Dom.makeComponent(CanvasTools_1.CanvasTools, { currentTool: userData.currentTool });
-    document.body.append(sideMenu, tools, ...layerElements);
+    document.body.append(Dom_1.Dom.makeComponent(App_1.App));
 });
 
 })();

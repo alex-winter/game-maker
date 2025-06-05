@@ -16,10 +16,12 @@ import {
 import { CanvasTools } from 'Client/Component/Canvas/CanvasTools'
 import { PlacementHistory } from 'Client/Component/PlacementHistory/PlacementHistory'
 import { AnimationMaker } from 'Client/Component/Animation/AnimationMaker'
+import { App } from 'Client/Component/App'
 
 const UUID_NAMESPACE = '6fa459ea-ee8a-3ca4-894e-db77e160355e'
 
 export const COMPONENTS = new Map<CustomElementConstructor, string>([
+  [App, 'main-app'],
   [SideMenu, 'side-menu'],
   [LayerListing, 'layer-listing'],
   [WindowBox, 'window-box'],
