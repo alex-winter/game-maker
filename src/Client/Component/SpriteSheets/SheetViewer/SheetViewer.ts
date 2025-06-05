@@ -1,4 +1,3 @@
-import { EVENTS } from 'Client/Constants/events'
 import { LEFT_BUTTON } from 'Client/Constants/mouse-events'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
@@ -92,7 +91,7 @@ export class SheetViewer extends Component {
                 const boxHeight = parseInt(box.style.height || '0', 10)
 
                 Events.emit(
-                    EVENTS.sheetSelectionMade,
+                    'sheet-selection-made',
                     await extractImageFromCanvasArea(
                         this.canvas,
                         boxX,

@@ -10,7 +10,7 @@ export class WindowBoxFactory {
         component: Component,
         title: string,
         configuration: WindowConfiguration
-    ): WindowBox {
+    ): WindowBox | null {
         const windowBox: WindowBox = Dom.makeComponent(WindowBox, { configuration }) as WindowBox
 
         if (component.isSingleton && singletonInstances.includes(component)) {
@@ -33,11 +33,9 @@ export class WindowBoxFactory {
                 singletonInstances.push(component)
             }
 
-            document.body.append(
-                windowBox
-            )
+            return windowBox
         }
 
-        return windowBox
+        return null
     }
 }

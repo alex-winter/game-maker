@@ -1203,8 +1203,8 @@ class App extends Component_1.Component {
     async setup() {
         this.userData = await UserDataRepository_1.userDataRepository.getAll();
         this.layers = await LayerRepository_1.layerRepository.getAll();
-        const sheets = await SheetRepository_1.sheetRepository.getAll();
-        const placementImages = await PlacementImageRepository_1.placementImageRepository.getAll();
+        await SheetRepository_1.sheetRepository.getAll();
+        await PlacementImageRepository_1.placementImageRepository.getAll();
         for (const layer of this.layers) {
             for (const placement of layer.placements) {
                 const placementImage = await PlacementImageRepository_1.placementImageRepository.getByUuid(placement.imageUuid);
@@ -1246,12 +1246,15 @@ class App extends Component_1.Component {
         }
         const sheetViewerDataset = { imageSrc: sheet.imageSrc };
         const component = Dom_1.Dom.makeComponent(SheetViewer_1.SheetViewer, sheetViewerDataset);
-        this.openSheets.push(sheet.name);
-        this.windowBoxes[sheet.name] = WindowBoxFactory_1.WindowBoxFactory.make(component, sheet.name, {
+        const windowBox = WindowBoxFactory_1.WindowBoxFactory.make(component, sheet.name, {
             uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetViewer_1.SheetViewer),
             componentConfigration: { dataset: sheetViewerDataset },
             title: sheet.name,
         });
+        if (windowBox) {
+            this.openSheets.push(sheet.name);
+            this.windowBoxes[sheet.name] = windowBox;
+        }
     }
     handleWindowDestroyed(event) {
         const name = event.detail;
@@ -1272,11 +1275,14 @@ class App extends Component_1.Component {
     }
     handleOpenSheetImporter(event) {
         const component = Dom_1.Dom.makeComponent(SheetImporter_1.SheetImporter);
-        WindowBoxFactory_1.WindowBoxFactory.make(component, 'Import Sheets', {
+        const windowBox = WindowBoxFactory_1.WindowBoxFactory.make(component, 'Import Sheets', {
             uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetImporter_1.SheetImporter),
             componentConfigration: { dataset: {} },
             title: 'Import Sheets',
         });
+        if (windowBox) {
+            this.shadowRoot?.append(windowBox);
+        }
     }
     handleOpenAddNewLayer(event) {
         const modal = Dom_1.Dom.makeComponent(BasicModal_1.BasicModal);
@@ -1325,11 +1331,14 @@ class App extends Component_1.Component {
         UserDataRepository_1.userDataRepository.persist(userData);
     }
     handleOpenHistory(event) {
-        WindowBoxFactory_1.WindowBoxFactory.make(Dom_1.Dom.makeComponent(PlacementHistory_1.PlacementHistory), 'Placement History', {
+        const windowBox = WindowBoxFactory_1.WindowBoxFactory.make(Dom_1.Dom.makeComponent(PlacementHistory_1.PlacementHistory), 'Placement History', {
             uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(PlacementHistory_1.PlacementHistory),
             componentConfigration: { dataset: {} },
             title: 'Placement History',
         });
+        if (windowBox) {
+            this.shadowRoot?.append(windowBox);
+        }
     }
     async handleRequestPlacementDeletion(event) {
         const placementUuid = event.detail;
@@ -2238,7 +2247,6 @@ exports.LayerItem = LayerItem;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.LayerListing = void 0;
 const LayerItem_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerItem */ "./src/Client/Component/LayerListing/LayerItem.ts");
-const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
@@ -2263,7 +2271,7 @@ class LayerListing extends Component_1.Component {
         return container;
     }
     handleClickAddNew() {
-        Events_1.Events.emit(events_1.EVENTS.openAddNewLayer);
+        Events_1.Events.emit('open-add-new-layer');
     }
     handleNewLayers() {
         LayerRepository_1.layerRepository.getAll().then(layers => {
@@ -2289,7 +2297,6 @@ exports.LayerListing = LayerListing;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.NewLayerForm = void 0;
-const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
 const layers_1 = __webpack_require__(/*! Client/Constants/layers */ "./src/Client/Constants/layers.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
@@ -2364,7 +2371,7 @@ class NewLayerForm extends Component_1.Component {
     }
     handleSubmit() {
         Events_1.Events.emit('close-modal', this);
-        Events_1.Events.emit(events_1.EVENTS.newLayerSubmit, {
+        Events_1.Events.emit('new-layer-submit', {
             name: this.name,
             type: this.type,
         });
@@ -2711,7 +2718,6 @@ exports.SheetImporter = SheetImporter;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SheetViewer = void 0;
-const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
 const mouse_events_1 = __webpack_require__(/*! Client/Constants/mouse-events */ "./src/Client/Constants/mouse-events.ts");
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
@@ -2784,7 +2790,7 @@ class SheetViewer extends Component_1.Component {
                 const boxY = parseInt(box.style.top || '0', 10);
                 const boxWidth = parseInt(box.style.width || '0', 10);
                 const boxHeight = parseInt(box.style.height || '0', 10);
-                Events_1.Events.emit(events_1.EVENTS.sheetSelectionMade, await (0, extract_image_from_canvas_area_1.extractImageFromCanvasArea)(this.canvas, boxX, boxY, boxWidth, boxHeight));
+                Events_1.Events.emit('sheet-selection-made', await (0, extract_image_from_canvas_area_1.extractImageFromCanvasArea)(this.canvas, boxX, boxY, boxWidth, boxHeight));
             }
         };
         this.addEventListener('mousedown', (event) => {
@@ -3019,35 +3025,6 @@ exports.COMPONENT_UUIDS_CONSTRUCT_LOOKUP = new Map(Array.from(exports.COMPONENTS
     component,
     (0, uuid_1.v5)(tag, UUID_NAMESPACE),
 ]));
-
-
-/***/ }),
-
-/***/ "./src/Client/Constants/events.ts":
-/*!****************************************!*\
-  !*** ./src/Client/Constants/events.ts ***!
-  \****************************************/
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.EVENTS = void 0;
-exports.EVENTS = {
-    uploadFilesSubmission: 'upload-files-submission',
-    openSheet: 'open-sheet',
-    openSheetImporter: 'open-sheet-importer',
-    openAddNewLayer: 'open-add-new-layer',
-    mouseDownWindowBox: 'mouse-down-window-box',
-    newLayerSubmit: 'new-layer-submit',
-    newLayerMapped: 'new-layer-mapped',
-    gotLayer: 'got-layer',
-    getSheets: 'get-sheets',
-    gotSheets: 'got-sheets',
-    closeModal: 'close-modal',
-    sheetSelectionMade: 'sheet-selection-made',
-    windowResize: 'window-resize',
-    layerPlacementMade: 'layer-placement-made',
-};
 
 
 /***/ }),
@@ -3559,9 +3536,9 @@ class WindowBoxFactory {
             if (component.isSingleton) {
                 singletonInstances.push(component);
             }
-            document.body.append(windowBox);
+            return windowBox;
         }
-        return windowBox;
+        return null;
     }
 }
 exports.WindowBoxFactory = WindowBoxFactory;
@@ -3708,14 +3685,13 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 __webpack_require__(/*! Client/styles.css */ "./src/Client/styles.css");
 const components_1 = __webpack_require__(/*! Client/Constants/components */ "./src/Client/Constants/components.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
-const events_1 = __webpack_require__(/*! Client/Constants/events */ "./src/Client/Constants/events.ts");
 const App_1 = __webpack_require__(/*! Client/Component/App */ "./src/Client/Component/App.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 for (const [constructor, tag] of components_1.COMPONENTS) {
     customElements.define(tag, constructor);
 }
 document.addEventListener('DOMContentLoaded', async () => {
-    window.addEventListener('resize', () => Events_1.Events.emit(events_1.EVENTS.windowResize));
+    window.addEventListener('resize', () => Events_1.Events.emit('window-resize'));
     document.body.append(Dom_1.Dom.makeComponent(App_1.App));
 });
 

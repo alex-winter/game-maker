@@ -1,5 +1,4 @@
 import { LayerItem } from 'Client/Component/LayerListing/LayerItem'
-import { EVENTS } from 'Client/Constants/events'
 import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
@@ -39,7 +38,7 @@ export class LayerListing extends Component {
     }
 
     private handleClickAddNew(): void {
-        Events.emit(EVENTS.openAddNewLayer)
+        Events.emit('open-add-new-layer')
     }
 
     private handleNewLayers(): void {

@@ -1,4 +1,3 @@
-import { EVENTS } from 'Client/Constants/events'
 import { LAYERS } from 'Client/Constants/layers'
 import { Component, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
@@ -94,7 +93,7 @@ export class NewLayerForm extends Component {
     private handleSubmit(): void {
         Events.emit('close-modal', this)
         Events.emit(
-            EVENTS.newLayerSubmit,
+            'new-layer-submit',
             {
                 name: this.name,
                 type: this.type,

@@ -54,8 +54,9 @@ export class App extends Component {
     protected async setup(): Promise<void> {
         this.userData = await userDataRepository.getAll()
         this.layers = await layerRepository.getAll()
-        const sheets = await sheetRepository.getAll()
-        const placementImages = await placementImageRepository.getAll()
+
+        await sheetRepository.getAll()
+        await placementImageRepository.getAll()
 
         for (const layer of this.layers) {
             for (const placement of layer.placements) {
@@ -116,13 +117,16 @@ export class App extends Component {
         const sheetViewerDataset = { imageSrc: sheet.imageSrc }
         const component = Dom.makeComponent(SheetViewer, sheetViewerDataset)
 
-        this.openSheets.push(sheet.name)
-
-        this.windowBoxes[sheet.name] = WindowBoxFactory.make(component, sheet.name, {
+        const windowBox = WindowBoxFactory.make(component, sheet.name, {
             uuid: COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetViewer)!,
             componentConfigration: { dataset: sheetViewerDataset },
             title: sheet.name,
         })
+
+        if (windowBox) {
+            this.openSheets.push(sheet.name)
+            this.windowBoxes[sheet.name] = windowBox
+        }
     }
 
     private handleWindowDestroyed(event: CustomEvent): void {
@@ -149,12 +153,15 @@ export class App extends Component {
 
     private handleOpenSheetImporter(event: CustomEvent): void {
         const component = Dom.makeComponent(SheetImporter)
-
-        WindowBoxFactory.make(component, 'Import Sheets', {
+        const windowBox = WindowBoxFactory.make(component, 'Import Sheets', {
             uuid: COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetImporter)!,
             componentConfigration: { dataset: {} },
             title: 'Import Sheets',
         })
+
+        if (windowBox) {
+            this.shadowRoot?.append(windowBox)
+        }
     }
 
     private handleOpenAddNewLayer(event: CustomEvent): void {
@@ -230,7 +237,7 @@ export class App extends Component {
     }
 
     private handleOpenHistory(event: CustomEvent): void {
-        WindowBoxFactory.make(
+        const windowBox = WindowBoxFactory.make(
             Dom.makeComponent(PlacementHistory),
             'Placement History',
             {
@@ -239,6 +246,9 @@ export class App extends Component {
                 title: 'Placement History',
             }
         )
+        if (windowBox) {
+            this.shadowRoot?.append(windowBox)
+        }
     }
 
     private async handleRequestPlacementDeletion(event: CustomEvent): Promise<void> {
