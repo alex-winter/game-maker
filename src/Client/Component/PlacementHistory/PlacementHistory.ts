@@ -89,7 +89,7 @@ export class PlacementHistory extends Component {
         const row = (event.target as HTMLElement).closest('.placement-row') as HTMLElement
         const uuid = row?.dataset.uuid
 
-        // row.remove()
+        row.remove()
 
         Events.emit('request-placement-deletion', uuid)
     }

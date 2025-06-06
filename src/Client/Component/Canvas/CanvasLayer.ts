@@ -120,7 +120,9 @@ export class CanvasLayer extends Component {
                 : CanvasLayer.DEFAULT_IMAGE
         )
 
-        this.layer.placements.forEach(this.loadPlacement.bind(this))
+        for (const placement of this.layer.placements) {
+            this.loadPlacement(placement)
+        }
 
         this.viewCoordinates.x = this.parsedDataset.userData?.lastViewPosition?.x || 0
         this.viewCoordinates.y = this.parsedDataset.userData?.lastViewPosition?.y || 0
@@ -497,7 +499,7 @@ export class CanvasLayer extends Component {
             this.viewCoordinates.x = startX + deltaX * easeOut
             this.viewCoordinates.y = startY + deltaY * easeOut
 
-            Events.emit('updated-view-coordinates', { ...this.viewCoordinates })
+            Events.emit('updated-view-coordinates', this.viewCoordinates)
 
             if (progress < 1) {
                 requestAnimationFrame(animate)

@@ -1253,6 +1253,7 @@ class App extends Component_1.Component {
         'updated-view-coordinates': this.handleUpdateViewCoordinates,
         'window-update': this.handleWindowUpdate,
         'request-placement-deletion': this.handleRequestPlacementDeletion,
+        'layer-order-up': this.handleLayerOrderUp,
     };
     async setup() {
         this.userData = await UserDataRepository_1.userDataRepository.getAll();
@@ -1408,6 +1409,24 @@ class App extends Component_1.Component {
                 break;
             }
         }
+    }
+    async handleLayerOrderUp(event) {
+        console.log(event.detail);
+        const layerUuid = event.detail;
+        const layer = await LayerRepository_1.layerRepository.getByUuid(layerUuid);
+        const layers = await LayerRepository_1.layerRepository.getAll();
+        layers.sort((a, b) => a.order - b.order);
+        const index = layers.findIndex(l => l.uuid === layer.uuid);
+        if (index <= 0)
+            return;
+        const above = layers[index - 1];
+        const tempOrder = layer.order;
+        layer.order = above.order;
+        above.order = tempOrder;
+        await Promise.all([
+            LayerRepository_1.layerRepository.update(layer),
+            LayerRepository_1.layerRepository.update(above),
+        ]);
     }
 }
 exports.App = App;
@@ -1641,7 +1660,9 @@ class CanvasLayer extends Component_1.Component {
         this.currentImage = await Dom_1.Dom.image(this.isCollisionLayer
             ? CanvasLayer.COLLISION_IMAGE
             : CanvasLayer.DEFAULT_IMAGE);
-        this.layer.placements.forEach(this.loadPlacement.bind(this));
+        for (const placement of this.layer.placements) {
+            this.loadPlacement(placement);
+        }
         this.viewCoordinates.x = this.parsedDataset.userData?.lastViewPosition?.x || 0;
         this.viewCoordinates.y = this.parsedDataset.userData?.lastViewPosition?.y || 0;
     }
@@ -1899,7 +1920,7 @@ class CanvasLayer extends Component_1.Component {
             const easeOut = 1 - Math.pow(1 - progress, 3);
             this.viewCoordinates.x = startX + deltaX * easeOut;
             this.viewCoordinates.y = startY + deltaY * easeOut;
-            Events_1.Events.emit('updated-view-coordinates', { ...this.viewCoordinates });
+            Events_1.Events.emit('updated-view-coordinates', this.viewCoordinates);
             if (progress < 1) {
                 requestAnimationFrame(animate);
             }
@@ -2302,6 +2323,7 @@ class LayerItem extends Component_1.Component {
     }
     handleClickUp(e) {
         e.stopPropagation();
+        console.log('up');
         Events_1.Events.emit('layer-order-up', this.layer.uuid);
     }
     handleClickDown(e) {
@@ -2526,7 +2548,7 @@ class PlacementHistory extends Component_1.Component {
         event.stopPropagation();
         const row = event.target.closest('.placement-row');
         const uuid = row?.dataset.uuid;
-        // row.remove()
+        row.remove();
         Events_1.Events.emit('request-placement-deletion', uuid);
     }
     css() {
@@ -3396,6 +3418,9 @@ class LayerRepository extends Repository_1.Repository {
             }
             this.update(layer);
         }
+    }
+    getByUuid(uuid) {
+        return this.layers.find(layer => layer.uuid === uuid);
     }
 }
 exports.layerRepository = new LayerRepository();

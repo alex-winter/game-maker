@@ -49,6 +49,7 @@ export class App extends Component {
         'updated-view-coordinates': this.handleUpdateViewCoordinates,
         'window-update': this.handleWindowUpdate,
         'request-placement-deletion': this.handleRequestPlacementDeletion,
+        'layer-order-up': this.handleLayerOrderUp,
     }
 
     protected async setup(): Promise<void> {
@@ -268,5 +269,29 @@ export class App extends Component {
                 break
             }
         }
+    }
+
+    private async handleLayerOrderUp(event: CustomEvent): Promise<void> {
+        console.log(event.detail)
+        const layerUuid: string = event.detail
+        const layer = await layerRepository.getByUuid(layerUuid)
+        const layers: Layer[] = await layerRepository.getAll()
+
+        layers.sort((a, b) => a.order - b.order)
+
+        const index = layers.findIndex(l => l.uuid === layer.uuid)
+
+        if (index <= 0) return
+
+        const above = layers[index - 1]
+
+        const tempOrder = layer.order
+        layer.order = above.order
+        above.order = tempOrder
+
+        await Promise.all([
+            layerRepository.update(layer),
+            layerRepository.update(above),
+        ])
     }
 }

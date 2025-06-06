@@ -74,6 +74,10 @@ class LayerRepository extends Repository {
             this.update(layer)
         }
     }
+
+    public getByUuid(uuid: string): Layer {
+        return this.layers.find(layer => layer.uuid === uuid)!
+    }
 }
 
 export const layerRepository = new LayerRepository()
