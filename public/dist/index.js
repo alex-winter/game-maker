@@ -11,20 +11,40 @@
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Component = void 0;
-const Events_1 = __webpack_require__(/*! ./Events */ "./node_modules/event-driven-web-components/dist/Events.js");
-const is_json_1 = __webpack_require__(/*! ./is-json */ "./node_modules/event-driven-web-components/dist/is-json.js");
-const patch_dom_1 = __webpack_require__(/*! ./patch-dom */ "./node_modules/event-driven-web-components/dist/patch-dom.js");
+const ComponentPrototype_1 = __webpack_require__(/*! ./ComponentPrototype */ "./node_modules/event-driven-web-components/dist/ComponentPrototype.js");
 class Component extends HTMLElement {
-    globalStylesheets = undefined;
-    parsedDataset = {};
-    listeners = {};
-    externalListeners = {};
-    shadow;
-    externalHandlers = [];
-    attachedListeners = [];
+    #delegate;
     constructor() {
         super();
-        this.shadow = this.attachShadow({ mode: 'open' });
+        this.attachShadow({ mode: 'open' });
+        this.#delegate = new ComponentPrototype_1.ComponentPrototype(this);
+        this.#delegate.setup = this.setup.bind(this);
+        this.#delegate.build = this.build.bind(this);
+        this.#delegate.css = this.css.bind(this);
+        this.#delegate.afterBuild = this.afterBuild.bind(this);
+        this.#delegate.afterPatch = this.afterPatch.bind(this);
+        if (this.globalStylesheets) {
+            this.#delegate.globalStylesheets = this.globalStylesheets;
+        }
+    }
+    connectedCallback() {
+        if (this.isConnected) {
+            this.#delegate.listeners = this.listeners || {};
+            this.#delegate.externalListeners = this.externalListeners || {};
+            void this.#delegate.connectedCallback();
+        }
+    }
+    disconnectedCallback() {
+        this.#delegate.disconnectedCallback();
+    }
+    patch() {
+        this.#delegate.patch();
+    }
+    findOne(query) {
+        return this.#delegate.findOne(query);
+    }
+    findAll(query) {
+        return this.#delegate.findAll(query);
     }
     async setup() { }
     afterBuild() { }
@@ -32,92 +52,127 @@ class Component extends HTMLElement {
     css() {
         return '';
     }
-    destroy() {
-        this.shadow.host.remove();
+    get globalStylesheets() {
+        return undefined;
     }
-    connectedCallback() {
-        const datasetKeys = Object.keys(this.dataset);
-        for (let key of datasetKeys) {
-            const value = this.dataset[key];
+    get parsedDataset() {
+        return this.#delegate.parsedDataset;
+    }
+}
+exports.Component = Component;
+//# sourceMappingURL=Component.js.map
+
+/***/ }),
+
+/***/ "./node_modules/event-driven-web-components/dist/ComponentPrototype.js":
+/*!*****************************************************************************!*\
+  !*** ./node_modules/event-driven-web-components/dist/ComponentPrototype.js ***!
+  \*****************************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ComponentPrototype = void 0;
+const Events_1 = __webpack_require__(/*! ./Events */ "./node_modules/event-driven-web-components/dist/Events.js");
+const is_json_1 = __webpack_require__(/*! ./is-json */ "./node_modules/event-driven-web-components/dist/is-json.js");
+const patch_dom_1 = __webpack_require__(/*! ./patch-dom */ "./node_modules/event-driven-web-components/dist/patch-dom.js");
+class ComponentPrototype {
+    anchor;
+    shadow;
+    parsedDataset = {};
+    listeners = {};
+    externalListeners = {};
+    externalHandlers = [];
+    attachedListeners = [];
+    globalStylesheets;
+    constructor(anchor) {
+        this.anchor = anchor;
+        const shadowRoot = anchor.shadowRoot;
+        if (!shadowRoot) {
+            throw new Error('ComponentPrototype requires a shadowRoot');
+        }
+        this.shadow = shadowRoot;
+    }
+    setup = async () => { };
+    build = () => {
+        throw new Error('You must override the build() method');
+    };
+    css = () => '';
+    afterBuild = () => { };
+    afterPatch = () => { };
+    async connectedCallback() {
+        for (const key of Object.keys(this.anchor.dataset)) {
+            const value = this.anchor.dataset[key];
             this.parsedDataset[key] = (0, is_json_1.isJSON)(value)
                 ? JSON.parse(value)
                 : value;
         }
-        const build = async () => {
-            if (this.globalStylesheets) {
-                for (let href of this.globalStylesheets) {
-                    const link = document.createElement('link');
-                    link.rel = 'stylesheet';
-                    link.href = href;
-                    this.shadow.append(link);
-                }
+        if (this.globalStylesheets) {
+            for (const href of this.globalStylesheets) {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = href;
+                this.shadow.appendChild(link);
             }
-            await this.setup();
-            const css = this.css().trim();
-            if (css.length) {
-                const sheet = new CSSStyleSheet();
-                sheet.replaceSync(css);
-                this.shadow.adoptedStyleSheets = [sheet];
-            }
-            this.shadow.appendChild(this.build());
-            this.setListeners();
-            this.setExternalListeners();
-            this.afterBuild();
-        };
-        build();
+        }
+        await this.setup();
+        const cssText = this.css().trim();
+        if (cssText.length > 0) {
+            const sheet = new CSSStyleSheet();
+            sheet.replaceSync(cssText);
+            this.shadow.adoptedStyleSheets = [sheet];
+        }
+        this.shadow.appendChild(this.build());
+        this.setListeners();
+        this.setExternalListeners();
+        this.afterBuild();
+    }
+    disconnectedCallback() {
+        this.anchor.remove();
     }
     patch() {
-        const firstChild = Array.from(this.shadow.children)
+        const nonLinkChildren = Array.from(this.shadow.children)
             .filter(child => child.tagName !== 'LINK');
-        if (firstChild.length > 1) {
-            throw new Error('There should only be one root child of the shadow dom');
+        if (nonLinkChildren.length !== 1) {
+            throw new Error('Shadow root must contain exactly one non-link root element');
         }
-        (0, patch_dom_1.patchDOM)(firstChild[0], this.build());
+        (0, patch_dom_1.patchDOM)(nonLinkChildren[0], this.build());
         this.setListeners();
         this.setExternalListeners();
         this.afterPatch();
     }
-    async setListeners() {
+    setListeners() {
         for (const listener of this.attachedListeners) {
             listener.element.removeEventListener(listener.type, listener.handler);
         }
         this.attachedListeners = [];
-        const listeners = this.listeners;
-        if (listeners) {
-            const listenerKeys = Object.keys(listeners);
-            for (let key of listenerKeys) {
-                const eventFn = listeners[key];
-                const [selector, eventType] = key.split(':');
-                const elements = this.findAll(selector);
-                for (let element of elements) {
-                    const boundHandler = eventFn.bind(this);
-                    element.addEventListener(eventType, boundHandler);
-                    this.attachedListeners.push({
-                        element,
-                        type: eventType,
-                        handler: boundHandler,
-                    });
-                }
-            }
-        }
-    }
-    async setExternalListeners() {
-        for (let handler of this.externalHandlers) {
-            Events_1.Events.unlisten(handler.key, handler.handler);
-        }
-        this.externalHandlers = [];
-        const listeners = this.externalListeners;
-        if (listeners) {
-            const listenerKeys = Object.keys(listeners);
-            for (let key of listenerKeys) {
-                const eventFn = listeners[key];
-                const boundHandler = eventFn.bind(this);
-                Events_1.Events.listen(key, boundHandler);
-                this.externalHandlers.push({
-                    key,
+        for (const key of Object.keys(this.listeners)) {
+            const [selector, eventType] = key.split(':');
+            const handler = this.listeners[key];
+            const elements = this.findAll(selector);
+            for (const el of elements) {
+                const boundHandler = handler.bind(this.anchor);
+                el.addEventListener(eventType, boundHandler);
+                this.attachedListeners.push({
+                    element: el,
+                    type: eventType,
                     handler: boundHandler,
                 });
             }
+        }
+    }
+    setExternalListeners() {
+        for (const handler of this.externalHandlers) {
+            Events_1.Events.unlisten(handler.key, handler.handler);
+        }
+        this.externalHandlers = [];
+        for (const key of Object.keys(this.externalListeners)) {
+            const boundHandler = this.externalListeners[key].bind(this.anchor);
+            Events_1.Events.listen(key, boundHandler);
+            this.externalHandlers.push({
+                key,
+                handler: boundHandler,
+            });
         }
     }
     findOne(query) {
@@ -127,8 +182,8 @@ class Component extends HTMLElement {
         return Array.from(this.shadow.querySelectorAll(query));
     }
 }
-exports.Component = Component;
-//# sourceMappingURL=Component.js.map
+exports.ComponentPrototype = ComponentPrototype;
+//# sourceMappingURL=ComponentPrototype.js.map
 
 /***/ }),
 
@@ -1127,7 +1182,6 @@ exports.AnimationMaker = void 0;
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 class AnimationMaker extends Component_1.Component {
-    listeners = {};
     css() {
         return /*css*/ `
             .container {
@@ -1666,8 +1720,8 @@ class CanvasLayer extends Component_1.Component {
         const canvas = this.getCanvas();
         if (this.layer.uuid === event.detail) {
             canvas.stopAnimation();
-            canvas.destroy();
-            this.destroy();
+            canvas.remove();
+            this.remove();
         }
     }
     handleMovement(event) {
@@ -2092,12 +2146,12 @@ class BasicModal extends Component_1.Component {
     }
     handleCloseModal(event) {
         if (this.contains(event.detail)) {
-            this.destroy();
+            this.remove();
         }
     }
     handleClickBackdrop(event) {
         if (event.target === this.getBackdrop()) {
-            this.destroy();
+            this.remove();
         }
     }
 }
@@ -2232,7 +2286,7 @@ class LayerItem extends Component_1.Component {
     handleLayerDeleted(event) {
         const uuid = event.detail;
         if (this.layer.uuid === uuid) {
-            this.destroy();
+            this.remove();
         }
     }
     handleContainerClick() {
@@ -2983,7 +3037,7 @@ class WindowBox extends Component_1.Component {
         close.addEventListener('click', (event) => {
             event.stopPropagation();
             Events_1.Events.emit('window-destroyed', this.dataset.title);
-            this.destroy();
+            this.remove();
         }, true);
         options.append(close);
         element.append(title, options);
@@ -3106,9 +3160,11 @@ exports.Component = void 0;
 const Component_1 = __webpack_require__(/*! event-driven-web-components/dist/Component */ "./node_modules/event-driven-web-components/dist/Component.js");
 class Component extends Component_1.Component {
     isSingleton = false;
-    globalStylesheets = [
-        '/dist/index.css'
-    ];
+    get globalStylesheets() {
+        return [
+            '/dist/index.css'
+        ];
+    }
 }
 exports.Component = Component;
 

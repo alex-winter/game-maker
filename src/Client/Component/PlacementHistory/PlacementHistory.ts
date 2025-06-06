@@ -5,7 +5,6 @@ import { Events } from 'Client/Service/Events'
 import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
 
 export class PlacementHistory extends Component {
-
     protected externalListeners: ExternalListeners = {
         'placement-added': this.handlePlacementAdded,
     }

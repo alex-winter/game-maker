@@ -2,9 +2,6 @@ import { Component, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 
 export class AnimationMaker extends Component {
-    protected listeners: Listeners = {
-    }
-
     protected css(): string {
         return /*css*/`
             .container {

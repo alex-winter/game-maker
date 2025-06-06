@@ -109,7 +109,7 @@ export class LayerItem extends Component {
         const uuid = event.detail as string
 
         if (this.layer.uuid === uuid) {
-            this.destroy()
+            this.remove()
         }
     }
 

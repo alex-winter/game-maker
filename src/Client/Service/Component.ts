@@ -10,7 +10,9 @@ export type Listeners = BaseListeners
 export abstract class Component extends BaseComponent {
     public isSingleton: boolean = false
 
-    protected globalStylesheets: string[] = [
-        '/dist/index.css'
-    ]
+    protected get globalStylesheets(): string[] {
+        return [
+            '/dist/index.css'
+        ]
+    }
 }

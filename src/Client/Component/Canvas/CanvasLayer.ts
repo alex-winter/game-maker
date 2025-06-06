@@ -238,8 +238,8 @@ export class CanvasLayer extends Component {
 
         if (this.layer.uuid === event.detail as string) {
             canvas.stopAnimation()
-            canvas.destroy()
-            this.destroy()
+            canvas.remove()
+            this.remove()
         }
     }
 

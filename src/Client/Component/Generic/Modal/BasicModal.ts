@@ -53,13 +53,13 @@ export class BasicModal extends Component {
 
     private handleCloseModal(event: CustomEvent): void {
         if (this.contains(event.detail as Component)) {
-            this.destroy()
+            this.remove()
         }
     }
 
     private handleClickBackdrop(event: Event): void {
         if (event.target === this.getBackdrop()) {
-            this.destroy()
+            this.remove()
         }
     }
 }
