@@ -6,7 +6,7 @@ import { sheetRepository } from 'Client/Service/Repository/SheetRepository'
 
 export class FileListing extends Component {
     protected externalListeners: ExternalListeners = {
-        'upload-files-submission': this.handleFilesUploadSubmitted
+        'upload-files-submission': this.handleFilesUploadSubmitted,
     }
 
     protected listeners: Listeners = {

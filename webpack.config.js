@@ -38,7 +38,7 @@ module.exports = {
             path.resolve(__dirname, 'src'),
             'node_modules',
         ],
-        extensions: ['.ts', '.css'],
+        extensions: ['.ts', '.js', '.css'],
     },
 
     output: {

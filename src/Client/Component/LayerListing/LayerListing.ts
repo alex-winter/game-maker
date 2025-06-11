@@ -8,6 +8,7 @@ import { Layer } from 'Model/Layer'
 export class LayerListing extends Component {
     protected externalListeners: ExternalListeners = {
         'new-layer-mapped': this.handleNewLayers,
+        'layer-update': this.handleLayerUpdate,
     }
 
     protected listeners: Listeners = {
@@ -15,6 +16,10 @@ export class LayerListing extends Component {
     }
 
     private layers!: Layer[]
+
+    private handleLayerUpdate() {
+        this.patch()
+    }
 
     protected async setup(): Promise<void> {
         this.layers = await layerRepository.getAll()
@@ -26,7 +31,7 @@ export class LayerListing extends Component {
         const addNewLayerButton = Dom.button('Add New Layer', 'add-new')
 
         listing.append(
-            ...this.layers.map(this.buildLayer.bind(this))
+            ...this.layers.sort((a, b) => a.order - b.order).map(this.buildLayer.bind(this))
         )
 
         container.append(

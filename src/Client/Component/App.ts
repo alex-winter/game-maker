@@ -272,7 +272,6 @@ export class App extends Component {
     }
 
     private async handleLayerOrderUp(event: CustomEvent): Promise<void> {
-        console.log(event.detail)
         const layerUuid: string = event.detail
         const layer = await layerRepository.getByUuid(layerUuid)
         const layers: Layer[] = await layerRepository.getAll()

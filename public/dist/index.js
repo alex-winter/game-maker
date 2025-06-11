@@ -58,6 +58,12 @@ class Component extends HTMLElement {
     get parsedDataset() {
         return this.#delegate.parsedDataset;
     }
+    get debug() {
+        return this.#delegate.debug;
+    }
+    set debug(value) {
+        this.#delegate.debug = value;
+    }
 }
 exports.Component = Component;
 //# sourceMappingURL=Component.js.map
@@ -85,6 +91,19 @@ class ComponentPrototype {
     externalHandlers = [];
     attachedListeners = [];
     globalStylesheets;
+    // Debug mode flag
+    _debug = false;
+    get debug() {
+        return this._debug;
+    }
+    set debug(value) {
+        this._debug = value;
+    }
+    log(...args) {
+        if (this._debug) {
+            console.log('[ComponentPrototype]', ...args);
+        }
+    }
     constructor(anchor) {
         this.anchor = anchor;
         const shadowRoot = anchor.shadowRoot;
@@ -101,49 +120,68 @@ class ComponentPrototype {
     afterBuild = () => { };
     afterPatch = () => { };
     async connectedCallback() {
+        this.log('connectedCallback called');
         for (const key of Object.keys(this.anchor.dataset)) {
             const value = this.anchor.dataset[key];
             this.parsedDataset[key] = (0, is_json_1.isJSON)(value)
                 ? JSON.parse(value)
                 : value;
+            this.log(`Parsed dataset key="${key}":`, this.parsedDataset[key]);
         }
         if (this.globalStylesheets) {
             for (const href of this.globalStylesheets) {
-                const link = document.createElement('link');
-                link.rel = 'stylesheet';
-                link.href = href;
-                this.shadow.appendChild(link);
+                if (!this.shadow.querySelector(`link[href="${href}"]`)) {
+                    const link = document.createElement('link');
+                    link.rel = 'stylesheet';
+                    link.href = href;
+                    this.shadow.appendChild(link);
+                    this.log(`Appended global stylesheet: ${href}`);
+                }
             }
         }
+        this.log('Setup starting...');
         await this.setup();
+        this.log('Setup complete');
         const cssText = this.css().trim();
         if (cssText.length > 0) {
             const sheet = new CSSStyleSheet();
             sheet.replaceSync(cssText);
             this.shadow.adoptedStyleSheets = [sheet];
+            this.log('Adopted stylesheets set');
         }
         this.shadow.appendChild(this.build());
+        this.log('Component built and appended');
         this.setListeners();
         this.setExternalListeners();
         this.afterBuild();
+        this.log('connectedCallback complete');
     }
     disconnectedCallback() {
+        this.log('disconnectedCallback called');
         this.anchor.remove();
+        this.log('Anchor element removed from DOM');
     }
     patch() {
+        this.log('patch() called');
         const nonLinkChildren = Array.from(this.shadow.children)
             .filter(child => child.tagName !== 'LINK');
         if (nonLinkChildren.length !== 1) {
-            throw new Error('Shadow root must contain exactly one non-link root element');
+            const errMsg = 'Shadow root must contain exactly one non-link root element';
+            this.log(errMsg);
+            throw new Error(errMsg);
         }
         (0, patch_dom_1.patchDOM)(nonLinkChildren[0], this.build());
+        this.log('DOM patched');
         this.setListeners();
         this.setExternalListeners();
         this.afterPatch();
+        this.log('patch() completed');
     }
     setListeners() {
+        this.log('Setting listeners...');
         for (const listener of this.attachedListeners) {
             listener.element.removeEventListener(listener.type, listener.handler);
+            this.log(`Removed listener for event "${listener.type}" from element`, listener.element);
         }
         this.attachedListeners = [];
         for (const key of Object.keys(this.listeners)) {
@@ -158,12 +196,16 @@ class ComponentPrototype {
                     type: eventType,
                     handler: boundHandler,
                 });
+                this.log(`Attached listener for event "${eventType}" on selector "${selector}"`, el);
             }
         }
+        this.log('Listeners set');
     }
     setExternalListeners() {
+        this.log('Setting external listeners');
         for (const handler of this.externalHandlers) {
             Events_1.Events.unlisten(handler.key, handler.handler);
+            this.log(`Removed external listener for event "${handler.key}"`);
         }
         this.externalHandlers = [];
         for (const key of Object.keys(this.externalListeners)) {
@@ -173,7 +215,9 @@ class ComponentPrototype {
                 key,
                 handler: boundHandler,
             });
+            this.log(`Attached external listener for event "${key}"`);
         }
+        this.log('External listeners set');
     }
     findOne(query) {
         return this.shadow.querySelector(query);
@@ -266,14 +310,15 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.patchDOM = patchDOM;
 function patchDOM(oldNode, newNode) {
     if (!oldNode || !newNode)
-        // Replace if node types or node names differ
-        if (oldNode.nodeType !== newNode.nodeType || oldNode.nodeName !== newNode.nodeName) {
-            if (oldNode.nodeType === Node.ELEMENT_NODE ||
-                oldNode.nodeType === Node.TEXT_NODE) {
-                oldNode.replaceWith(newNode.cloneNode(true));
-            }
-            return;
+        return;
+    // Replace if node types or node names differ
+    if (oldNode.nodeType !== newNode.nodeType || oldNode.nodeName !== newNode.nodeName) {
+        if (oldNode.nodeType === Node.ELEMENT_NODE ||
+            oldNode.nodeType === Node.TEXT_NODE) {
+            oldNode.replaceWith(newNode.cloneNode(true));
         }
+        return;
+    }
     // Update text content for text nodes
     if (oldNode.nodeType === Node.TEXT_NODE && newNode.nodeType === Node.TEXT_NODE) {
         const oldText = oldNode;
@@ -283,11 +328,31 @@ function patchDOM(oldNode, newNode) {
         }
         return;
     }
-    // If we're here, assume ELEMENT_NODEs
+    // Assume ELEMENT_NODE from here
     if (oldNode.nodeType === Node.ELEMENT_NODE && newNode.nodeType === Node.ELEMENT_NODE) {
         const oldEl = oldNode;
         const newEl = newNode;
-        // Update attributes
+        // --- NEW: Check for differences in data-* attributes ---
+        for (let i = 0; i < newEl.attributes.length; i++) {
+            const attr = newEl.attributes[i];
+            if (attr.name.startsWith('data-')) {
+                const oldVal = oldEl.getAttribute(attr.name);
+                if (oldVal !== attr.value) {
+                    // Replace whole node if any data-* attribute differs
+                    oldEl.replaceWith(newEl.cloneNode(true));
+                    return;
+                }
+            }
+        }
+        // Also check if oldEl has any data-* attribute not present in newEl
+        for (let i = 0; i < oldEl.attributes.length; i++) {
+            const attr = oldEl.attributes[i];
+            if (attr.name.startsWith('data-') && !newEl.hasAttribute(attr.name)) {
+                oldEl.replaceWith(newEl.cloneNode(true));
+                return;
+            }
+        }
+        // Update attributes (non data-* already handled by above check)
         const oldAttrs = oldEl.attributes;
         const newAttrs = newEl.attributes;
         // Add or update attributes
@@ -304,21 +369,21 @@ function patchDOM(oldNode, newNode) {
                 oldEl.removeAttribute(attr.name);
             }
         }
+        // Update input value (for inputs inside the element)
+        if (oldEl.value !== newEl.value) {
+            oldEl.value = newEl.value;
+        }
         // Recursively patch children, skipping custom elements
         const oldChildren = Array.from(oldEl.childNodes);
         const newChildren = Array.from(newEl.childNodes);
-        const max = Math.max(oldChildren.length, newChildren.length);
-        for (let i = 0; i < max; i++) {
-            const oldChild = oldChildren[i];
-            const newChild = newChildren[i];
-            if (!oldChild && newChild) {
-                oldEl.appendChild(newChild.cloneNode(true));
-            }
-            else if (oldChild && !newChild) {
-                oldEl.removeChild(oldChild);
-            }
-            else if (oldChild && newChild) {
-                patchDOM(oldChild, newChild);
+        if (oldChildren.length !== newChildren.length ||
+            !oldChildren.every((child, i) => child.nodeName === newChildren[i]?.nodeName)) {
+            oldEl.innerHTML = '';
+            newChildren.forEach(child => oldEl.appendChild(child.cloneNode(true)));
+        }
+        else {
+            for (let i = 0; i < oldChildren.length; i++) {
+                patchDOM(oldChildren[i], newChildren[i]);
             }
         }
     }
@@ -1411,7 +1476,6 @@ class App extends Component_1.Component {
         }
     }
     async handleLayerOrderUp(event) {
-        console.log(event.detail);
         const layerUuid = event.detail;
         const layer = await LayerRepository_1.layerRepository.getByUuid(layerUuid);
         const layers = await LayerRepository_1.layerRepository.getAll();
@@ -2359,7 +2423,6 @@ class LayerItem extends Component_1.Component {
     }
     handleClickUp(e) {
         e.stopPropagation();
-        console.log('up');
         Events_1.Events.emit('layer-order-up', this.layer.uuid);
     }
     handleClickDown(e) {
@@ -2389,11 +2452,15 @@ const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/Laye
 class LayerListing extends Component_1.Component {
     externalListeners = {
         'new-layer-mapped': this.handleNewLayers,
+        'layer-update': this.handleLayerUpdate,
     };
     listeners = {
         '.add-new:click': this.handleClickAddNew
     };
     layers;
+    handleLayerUpdate() {
+        this.patch();
+    }
     async setup() {
         this.layers = await LayerRepository_1.layerRepository.getAll();
     }
@@ -2401,7 +2468,7 @@ class LayerListing extends Component_1.Component {
         const container = Dom_1.Dom.div();
         const listing = Dom_1.Dom.div('listing');
         const addNewLayerButton = Dom_1.Dom.button('Add New Layer', 'add-new');
-        listing.append(...this.layers.map(this.buildLayer.bind(this)));
+        listing.append(...this.layers.sort((a, b) => a.order - b.order).map(this.buildLayer.bind(this)));
         container.append(listing, addNewLayerButton);
         return container;
     }
@@ -2684,7 +2751,7 @@ const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/
 const SheetRepository_1 = __webpack_require__(/*! Client/Service/Repository/SheetRepository */ "./src/Client/Service/Repository/SheetRepository.ts");
 class FileListing extends Component_1.Component {
     externalListeners = {
-        'upload-files-submission': this.handleFilesUploadSubmitted
+        'upload-files-submission': this.handleFilesUploadSubmitted,
     };
     listeners = {
         '.open-sheet-button:click': this.handleOpenSheetButtonClick

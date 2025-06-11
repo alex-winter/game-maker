@@ -129,7 +129,6 @@ export class LayerItem extends Component {
 
     private handleClickUp(e: Event): void {
         e.stopPropagation()
-        console.log('up')
         Events.emit('layer-order-up', this.layer.uuid)
     }
 
