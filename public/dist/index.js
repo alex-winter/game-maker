@@ -1673,6 +1673,10 @@ class CanvasLayer extends Component_1.Component {
         this.currentImage.classList.add('current-image');
         canvas.classList.toggle('hide', !this.layer.is_visible);
         container.append(canvas, this.currentImage);
+        const baseZIndex = 500;
+        const orderIndex = this.layer.order ?? 0;
+        const calculatedZIndex = baseZIndex + orderIndex;
+        this.style.zIndex = calculatedZIndex.toString();
         return container;
     }
     afterBuild() {
