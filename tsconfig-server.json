@@ -4,7 +4,7 @@
         "emitDecoratorMetadata": true,
         "target": "esnext",
         "module": "commonjs",
-        "outDir": "./public/dist",
+        "outDir": "./dist",
         "baseUrl": "src",
         "sourceMap": true,
         "strict": true,
@@ -17,7 +17,7 @@
         "forceConsistentCasingInFileNames": true
     },
     "include": [
-        "src/Client",
+        "src/Server",
         "src/Model"
     ],
     "exclude": [

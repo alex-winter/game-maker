@@ -18,7 +18,14 @@ module.exports = {
         rules: [
             {
                 test: /\.tsx?$/,
-                use: 'ts-loader',
+                use: [
+                    {
+                        loader: 'ts-loader',
+                        options: {
+                            configFile: path.resolve(__dirname, 'tsconfig-server.json'),
+                        },
+                    },
+                ],
                 exclude: /node_modules/,
             },
         ],
@@ -29,7 +36,7 @@ module.exports = {
             path.resolve(__dirname, 'src'),
             'node_modules',
         ],
-        extensions: ['.ts', '.tsx', '.js'],
+        extensions: ['.ts'],
     },
 
     externals: [nodeExternals()],
