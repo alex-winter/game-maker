@@ -1702,9 +1702,9 @@ class CanvasLayer extends Component_1.Component {
             .filter(loadedPlacement => {
             return canvas.isRectVisible(this.viewCoordinates, loadedPlacement);
         });
-        visible.forEach(loadedPlacement => {
-            canvas.drawImage(loadedPlacement.image, Math.floor(loadedPlacement.x - this.viewCoordinates.x), Math.floor(loadedPlacement.y - this.viewCoordinates.y), loadedPlacement.image.width, loadedPlacement.image.height);
-        });
+        for (const placement of visible) {
+            canvas.drawImage(placement.image, Math.floor(placement.x - this.viewCoordinates.x), Math.floor(placement.y - this.viewCoordinates.y), placement.image.width, placement.image.height);
+        }
     }
     snap(value) {
         return Math.floor(Math.floor(value / CanvasLayer.TILE_SIZE) * CanvasLayer.TILE_SIZE);

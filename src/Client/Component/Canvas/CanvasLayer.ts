@@ -185,15 +185,15 @@ export class CanvasLayer extends Component {
                 )
             })
 
-        visible.forEach(loadedPlacement => {
+        for (const placement of visible) {
             canvas.drawImage(
-                loadedPlacement.image,
-                Math.floor(loadedPlacement.x - this.viewCoordinates.x),
-                Math.floor(loadedPlacement.y - this.viewCoordinates.y),
-                loadedPlacement.image.width,
-                loadedPlacement.image.height,
+                placement.image,
+                Math.floor(placement.x - this.viewCoordinates.x),
+                Math.floor(placement.y - this.viewCoordinates.y),
+                placement.image.width,
+                placement.image.height,
             )
-        })
+        }
     }
 
     private snap(value: number): number {
