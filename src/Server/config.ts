@@ -1,6 +1,6 @@
 import path from 'path'
 
-const projectRootDir = path.join(__dirname, '/../../')
+const projectRootDir = path.join(__dirname, '/../')
 const dataDir = path.join(projectRootDir, 'data')
 
 export const config = {
