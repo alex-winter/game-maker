@@ -197,7 +197,9 @@ export class CanvasLayer extends Component {
     }
 
     private snap(value: number): number {
-        return Math.floor(Math.floor(value / CanvasLayer.TILE_SIZE) * CanvasLayer.TILE_SIZE)
+        return Math.floor(
+            Math.floor(value / CanvasLayer.TILE_SIZE) * CanvasLayer.TILE_SIZE
+        )
     }
 
     private async generatePlacement(): Promise<void> {
