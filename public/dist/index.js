@@ -1808,10 +1808,33 @@ class CanvasLayer extends Component_1.Component {
             if (this.toolSelection === 'fill') {
                 this.performFill(this.mouseCoordinates.x, this.mouseCoordinates.y);
             }
+            if (this.toolSelection === 'rubber') {
+                this.removePlacementAt(this.mouseCoordinates.x, this.mouseCoordinates.y);
+                const mouseMove = (event) => {
+                    this.removePlacementAt(this.mouseCoordinates.x, this.mouseCoordinates.y);
+                };
+                const mouseUp = (event) => {
+                    Events_1.Events.emit('layer-placement-made', this.layer);
+                    document.removeEventListener('mouseup', mouseUp);
+                    document.removeEventListener('mousemove', mouseMove);
+                };
+                document.addEventListener('mouseup', mouseUp);
+                document.addEventListener('mousemove', mouseMove);
+            }
         }
         if (event.button === mouse_events_1.MIDDLE_BUTTON) {
             this.isMoving = true;
             this.lastMousePosition = { x: event.clientX, y: event.clientY };
+        }
+    }
+    removePlacementAt(x, y) {
+        const snappedX = this.snap(x);
+        const snappedY = this.snap(y);
+        const index = this.layer.placements.findIndex(p => p.coordinate.x === snappedX && p.coordinate.y === snappedY);
+        if (index !== -1) {
+            const [removed] = this.layer.placements.splice(index, 1);
+            console.log('found to remove');
+            LoadedPlacement_1.loadedPlacementRepository.removeByUuid(removed.uuid);
         }
     }
     handleMouseLeave(event) {
@@ -1951,6 +1974,7 @@ class CanvasTools extends Component_1.Component {
     listeners = {
         '.pencil-button:click': this.handlePencilToolClick,
         '.fill-button:click': this.handleFillToolClick,
+        '.rubber-button:click': this.handleRubberToolClick,
     };
     css() {
         return /*css*/ `
@@ -1995,7 +2019,11 @@ class CanvasTools extends Component_1.Component {
         const fillIcon = Dom_1.Dom.i('fa-solid', 'fa-fill-drip');
         fillButton.append(fillIcon);
         fillButton.classList.toggle('active', this.currentTool === 'fill');
-        container.append(pencilButton, fillButton);
+        const rubberButton = Dom_1.Dom.button('', 'rubber-button');
+        const rubberIcon = Dom_1.Dom.i('fa-solid', 'fa-eraser');
+        rubberButton.append(rubberIcon);
+        rubberButton.classList.toggle('active', this.currentTool === 'rubber');
+        container.append(pencilButton, fillButton, rubberButton);
         return container;
     }
     handlePencilToolClick(event) {
@@ -2004,6 +2032,10 @@ class CanvasTools extends Component_1.Component {
     }
     handleFillToolClick(event) {
         Events_1.Events.emit('tool-selection', this.currentTool = 'fill');
+        this.patch();
+    }
+    handleRubberToolClick(event) {
+        Events_1.Events.emit('tool-selection', this.currentTool = 'rubber');
         this.patch();
     }
 }

@@ -334,11 +334,44 @@ export class CanvasLayer extends Component {
             if (this.toolSelection === 'fill') {
                 this.performFill(this.mouseCoordinates.x, this.mouseCoordinates.y)
             }
+
+            if (this.toolSelection === 'rubber') {
+                this.removePlacementAt(this.mouseCoordinates.x, this.mouseCoordinates.y)
+
+                const mouseMove = (event: MouseEvent) => {
+                    this.removePlacementAt(this.mouseCoordinates.x, this.mouseCoordinates.y)
+                }
+
+                const mouseUp = (event: MouseEvent) => {
+                    Events.emit('layer-placement-made', this.layer)
+
+                    document.removeEventListener('mouseup', mouseUp)
+                    document.removeEventListener('mousemove', mouseMove)
+                }
+
+                document.addEventListener('mouseup', mouseUp)
+                document.addEventListener('mousemove', mouseMove)
+            }
         }
 
         if (event.button === MIDDLE_BUTTON) {
             this.isMoving = true
             this.lastMousePosition = { x: event.clientX, y: event.clientY }
+        }
+    }
+
+    private removePlacementAt(x: number, y: number): void {
+        const snappedX = this.snap(x)
+        const snappedY = this.snap(y)
+
+        const index = this.layer.placements.findIndex(p =>
+            p.coordinate.x === snappedX && p.coordinate.y === snappedY
+        )
+
+        if (index !== -1) {
+            const [removed] = this.layer.placements.splice(index, 1)
+            console.log('found to remove')
+            loadedPlacementRepository.removeByUuid(removed.uuid)
         }
     }
 

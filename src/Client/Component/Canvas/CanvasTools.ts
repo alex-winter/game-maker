@@ -8,6 +8,7 @@ export class CanvasTools extends Component {
     protected readonly listeners: Listeners = {
         '.pencil-button:click': this.handlePencilToolClick,
         '.fill-button:click': this.handleFillToolClick,
+        '.rubber-button:click': this.handleRubberToolClick,
     }
 
     protected css(): string {
@@ -58,10 +59,15 @@ export class CanvasTools extends Component {
         fillButton.append(fillIcon)
         fillButton.classList.toggle('active', this.currentTool === 'fill')
 
+        const rubberButton = Dom.button('', 'rubber-button')
+        const rubberIcon = Dom.i('fa-solid', 'fa-eraser')
+        rubberButton.append(rubberIcon)
+        rubberButton.classList.toggle('active', this.currentTool === 'rubber')
 
         container.append(
             pencilButton,
             fillButton,
+            rubberButton,
         )
 
         return container
@@ -74,6 +80,11 @@ export class CanvasTools extends Component {
 
     private handleFillToolClick(event: Event): void {
         Events.emit('tool-selection', this.currentTool = 'fill')
+        this.patch()
+    }
+
+    private handleRubberToolClick(event: Event): void {
+        Events.emit('tool-selection', this.currentTool = 'rubber')
         this.patch()
     }
 }
