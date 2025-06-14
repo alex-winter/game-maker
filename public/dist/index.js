@@ -2239,10 +2239,6 @@ class BasicModal extends Component_1.Component {
                 justify-content: center;
                 z-index: 2000;
             }
-
-            .modal-content {
-               
-            }
         `;
     }
     build() {

@@ -22,10 +22,6 @@ export class BasicModal extends Component {
                 justify-content: center;
                 z-index: 2000;
             }
-
-            .modal-content {
-               
-            }
         `
     }
 
