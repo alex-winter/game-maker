@@ -241,32 +241,28 @@ exports.ComponentPrototype = ComponentPrototype;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Events = void 0;
 class Events {
-    constructor() {
-        throw new Error('This service is static only, can not be constructed');
-    }
-    static listenersMap = new Map();
-    static emit(key, detail = undefined) {
-        document.dispatchEvent(new CustomEvent(key, {
-            detail,
-            bubbles: false,
-            composed: true,
-        }));
+    static listeners = {};
+    static emit(key, payload) {
+        const callbacks = this.listeners[key];
+        if (callbacks) {
+            for (const listener of callbacks) {
+                console.log(key, listener);
+                listener(payload);
+            }
+        }
     }
     static listen(key, callback) {
-        const eventListener = callback;
-        this.addListener(key, eventListener);
-        if (!this.listenersMap.has(key)) {
-            this.listenersMap.set(key, new Set());
+        if (!this.listeners[key]) {
+            this.listeners[key] = [];
         }
-        this.listenersMap.get(key).add(eventListener);
-    }
-    static addListener(key, callback) {
-        document.addEventListener(key, callback);
+        this.listeners[key].push(callback);
     }
     static unlisten(key, callback) {
-        const eventListener = callback;
-        document.removeEventListener(key, eventListener);
-        this.listenersMap.get(key)?.delete(eventListener);
+        const callbacks = this.listeners[key];
+        if (!callbacks) {
+            return;
+        }
+        this.listeners[key] = callbacks.filter(fn => fn !== callback);
     }
 }
 exports.Events = Events;
@@ -1353,12 +1349,10 @@ class App extends Component_1.Component {
         container.append(sideMenu, tools, ...layerElements);
         return container;
     }
-    handleUploadFilesSubmission(event) {
-        const files = event.detail;
+    handleUploadFilesSubmission(files) {
         FileUpload_1.FileUpload.uploadMultiple(files);
     }
-    handleOpenSheet(event) {
-        const sheetName = event.detail;
+    handleOpenSheet(sheetName) {
         const sheet = SheetRepository_1.sheetRepository.getByName(sheetName);
         if (this.openSheets.includes(sheet.name)) {
             this.windowBoxes[sheet.name].flash();
@@ -1377,8 +1371,7 @@ class App extends Component_1.Component {
             this.shadowRoot?.append(windowBox);
         }
     }
-    handleWindowDestroyed(event) {
-        const name = event.detail;
+    handleWindowDestroyed(name) {
         if (this.openSheets.includes(name)) {
             this.openSheets = this.openSheets.filter(item => item !== name);
         }
@@ -1386,15 +1379,14 @@ class App extends Component_1.Component {
             delete this.windowBoxes[name];
         }
     }
-    handleMouseDownWindowBox(event) {
-        const windowBox = event.detail;
+    handleMouseDownWindowBox(windowBox) {
         const all = Dom_1.Dom.getAllOfComponent(WindowBox_1.WindowBox);
         for (const one of all) {
             one.zIndexMoveDown();
         }
         windowBox.zIndexMoveUp();
     }
-    handleOpenSheetImporter(event) {
+    handleOpenSheetImporter() {
         const component = Dom_1.Dom.makeComponent(SheetImporter_1.SheetImporter);
         const windowBox = WindowBoxFactory_1.WindowBoxFactory.make(component, 'Import Sheets', {
             uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetImporter_1.SheetImporter),
@@ -1405,53 +1397,49 @@ class App extends Component_1.Component {
             this.shadowRoot?.append(windowBox);
         }
     }
-    handleOpenAddNewLayer(event) {
+    handleOpenAddNewLayer() {
         const modal = Dom_1.Dom.makeComponent(BasicModal_1.BasicModal);
         const newLayerForm = Dom_1.Dom.makeComponent(NewLayerForm_1.NewLayerForm);
         modal.append(newLayerForm);
         this.shadowRoot?.append(modal);
     }
-    handleNewLayerSubmit(event) {
-        const input = event.detail;
+    handleNewLayerSubmit(input) {
         const layer = Object.assign(LayerFactory_1.LayerFactory.make(), input);
         Events_1.Events.emit('new-layer-mapped', [layer]);
         LayerRepository_1.layerRepository.persist(layer);
     }
-    handleNewLayerMapped(event) {
-        this.shadowRoot?.append(...event.detail
+    handleNewLayerMapped(layers) {
+        this.shadowRoot?.append(...layers
             .sort((a, b) => b.order - a.order)
             .map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer })));
     }
-    handleLayerPlacementMade(event) {
-        LayerRepository_1.layerRepository.update(event.detail);
+    handleLayerPlacementMade(layer) {
+        LayerRepository_1.layerRepository.update(layer);
     }
-    handleLayerActive(event) {
-        LayerRepository_1.layerRepository.setActive(event.detail.uuid);
+    handleLayerActive(layer) {
+        LayerRepository_1.layerRepository.setActive(layer.uuid);
     }
-    handleLayerVisibleToggle(event) {
-        LayerRepository_1.layerRepository.toggleVisible(event.detail.uuid);
+    handleLayerVisibleToggle(layer) {
+        LayerRepository_1.layerRepository.toggleVisible(layer.uuid);
     }
-    handleLayerDelete(event) {
-        const uuid = event.detail;
+    handleLayerDelete(uuid) {
         LayerRepository_1.layerRepository.remove(uuid)
             .then(() => {
             Events_1.Events.emit('layer-deleted', uuid);
         });
     }
-    async handleUpdateViewCoordinates(event) {
-        const corrdinates = event.detail;
+    async handleUpdateViewCoordinates(corrdinates) {
         const userData = await UserDataRepository_1.userDataRepository.getAll();
         userData.lastViewPosition.x = corrdinates.x;
         userData.lastViewPosition.y = corrdinates.y;
         UserDataRepository_1.userDataRepository.persist(userData);
     }
-    async handleWindowUpdate(event) {
-        const windowConfiguration = event.detail;
+    async handleWindowUpdate(windowConfiguration) {
         const userData = await UserDataRepository_1.userDataRepository.getAll();
         userData.windows[windowConfiguration.uuid] = windowConfiguration;
         UserDataRepository_1.userDataRepository.persist(userData);
     }
-    handleOpenHistory(event) {
+    handleOpenHistory() {
         const windowBox = WindowBoxFactory_1.WindowBoxFactory.make(Dom_1.Dom.makeComponent(PlacementHistory_1.PlacementHistory), 'Placement History', {
             uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(PlacementHistory_1.PlacementHistory),
             componentConfigration: { dataset: {} },
@@ -1461,8 +1449,7 @@ class App extends Component_1.Component {
             this.shadowRoot?.append(windowBox);
         }
     }
-    async handleRequestPlacementDeletion(event) {
-        const placementUuid = event.detail;
+    async handleRequestPlacementDeletion(placementUuid) {
         const layers = await LayerRepository_1.layerRepository.getAll();
         LoadedPlacement_1.loadedPlacementRepository.removeByUuid(placementUuid);
         for (const layer of layers) {
@@ -1475,8 +1462,7 @@ class App extends Component_1.Component {
             }
         }
     }
-    async handleLayerOrderUp(event) {
-        const layerUuid = event.detail;
+    async handleLayerOrderUp(layerUuid) {
         const layer = await LayerRepository_1.layerRepository.getByUuid(layerUuid);
         const layers = await LayerRepository_1.layerRepository.getAll();
         layers.sort((a, b) => a.order - b.order);
@@ -1805,22 +1791,20 @@ class CanvasLayer extends Component_1.Component {
             Events_1.Events.emit('updated-view-coordinates', this.viewCoordinates);
         }
     }
-    handleDelete(event) {
+    handleDelete(layerUuid) {
         const canvas = this.getCanvas();
-        if (this.layer.uuid === event.detail) {
+        if (this.layer.uuid === layerUuid) {
             canvas.stopAnimation();
             canvas.remove();
             this.remove();
         }
     }
-    handleMovement(event) {
-        const movement = event.detail;
+    handleMovement(movement) {
         if (movement.layerUuid !== this.layer.uuid) {
             this.move(movement);
         }
     }
-    handleLayerUpdate(event) {
-        const layer = event.detail;
+    handleLayerUpdate(layer) {
         const canvas = this.getCanvas();
         if (canvas && this.layer.uuid === layer.uuid) {
             Object.assign(this.layer, layer);
@@ -1866,7 +1850,7 @@ class CanvasLayer extends Component_1.Component {
                 };
                 const mouseUp = (event) => {
                     Events_1.Events.emit('layer-placement-made', this.layer);
-                    Events_1.Events.emit('placement-added');
+                    Events_1.Events.emit('placement-added', undefined);
                     document.removeEventListener('mouseup', mouseUp);
                     document.removeEventListener('mousemove', mouseMove);
                 };
@@ -1908,8 +1892,7 @@ class CanvasLayer extends Component_1.Component {
     handleMouseLeave(event) {
         this.getCurrentImage().classList.add('hide');
     }
-    handleCurrentImageChange(event) {
-        const newImage = event.detail;
+    handleCurrentImageChange(newImage) {
         this.getCurrentImage().src = newImage.src;
         this.currentImage = newImage;
     }
@@ -1987,11 +1970,10 @@ class CanvasLayer extends Component_1.Component {
         await this.loadPlacement(placement);
         Events_1.Events.emit('layer-placement-made', this.layer);
     }
-    handleToolSelection(event) {
-        this.toolSelection = event.detail;
+    handleToolSelection(toolSelection) {
+        this.toolSelection = toolSelection;
     }
-    handleRequestFocusOnPlacement(event) {
-        const uuid = event.detail;
+    handleRequestFocusOnPlacement(uuid) {
         const targetPlacement = LoadedPlacement_1.loadedPlacementRepository.getByUuid(uuid);
         const canvas = this.getCanvas();
         if (!targetPlacement || !canvas)
@@ -2265,8 +2247,8 @@ class BasicModal extends Component_1.Component {
     getBackdrop() {
         return this.findOne('.backdrop');
     }
-    handleCloseModal(event) {
-        if (this.contains(event.detail)) {
+    handleCloseModal(component) {
+        if (this.contains(component)) {
             this.remove();
         }
     }
@@ -2397,15 +2379,13 @@ class LayerItem extends Component_1.Component {
         container.append(name, options);
         return container;
     }
-    handleLayerUpdate(event) {
-        const update = event.detail;
-        if (update.uuid === this.layer.uuid) {
-            this.layer = update;
+    handleLayerUpdate(layer) {
+        if (layer.uuid === this.layer.uuid) {
+            this.layer = layer;
             this.patch();
         }
     }
-    handleLayerDeleted(event) {
-        const uuid = event.detail;
+    handleLayerDeleted(uuid) {
         if (this.layer.uuid === uuid) {
             this.remove();
         }
@@ -2451,11 +2431,11 @@ const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/
 const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
 class LayerListing extends Component_1.Component {
     externalListeners = {
-        'new-layer-mapped': this.handleNewLayers,
+        [Events_1.Events.openAddNewLayer]: this.handleNewLayers,
         'layer-update': this.handleLayerUpdate,
     };
     listeners = {
-        '.add-new:click': this.handleClickAddNew
+        '.add-new:click': this.handleClickAddNew,
     };
     layers;
     handleLayerUpdate() {
@@ -2468,12 +2448,14 @@ class LayerListing extends Component_1.Component {
         const container = Dom_1.Dom.div();
         const listing = Dom_1.Dom.div('listing');
         const addNewLayerButton = Dom_1.Dom.button('Add New Layer', 'add-new');
-        listing.append(...this.layers.sort((a, b) => a.order - b.order).map(this.buildLayer.bind(this)));
+        listing.append(...this.layers
+            .sort((a, b) => a.order - b.order)
+            .map(this.buildLayer.bind(this)));
         container.append(listing, addNewLayerButton);
         return container;
     }
     handleClickAddNew() {
-        Events_1.Events.emit('open-add-new-layer');
+        Events_1.Events.emit(Events_1.Events.openAddNewLayer, undefined);
     }
     handleNewLayers() {
         LayerRepository_1.layerRepository.getAll().then(layers => {
@@ -2785,8 +2767,7 @@ class FileListing extends Component_1.Component {
     getContainer() {
         return this.findOne('.container');
     }
-    handleFilesUploadSubmitted(event) {
-        const files = event.detail;
+    handleFilesUploadSubmitted(files) {
         Promise.all(files.map(this.mapToSheet.bind(this))).then(sheets => {
             this.getContainer().append(...sheets.map(this.buildSheet.bind(this)));
         });
@@ -2844,10 +2825,10 @@ class SideMenu extends Component_1.Component {
     isSingleton = true;
     listeners = {
         '.open-sheet-importer:click': function () {
-            Events_1.Events.emit('open-sheet-importer');
+            Events_1.Events.emit('open-sheet-importer', undefined);
         },
         '.open-history:click': function () {
-            Events_1.Events.emit('click-open-history');
+            Events_1.Events.emit('click-open-history', undefined);
         }
     };
     css() {
@@ -3431,6 +3412,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Events = void 0;
 const Events_1 = __webpack_require__(/*! event-driven-web-components/dist/Events */ "./node_modules/event-driven-web-components/dist/Events.js");
 class Events extends Events_1.Events {
+    static openAddNewLayer = 'open-add-new-layer';
 }
 exports.Events = Events;
 
@@ -3484,11 +3466,11 @@ class LayerRepository extends Repository_1.Repository {
         return Math.max(...this.layers.map(item => item.order));
     }
     async persist(...layers) {
-        layers.forEach((layer) => {
+        for (const layer of layers) {
             const lastOrder = this.getLastOrder();
             layer.order = lastOrder + 1;
             this.layers.push(layer);
-        });
+        }
         await this.post(this.API_PATH, layers);
     }
     update(layer) {
@@ -3898,7 +3880,7 @@ for (const [constructor, tag] of components_1.COMPONENTS) {
     customElements.define(tag, constructor);
 }
 document.addEventListener('DOMContentLoaded', async () => {
-    window.addEventListener('resize', () => Events_1.Events.emit('window-resize'));
+    window.addEventListener('resize', () => Events_1.Events.emit('window-resize', undefined));
     document.body.append(Dom_1.Dom.makeComponent(App_1.App));
 });
 

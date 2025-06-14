@@ -10,7 +10,7 @@ for (const [constructor, tag] of COMPONENTS) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    window.addEventListener('resize', () => Events.emit('window-resize'))
+    window.addEventListener('resize', () => Events.emit('window-resize', undefined))
 
     document.body.append(
         Dom.makeComponent(App)

@@ -102,14 +102,11 @@ export class App extends Component {
         return container
     }
 
-    private handleUploadFilesSubmission(event: CustomEvent): void {
-        const files = event.detail as File[]
-
+    private handleUploadFilesSubmission(files: File[]): void {
         FileUpload.uploadMultiple(files)
     }
 
-    private handleOpenSheet(event: CustomEvent): void {
-        const sheetName = event.detail as string
+    private handleOpenSheet(sheetName: string): void {
         const sheet = sheetRepository.getByName(sheetName)
         if (this.openSheets.includes(sheet.name)) {
             this.windowBoxes[sheet.name].flash()
@@ -132,8 +129,7 @@ export class App extends Component {
         }
     }
 
-    private handleWindowDestroyed(event: CustomEvent): void {
-        const name = event.detail as string
+    private handleWindowDestroyed(name: string): void {
         if (this.openSheets.includes(name)) {
             this.openSheets = this.openSheets.filter(item => item !== name)
         }
@@ -142,9 +138,7 @@ export class App extends Component {
         }
     }
 
-    private handleMouseDownWindowBox(event: CustomEvent): void {
-        const windowBox = event.detail as WindowBox
-
+    private handleMouseDownWindowBox(windowBox: WindowBox): void {
         const all = Dom.getAllOfComponent<WindowBox>(WindowBox)
 
         for (const one of all) {
@@ -154,7 +148,7 @@ export class App extends Component {
         windowBox.zIndexMoveUp()
     }
 
-    private handleOpenSheetImporter(event: CustomEvent): void {
+    private handleOpenSheetImporter(): void {
         const component = Dom.makeComponent(SheetImporter)
         const windowBox = WindowBoxFactory.make(component, 'Import Sheets', {
             uuid: COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetImporter)!,
@@ -167,7 +161,7 @@ export class App extends Component {
         }
     }
 
-    private handleOpenAddNewLayer(event: CustomEvent): void {
+    private handleOpenAddNewLayer(): void {
         const modal = Dom.makeComponent(BasicModal)
         const newLayerForm = Dom.makeComponent(NewLayerForm)
 
@@ -178,9 +172,7 @@ export class App extends Component {
         )
     }
 
-    private handleNewLayerSubmit(event: CustomEvent): void {
-        const input: LayerInput = event.detail as LayerInput
-
+    private handleNewLayerSubmit(input: LayerInput): void {
         const layer = Object.assign(
             LayerFactory.make(),
             input
@@ -191,37 +183,34 @@ export class App extends Component {
         layerRepository.persist(layer)
     }
 
-    private handleNewLayerMapped(event: CustomEvent): void {
+    private handleNewLayerMapped(layers: Layer[]): void {
         this.shadowRoot?.append(
-            ...(event.detail as Layer[])
+            ...layers
                 .sort((a, b) => b.order - a.order)
                 .map(layer => Dom.makeComponent(CanvasLayer, { layer }))
         )
     }
 
-    private handleLayerPlacementMade(event: CustomEvent): void {
-        layerRepository.update(event.detail as Layer)
+    private handleLayerPlacementMade(layer: Layer): void {
+        layerRepository.update(layer)
     }
 
-    private handleLayerActive(event: CustomEvent): void {
-        layerRepository.setActive((event.detail as Layer).uuid)
+    private handleLayerActive(layer: Layer): void {
+        layerRepository.setActive(layer.uuid)
     }
 
-    private handleLayerVisibleToggle(event: CustomEvent): void {
-        layerRepository.toggleVisible((event.detail as Layer).uuid)
+    private handleLayerVisibleToggle(layer: Layer): void {
+        layerRepository.toggleVisible(layer.uuid)
     }
 
-    private handleLayerDelete(event: CustomEvent): void {
-        const uuid = event.detail as string
-
+    private handleLayerDelete(uuid: string): void {
         layerRepository.remove(uuid)
             .then(() => {
                 Events.emit('layer-deleted', uuid)
             })
     }
 
-    private async handleUpdateViewCoordinates(event: CustomEvent): Promise<void> {
-        const corrdinates = event.detail as Coordinates
+    private async handleUpdateViewCoordinates(corrdinates: Coordinates): Promise<void> {
         const userData = await userDataRepository.getAll()
 
         userData.lastViewPosition.x = corrdinates.x
@@ -230,8 +219,7 @@ export class App extends Component {
         userDataRepository.persist(userData)
     }
 
-    private async handleWindowUpdate(event: CustomEvent): Promise<void> {
-        const windowConfiguration = event.detail as WindowConfiguration
+    private async handleWindowUpdate(windowConfiguration: WindowConfiguration): Promise<void> {
         const userData = await userDataRepository.getAll()
 
         userData.windows[windowConfiguration.uuid] = windowConfiguration
@@ -239,7 +227,7 @@ export class App extends Component {
         userDataRepository.persist(userData)
     }
 
-    private handleOpenHistory(event: CustomEvent): void {
+    private handleOpenHistory(): void {
         const windowBox = WindowBoxFactory.make(
             Dom.makeComponent(PlacementHistory),
             'Placement History',
@@ -254,8 +242,7 @@ export class App extends Component {
         }
     }
 
-    private async handleRequestPlacementDeletion(event: CustomEvent): Promise<void> {
-        const placementUuid = event.detail as string
+    private async handleRequestPlacementDeletion(placementUuid: string): Promise<void> {
         const layers = await layerRepository.getAll()
 
         loadedPlacementRepository.removeByUuid(placementUuid)
@@ -271,8 +258,7 @@ export class App extends Component {
         }
     }
 
-    private async handleLayerOrderUp(event: CustomEvent): Promise<void> {
-        const layerUuid: string = event.detail
+    private async handleLayerOrderUp(layerUuid: string): Promise<void> {
         const layer = await layerRepository.getByUuid(layerUuid)
         const layers: Layer[] = await layerRepository.getAll()
 

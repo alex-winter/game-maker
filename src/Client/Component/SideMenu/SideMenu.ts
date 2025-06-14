@@ -8,10 +8,10 @@ export class SideMenu extends Component {
 
     protected listeners: Listeners = {
         '.open-sheet-importer:click': function () {
-            Events.emit('open-sheet-importer')
+            Events.emit('open-sheet-importer', undefined)
         },
         '.open-history:click': function () {
-            Events.emit('click-open-history')
+            Events.emit('click-open-history', undefined)
         }
     }
 

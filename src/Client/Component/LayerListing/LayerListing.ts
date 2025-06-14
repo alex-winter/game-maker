@@ -7,12 +7,12 @@ import { Layer } from 'Model/Layer'
 
 export class LayerListing extends Component {
     protected externalListeners: ExternalListeners = {
-        'new-layer-mapped': this.handleNewLayers,
+        [Events.openAddNewLayer]: this.handleNewLayers,
         'layer-update': this.handleLayerUpdate,
     }
 
     protected listeners: Listeners = {
-        '.add-new:click': this.handleClickAddNew
+        '.add-new:click': this.handleClickAddNew,
     }
 
     private layers!: Layer[]
@@ -31,7 +31,9 @@ export class LayerListing extends Component {
         const addNewLayerButton = Dom.button('Add New Layer', 'add-new')
 
         listing.append(
-            ...this.layers.sort((a, b) => a.order - b.order).map(this.buildLayer.bind(this))
+            ...this.layers
+                .sort((a, b) => a.order - b.order)
+                .map(this.buildLayer.bind(this))
         )
 
         container.append(
@@ -43,7 +45,7 @@ export class LayerListing extends Component {
     }
 
     private handleClickAddNew(): void {
-        Events.emit('open-add-new-layer')
+        Events.emit(Events.openAddNewLayer, undefined)
     }
 
     private handleNewLayers(): void {

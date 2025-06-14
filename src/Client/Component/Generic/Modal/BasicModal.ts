@@ -51,8 +51,8 @@ export class BasicModal extends Component {
         return this.findOne('.backdrop')!
     }
 
-    private handleCloseModal(event: CustomEvent): void {
-        if (this.contains(event.detail as Component)) {
+    private handleCloseModal(component: Component): void {
+        if (this.contains(component)) {
             this.remove()
         }
     }

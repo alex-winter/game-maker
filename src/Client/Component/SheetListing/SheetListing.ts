@@ -51,9 +51,7 @@ export class FileListing extends Component {
         return this.findOne('.container')!
     }
 
-    private handleFilesUploadSubmitted(event: CustomEvent): void {
-        const files = event.detail as File[]
-
+    private handleFilesUploadSubmitted(files: File[]): void {
         Promise.all(
             files.map(this.mapToSheet.bind(this))
         ).then(sheets => {

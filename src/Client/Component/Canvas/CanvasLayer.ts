@@ -243,26 +243,23 @@ export class CanvasLayer extends Component {
         }
     }
 
-    private handleDelete(event: CustomEvent) {
+    private handleDelete(layerUuid: string) {
         const canvas = this.getCanvas()
 
-        if (this.layer.uuid === event.detail as string) {
+        if (this.layer.uuid === layerUuid) {
             canvas.stopAnimation()
             canvas.remove()
             this.remove()
         }
     }
 
-    private handleMovement(event: CustomEvent): void {
-        const movement = event.detail as Movement
-
+    private handleMovement(movement: Movement): void {
         if (movement.layerUuid !== this.layer.uuid) {
             this.move(movement)
         }
     }
 
-    private handleLayerUpdate(event: CustomEvent): void {
-        const layer = event.detail as Layer
+    private handleLayerUpdate(layer: Layer): void {
         const canvas = this.getCanvas()
 
         if (canvas && this.layer.uuid === layer.uuid) {
@@ -327,7 +324,7 @@ export class CanvasLayer extends Component {
 
                 const mouseUp = (event: MouseEvent) => {
                     Events.emit('layer-placement-made', this.layer)
-                    Events.emit('placement-added')
+                    Events.emit('placement-added', undefined)
 
                     document.removeEventListener('mouseup', mouseUp)
                     document.removeEventListener('mousemove', mouseMove)
@@ -385,9 +382,7 @@ export class CanvasLayer extends Component {
         this.getCurrentImage().classList.add('hide')
     }
 
-    private handleCurrentImageChange(event: CustomEvent): void {
-        const newImage = event.detail as HTMLImageElement
-
+    private handleCurrentImageChange(newImage: HTMLImageElement): void {
         this.getCurrentImage().src = newImage.src
         this.currentImage = newImage
     }
@@ -508,12 +503,11 @@ export class CanvasLayer extends Component {
     }
 
 
-    private handleToolSelection(event: CustomEvent): void {
-        this.toolSelection = event.detail as string
+    private handleToolSelection(toolSelection: string): void {
+        this.toolSelection = toolSelection
     }
 
-    private handleRequestFocusOnPlacement(event: CustomEvent): void {
-        const uuid = event.detail as string
+    private handleRequestFocusOnPlacement(uuid: string): void {
         const targetPlacement = loadedPlacementRepository.getByUuid(uuid)
         const canvas = this.getCanvas()
 

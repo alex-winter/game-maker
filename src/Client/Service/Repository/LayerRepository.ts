@@ -15,13 +15,13 @@ class LayerRepository extends Repository {
     }
 
     public async persist(...layers: Layer[]): Promise<void> {
-        layers.forEach((layer) => {
+        for (const layer of layers) {
             const lastOrder = this.getLastOrder()
 
             layer.order = lastOrder + 1
 
             this.layers.push(layer)
-        })
+        }
 
         await this.post(
             this.API_PATH,

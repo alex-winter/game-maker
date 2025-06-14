@@ -96,18 +96,14 @@ export class LayerItem extends Component {
         return container
     }
 
-    private handleLayerUpdate(event: CustomEvent): void {
-        const update = event.detail as Layer
-
-        if (update.uuid === this.layer.uuid) {
-            this.layer = update
+    private handleLayerUpdate(layer: Layer): void {
+        if (layer.uuid === this.layer.uuid) {
+            this.layer = layer
             this.patch()
         }
     }
 
-    private handleLayerDeleted(event: CustomEvent): void {
-        const uuid = event.detail as string
-
+    private handleLayerDeleted(uuid: string): void {
         if (this.layer.uuid === uuid) {
             this.remove()
         }
