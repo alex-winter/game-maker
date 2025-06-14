@@ -50,6 +50,7 @@ export class App extends Component {
         'window-update': this.handleWindowUpdate,
         'request-placement-deletion': this.handleRequestPlacementDeletion,
         'layer-order-up': this.handleLayerOrderUp,
+        'layer-order-down': this.handleLayerOrderDown,
     }
 
     protected async setup(): Promise<void> {
@@ -277,6 +278,28 @@ export class App extends Component {
         await Promise.all([
             layerRepository.update(layer),
             layerRepository.update(above),
+        ])
+    }
+
+    private async handleLayerOrderDown(layerUuid: string): Promise<void> {
+        const layer = await layerRepository.getByUuid(layerUuid)
+        const layers: Layer[] = await layerRepository.getAll()
+
+        layers.sort((a, b) => a.order - b.order)
+
+        const index = layers.findIndex(l => l.uuid === layer.uuid)
+
+        if (index === -1 || index >= layers.length - 1) return // Already at the bottom or not found
+
+        const below = layers[index + 1]
+
+        const tempOrder = layer.order
+        layer.order = below.order
+        below.order = tempOrder
+
+        await Promise.all([
+            layerRepository.update(layer),
+            layerRepository.update(below),
         ])
     }
 }
