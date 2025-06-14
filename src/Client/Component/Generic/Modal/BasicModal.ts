@@ -24,13 +24,7 @@ export class BasicModal extends Component {
             }
 
             .modal-content {
-                background: white;
-                border-radius: 12px;
-                padding: 2rem;
-                max-width: 500px;
-                width: 90%;
-                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
-                font-family: sans-serif;
+               
             }
         `
     }

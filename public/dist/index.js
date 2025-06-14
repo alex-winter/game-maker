@@ -2241,13 +2241,7 @@ class BasicModal extends Component_1.Component {
             }
 
             .modal-content {
-                background: white;
-                border-radius: 12px;
-                padding: 2rem;
-                max-width: 500px;
-                width: 90%;
-                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
-                font-family: sans-serif;
+               
             }
         `;
     }
@@ -2338,60 +2332,33 @@ class LayerItem extends Component_1.Component {
         '.up-button:click': this.handleClickUp,
         '.down-button:click': this.handleClickDown,
     };
-    css() {
-        return /*css*/ `
-            .container {
-                display: flex;
-                padding: 4px;
-            }
-
-            .container > div {
-                flex: 1;
-            }
-
-            .container.collision-layer {
-                background: #eb4d4b;
-            }
-
-            .options {
-                display: flex;
-                justify-content: end;
-                gap: 4px;
-            }
-
-            .active {
-                background: beige;
-            }
-        `;
-    }
     async setup() {
         this.layer = this.parsedDataset.layer;
     }
     build() {
         const container = Dom_1.Dom.div('container');
-        const name = Dom_1.Dom.div();
+        const name = Dom_1.Dom.div('name');
         const options = Dom_1.Dom.div('options');
         const visibleButton = Dom_1.Dom.button('', 'visibility-button');
-        const eyeIcon = Dom_1.Dom.i('fa-solid');
+        const eyeIcon = Dom_1.Dom.i('fa-solid', this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash');
         const deleteButton = Dom_1.Dom.button('', 'delete-button');
         const trashIcon = Dom_1.Dom.i('fa-solid', 'fa-trash');
         const upButton = Dom_1.Dom.button('', 'up-button');
         const upIcon = Dom_1.Dom.i('fa-solid', 'fa-arrow-up');
         const downButton = Dom_1.Dom.button('', 'down-button');
         const downIcon = Dom_1.Dom.i('fa-solid', 'fa-arrow-down');
-        const collisionIcon = Dom_1.Dom.i('fa-solid', 'fa-road-barrier');
         if (this.layer.type === 'collision') {
+            const collisionIcon = Dom_1.Dom.i('fa-solid', 'fa-road-barrier');
             name.append(collisionIcon);
         }
         name.append(document.createTextNode(this.layer.name));
-        eyeIcon.classList.add(this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash');
-        container.classList.toggle('active', this.layer.is_active);
-        container.classList.toggle('collision-layer', this.layer.type === 'collision');
         deleteButton.append(trashIcon);
         visibleButton.append(eyeIcon);
         upButton.append(upIcon);
         downButton.append(downIcon);
-        options.append(deleteButton, visibleButton, upButton, downButton);
+        options.append(visibleButton, upButton, downButton, deleteButton);
+        container.classList.toggle('active', this.layer.is_active);
+        container.classList.toggle('collision-layer', this.layer.type === 'collision');
         container.append(name, options);
         return container;
     }
@@ -2423,6 +2390,66 @@ class LayerItem extends Component_1.Component {
         e.stopPropagation();
         Events_1.Events.emit('layer-order-down', this.layer.uuid);
     }
+    css() {
+        return /*css*/ `
+            .container {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 12px 16px;
+                border-radius: 10px;
+                background: white;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+                transition: background 0.3s ease;
+                cursor: pointer;
+            }
+
+            .container:hover {
+                background: #f0f0f0;
+            }
+
+            .container.active {
+                border: 2px solid #3498db;
+                background: #ecf6fd;
+            }
+
+            .container.collision-layer {
+                background: #ffe8e8;
+                border-left: 4px solid #e74c3c;
+            }
+
+            .name {
+                display: flex;
+                align-items: center;
+                font-weight: 500;
+                font-size: 16px;
+                gap: 8px;
+            }
+
+            .options {
+                display: flex;
+                gap: 10px;
+            }
+
+            .options button {
+                border: none;
+                background: transparent;
+                font-size: 16px;
+                color: #555;
+                cursor: pointer;
+                padding: 4px;
+                transition: color 0.2s;
+            }
+
+            .options button:hover {
+                color: #000;
+            }
+
+            .options i {
+                pointer-events: none;
+            }
+        `;
+    }
 }
 exports.LayerItem = LayerItem;
 
@@ -2452,18 +2479,13 @@ class LayerListing extends Component_1.Component {
         '.add-new:click': this.handleClickAddNew,
     };
     layers;
-    handleLayersUpdate() {
-        LayerRepository_1.layerRepository.getAll().then(layers => {
-            this.patch();
-        });
-    }
     async setup() {
         this.layers = await LayerRepository_1.layerRepository.getAll();
     }
     build() {
-        const container = Dom_1.Dom.div();
+        const container = Dom_1.Dom.div('layer-listing-container');
         const listing = Dom_1.Dom.div('listing');
-        const addNewLayerButton = Dom_1.Dom.button('Add New Layer', 'add-new');
+        const addNewLayerButton = Dom_1.Dom.button('+ Add New Layer', 'add-new');
         listing.append(...this.layers
             .sort((a, b) => a.order - b.order)
             .map(this.buildLayer.bind(this)));
@@ -2479,8 +2501,49 @@ class LayerListing extends Component_1.Component {
             this.patch();
         });
     }
+    handleLayersUpdate() {
+        LayerRepository_1.layerRepository.getAll().then(layers => {
+            this.layers = layers;
+            this.patch();
+        });
+    }
     buildLayer(layer) {
         return Dom_1.Dom.makeComponent(LayerItem_1.LayerItem, { layer });
+    }
+    css() {
+        return /*css*/ `
+            .layer-listing-container {
+                padding: 16px;
+                background: #f9f9f9;
+                border-radius: 12px;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .listing {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .add-new {
+                align-self: center;
+                padding: 10px 20px;
+                font-size: 16px;
+                background-color: #2ecc71;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: background-color 0.3s ease;
+            }
+
+            .add-new:hover {
+                background-color: #27ae60;
+            }
+        `;
     }
 }
 exports.LayerListing = LayerListing;
@@ -2512,58 +2575,102 @@ class NewLayerForm extends Component_1.Component {
     css() {
         return /*css*/ `
             .form-container {
-                font-family: sans-serif;
+                font-family: 'Segoe UI', sans-serif;
+                background: #fff;
+                padding: 24px;
+                border-radius: 12px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
                 width: 100%;
+                max-width: 400px;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
             }
 
             .form-group {
-                margin-bottom: 1rem;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
             }
 
             .form-label {
-                display: block;
-                margin-bottom: 0.5rem;
                 font-weight: 600;
                 color: #333;
+                font-size: 14px;
             }
 
-            .text-input {
-                width: 100%;
-                padding: 0.5rem;
-                font-size: 1rem;
+            .text-input, select {
+                padding: 10px 12px;
+                font-size: 14px;
+                border-radius: 8px;
                 border: 1px solid #ccc;
-                border-radius: 4px;
+                background: #fdfdfd;
+                transition: border 0.2s, box-shadow 0.2s;
+            }
+
+            .text-input:focus, select:focus {
+                border-color: #007bff;
+                box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
                 outline: none;
             }
 
-            .text-input:focus {
-                border-color: #007bff;
-                box-shadow: 0 0 0 2px rgba(0,123,255,0.2);
+            select {
+                appearance: none;
+                background-image: url('data:image/svg+xml;utf8,<svg fill="gray" height="20" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"><polygon points="0,0 20,0 10,10"/></svg>');
+                background-repeat: no-repeat;
+                background-position: right 12px center;
+                background-size: 10px;
+            }
+
+            .submit-button {
+                padding: 12px 16px;
+                border: none;
+                background-color: #007bff;
+                color: white;
+                font-size: 15px;
+                font-weight: 600;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: background-color 0.2s ease, transform 0.1s ease;
+            }
+
+            .submit-button:hover {
+                background-color: #0056b3;
+            }
+
+            .submit-button:active {
+                transform: scale(0.98);
             }
         `;
     }
     build() {
         const container = Dom_1.Dom.div('form-container');
-        const formGroup = Dom_1.Dom.div('form-group');
-        const label = Dom_1.Dom.label('Layer Name', 'form-label');
-        const input = Dom_1.Dom.inputText('text-input', 'layer-name-input');
-        input.placeholder = 'Enter layer name';
-        const submitButton = Dom_1.Dom.button('Save', 'submit-button');
-        formGroup.appendChild(label);
-        formGroup.appendChild(input);
-        const layerTypeOptions = document.createElement('select');
+        // Name field
+        const nameGroup = Dom_1.Dom.div('form-group');
+        const nameLabel = Dom_1.Dom.label('Layer Name', 'form-label');
+        const nameInput = Dom_1.Dom.inputText('text-input', 'layer-name-input');
+        nameInput.placeholder = 'e.g., Background Tiles';
+        nameGroup.append(nameLabel, nameInput);
+        // Type dropdown
+        const typeGroup = Dom_1.Dom.div('form-group');
+        const typeLabel = Dom_1.Dom.label('Layer Type', 'form-label');
+        const typeSelect = document.createElement('select');
+        typeSelect.className = 'text-input';
         layers_1.LAYERS.types.forEach(type => {
             const option = document.createElement('option');
             option.value = type;
             option.innerText = type.toUpperCase();
-            layerTypeOptions.append(option);
+            typeSelect.appendChild(option);
         });
-        container.append(formGroup, layerTypeOptions, submitButton);
+        typeGroup.append(typeLabel, typeSelect);
+        // Submit button
+        const submitButton = Dom_1.Dom.button('Create Layer', 'submit-button');
+        container.append(nameGroup, typeGroup, submitButton);
         return container;
     }
     handleSelectChange(event) {
-        const layerTypeOptions = event.target;
-        this.type = layerTypeOptions.value;
+        const select = event.target;
+        this.type = select.value;
     }
     handleNameChange(event) {
         const input = event.target;
@@ -2840,23 +2947,67 @@ const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/
 class SideMenu extends Component_1.Component {
     isSingleton = true;
     listeners = {
-        '.open-sheet-importer:click': function () {
+        '.open-sheet-importer:click': () => {
             Events_1.Events.emit('open-sheet-importer', undefined);
         },
-        '.open-history:click': function () {
+        '.open-history:click': () => {
             Events_1.Events.emit('click-open-history', undefined);
-        }
+        },
     };
     css() {
         return /*css*/ `
             :host {
-                background-color: whitesmoke;
+                background-color: #f4f4f4;
                 position: fixed;
                 left: 0;
-                right: 0;
-                height: 100vh;
-                width: 200px;
+                top: 0;
+                bottom: 0;
+                width: 300px;
+                padding: 20px;
+                box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
                 z-index: 800;
+            }
+
+            .floating-buttons {
+                position: absolute;
+                top: 20px;
+                left: 100%;
+                margin-left: 10px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                z-index: 1000;
+            }
+
+            .floating-buttons button {
+                width: 42px;
+                height: 42px;
+                border-radius: 50%;
+                background-color: white;
+                border: none;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background 0.2s ease, transform 0.1s ease;
+            }
+
+            .floating-buttons button:hover {
+                background-color: #eaeaea;
+            }
+
+            .floating-buttons button:active {
+                transform: scale(0.95);
+            }
+
+            .floating-buttons i {
+                font-size: 18px;
+                color: #555;
+            }
+
+            ::slotted(*) {
+                margin-bottom: 16px;
             }
         `;
     }
@@ -2864,14 +3015,13 @@ class SideMenu extends Component_1.Component {
         const container = Dom_1.Dom.div();
         const slot = Dom_1.Dom.slot();
         container.appendChild(slot);
+        const floatingWrapper = Dom_1.Dom.div('floating-buttons');
         const importButton = Dom_1.Dom.button('', 'open-sheet-importer');
-        const importIcon = Dom_1.Dom.i('fa-solid', 'fa-images');
-        importButton.appendChild(importIcon);
-        container.appendChild(importButton);
+        importButton.appendChild(Dom_1.Dom.i('fa-solid', 'fa-images'));
         const historyButton = Dom_1.Dom.button('', 'open-history');
-        const historyIcon = Dom_1.Dom.i('fa-solid', 'fa-clock-rotate-left');
-        historyButton.appendChild(historyIcon);
-        container.appendChild(historyButton);
+        historyButton.appendChild(Dom_1.Dom.i('fa-solid', 'fa-clock-rotate-left'));
+        floatingWrapper.append(importButton, historyButton);
+        container.appendChild(floatingWrapper);
         return container;
     }
 }

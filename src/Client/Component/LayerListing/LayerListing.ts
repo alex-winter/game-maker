@@ -17,20 +17,14 @@ export class LayerListing extends Component {
 
     private layers!: Layer[]
 
-    private handleLayersUpdate() {
-        layerRepository.getAll().then(layers => {
-            this.patch()
-        })
-    }
-
     protected async setup(): Promise<void> {
         this.layers = await layerRepository.getAll()
     }
 
     protected build(): HTMLElement {
-        const container = Dom.div()
+        const container = Dom.div('layer-listing-container')
         const listing = Dom.div('listing')
-        const addNewLayerButton = Dom.button('Add New Layer', 'add-new')
+        const addNewLayerButton = Dom.button('+ Add New Layer', 'add-new')
 
         listing.append(
             ...this.layers
@@ -38,10 +32,7 @@ export class LayerListing extends Component {
                 .map(this.buildLayer.bind(this))
         )
 
-        container.append(
-            listing,
-            addNewLayerButton,
-        )
+        container.append(listing, addNewLayerButton)
 
         return container
     }
@@ -57,7 +48,50 @@ export class LayerListing extends Component {
         })
     }
 
+    private handleLayersUpdate(): void {
+        layerRepository.getAll().then(layers => {
+            this.layers = layers
+            this.patch()
+        })
+    }
+
     private buildLayer(layer: Layer): HTMLElement {
         return Dom.makeComponent(LayerItem, { layer })
+    }
+
+    protected css(): string {
+        return /*css*/`
+            .layer-listing-container {
+                padding: 16px;
+                background: #f9f9f9;
+                border-radius: 12px;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .listing {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .add-new {
+                align-self: center;
+                padding: 10px 20px;
+                font-size: 16px;
+                background-color: #2ecc71;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: background-color 0.3s ease;
+            }
+
+            .add-new:hover {
+                background-color: #27ae60;
+            }
+        `
     }
 }

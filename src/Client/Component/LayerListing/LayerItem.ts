@@ -20,44 +20,17 @@ export class LayerItem extends Component {
         '.down-button:click': this.handleClickDown,
     }
 
-    protected css(): string {
-        return /*css*/`
-            .container {
-                display: flex;
-                padding: 4px;
-            }
-
-            .container > div {
-                flex: 1;
-            }
-
-            .container.collision-layer {
-                background: #eb4d4b;
-            }
-
-            .options {
-                display: flex;
-                justify-content: end;
-                gap: 4px;
-            }
-
-            .active {
-                background: beige;
-            }
-        `
-    }
-
     protected async setup(): Promise<void> {
         this.layer = this.parsedDataset.layer
     }
 
     protected build(): HTMLElement {
         const container = Dom.div('container')
-        const name = Dom.div()
+        const name = Dom.div('name')
         const options = Dom.div('options')
 
         const visibleButton = Dom.button('', 'visibility-button')
-        const eyeIcon = Dom.i('fa-solid')
+        const eyeIcon = Dom.i('fa-solid', this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash')
 
         const deleteButton = Dom.button('', 'delete-button')
         const trashIcon = Dom.i('fa-solid', 'fa-trash')
@@ -68,29 +41,22 @@ export class LayerItem extends Component {
         const downButton = Dom.button('', 'down-button')
         const downIcon = Dom.i('fa-solid', 'fa-arrow-down')
 
-        const collisionIcon = Dom.i('fa-solid', 'fa-road-barrier')
-
         if (this.layer.type === 'collision') {
+            const collisionIcon = Dom.i('fa-solid', 'fa-road-barrier')
             name.append(collisionIcon)
         }
 
         name.append(document.createTextNode(this.layer.name))
-
-        eyeIcon.classList.add(this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash')
-        container.classList.toggle('active', this.layer.is_active)
-        container.classList.toggle('collision-layer', this.layer.type === 'collision')
 
         deleteButton.append(trashIcon)
         visibleButton.append(eyeIcon)
         upButton.append(upIcon)
         downButton.append(downIcon)
 
-        options.append(
-            deleteButton,
-            visibleButton,
-            upButton,
-            downButton,
-        )
+        options.append(visibleButton, upButton, downButton, deleteButton)
+
+        container.classList.toggle('active', this.layer.is_active)
+        container.classList.toggle('collision-layer', this.layer.type === 'collision')
 
         container.append(name, options)
 
@@ -130,5 +96,66 @@ export class LayerItem extends Component {
     private handleClickDown(e: Event): void {
         e.stopPropagation()
         Events.emit('layer-order-down', this.layer.uuid)
+    }
+
+    protected css(): string {
+        return /*css*/`
+            .container {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 12px 16px;
+                border-radius: 10px;
+                background: white;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+                transition: background 0.3s ease;
+                cursor: pointer;
+            }
+
+            .container:hover {
+                background: #f0f0f0;
+            }
+
+            .container.active {
+                border: 2px solid #3498db;
+                background: #ecf6fd;
+            }
+
+            .container.collision-layer {
+                background: #ffe8e8;
+                border-left: 4px solid #e74c3c;
+            }
+
+            .name {
+                display: flex;
+                align-items: center;
+                font-weight: 500;
+                font-size: 16px;
+                gap: 8px;
+            }
+
+            .options {
+                display: flex;
+                gap: 10px;
+            }
+
+            .options button {
+                border: none;
+                background: transparent;
+                font-size: 16px;
+                color: #555;
+                cursor: pointer;
+                padding: 4px;
+                transition: color 0.2s;
+            }
+
+            .options button:hover {
+                color: #000;
+            }
+
+            .options i {
+                pointer-events: none;
+            }
+        `
     }
 }

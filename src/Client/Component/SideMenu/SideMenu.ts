@@ -7,24 +7,68 @@ export class SideMenu extends Component {
     public isSingleton: boolean = true
 
     protected listeners: Listeners = {
-        '.open-sheet-importer:click': function () {
+        '.open-sheet-importer:click': () => {
             Events.emit('open-sheet-importer', undefined)
         },
-        '.open-history:click': function () {
+        '.open-history:click': () => {
             Events.emit('click-open-history', undefined)
-        }
+        },
     }
 
     protected css(): string {
         return /*css*/`
             :host {
-                background-color: whitesmoke;
+                background-color: #f4f4f4;
                 position: fixed;
                 left: 0;
-                right: 0;
-                height: 100vh;
-                width: 200px;
+                top: 0;
+                bottom: 0;
+                width: 300px;
+                padding: 20px;
+                box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
                 z-index: 800;
+            }
+
+            .floating-buttons {
+                position: absolute;
+                top: 20px;
+                left: 100%;
+                margin-left: 10px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                z-index: 1000;
+            }
+
+            .floating-buttons button {
+                width: 42px;
+                height: 42px;
+                border-radius: 50%;
+                background-color: white;
+                border: none;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background 0.2s ease, transform 0.1s ease;
+            }
+
+            .floating-buttons button:hover {
+                background-color: #eaeaea;
+            }
+
+            .floating-buttons button:active {
+                transform: scale(0.95);
+            }
+
+            .floating-buttons i {
+                font-size: 18px;
+                color: #555;
+            }
+
+            ::slotted(*) {
+                margin-bottom: 16px;
             }
         `
     }
@@ -35,17 +79,17 @@ export class SideMenu extends Component {
         const slot = Dom.slot()
         container.appendChild(slot)
 
-        const importButton = Dom.button('', 'open-sheet-importer')
-        const importIcon = Dom.i('fa-solid', 'fa-images')
-        importButton.appendChild(importIcon)
+        const floatingWrapper = Dom.div('floating-buttons')
 
-        container.appendChild(importButton)
+        const importButton = Dom.button('', 'open-sheet-importer')
+        importButton.appendChild(Dom.i('fa-solid', 'fa-images'))
 
         const historyButton = Dom.button('', 'open-history')
-        const historyIcon = Dom.i('fa-solid', 'fa-clock-rotate-left')
-        historyButton.appendChild(historyIcon)
+        historyButton.appendChild(Dom.i('fa-solid', 'fa-clock-rotate-left'))
 
-        container.appendChild(historyButton)
+        floatingWrapper.append(importButton, historyButton)
+
+        container.appendChild(floatingWrapper)
 
         return container
     }
