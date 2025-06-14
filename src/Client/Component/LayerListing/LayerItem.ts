@@ -1,13 +1,14 @@
 import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
+import { layerRepository } from 'Client/Service/Repository/LayerRepository'
 import { Layer } from 'Model/Layer'
 
 export class LayerItem extends Component {
     private layer!: Layer
 
     protected externalListeners: ExternalListeners = {
-        'layer-update': this.handleLayerUpdate,
+        'layers-update': this.handleLayersUpdate,
         'layer-deleted': this.handleLayerDeleted,
     }
 
@@ -96,11 +97,9 @@ export class LayerItem extends Component {
         return container
     }
 
-    private handleLayerUpdate(layer: Layer): void {
-        if (layer.uuid === this.layer.uuid) {
-            this.layer = layer
-            this.patch()
-        }
+    private handleLayersUpdate(): void {
+        this.layer = layerRepository.getByUuid(this.layer.uuid)
+        this.patch()
     }
 
     private handleLayerDeleted(uuid: string): void {

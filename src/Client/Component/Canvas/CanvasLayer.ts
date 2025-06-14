@@ -10,6 +10,7 @@ import { placementImageRepository } from 'Client/Service/Repository/PlacementIma
 import { Layer } from 'Model/Layer'
 import { Canvas2D } from 'Client/Component/Canvas/Canvas'
 import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
+import { layerRepository } from 'Client/Service/Repository/LayerRepository'
 
 type Movement = {
     layerUuid: string
@@ -44,7 +45,7 @@ export class CanvasLayer extends Component {
 
     protected readonly externalListeners: ExternalListeners = {
         'layer-deleted': this.handleDelete,
-        'layer-update': this.handleLayerUpdate,
+        'layers-update': this.handleLayersUpdate,
         'moving-in-canvas': this.handleMovement,
         'sheet-selection-made': this.handleCurrentImageChange,
         'tool-selection': this.handleToolSelection,
@@ -259,19 +260,14 @@ export class CanvasLayer extends Component {
         }
     }
 
-    private handleLayerUpdate(layer: Layer): void {
+    private handleLayersUpdate(): void {
         const canvas = this.getCanvas()
 
-        if (canvas && this.layer.uuid === layer.uuid) {
-            Object.assign(
-                this.layer,
-                layer,
-            )
+        this.layer = layerRepository.getByUuid(this.layer.uuid)
 
-            canvas.stopAnimation()
+        canvas.stopAnimation()
 
-            this.patch()
-        }
+        this.patch()
     }
 
     private handleMouseMove(event: MouseEvent): void {

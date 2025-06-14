@@ -180,7 +180,7 @@ export class App extends Component {
 
         Events.emit('new-layer-mapped', [layer])
 
-        layerRepository.persist(layer)
+        layerRepository.create(layer)
     }
 
     private handleNewLayerMapped(layers: Layer[]): void {

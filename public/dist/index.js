@@ -246,7 +246,6 @@ class Events {
         const callbacks = this.listeners[key];
         if (callbacks) {
             for (const listener of callbacks) {
-                console.log(key, listener);
                 listener(payload);
             }
         }
@@ -1406,7 +1405,7 @@ class App extends Component_1.Component {
     handleNewLayerSubmit(input) {
         const layer = Object.assign(LayerFactory_1.LayerFactory.make(), input);
         Events_1.Events.emit('new-layer-mapped', [layer]);
-        LayerRepository_1.layerRepository.persist(layer);
+        LayerRepository_1.layerRepository.create(layer);
     }
     handleNewLayerMapped(layers) {
         this.shadowRoot?.append(...layers
@@ -1627,6 +1626,7 @@ const generate_image_1 = __webpack_require__(/*! Client/Service/generate-image *
 const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Repository/PlacementImageRepository */ "./src/Client/Service/Repository/PlacementImageRepository.ts");
 const Canvas_1 = __webpack_require__(/*! Client/Component/Canvas/Canvas */ "./src/Client/Component/Canvas/Canvas.ts");
 const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
+const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
 class CanvasLayer extends Component_1.Component {
     static TILE_SIZE = 16;
     static COLLISION_IMAGE = (0, generate_image_1.generateImageDataURL)(CanvasLayer.TILE_SIZE, CanvasLayer.TILE_SIZE, { r: 255, g: 0, b: 0, a: 0.3 });
@@ -1641,7 +1641,7 @@ class CanvasLayer extends Component_1.Component {
     toolSelection = 'pencil';
     externalListeners = {
         'layer-deleted': this.handleDelete,
-        'layer-update': this.handleLayerUpdate,
+        'layers-update': this.handleLayersUpdate,
         'moving-in-canvas': this.handleMovement,
         'sheet-selection-made': this.handleCurrentImageChange,
         'tool-selection': this.handleToolSelection,
@@ -1804,13 +1804,11 @@ class CanvasLayer extends Component_1.Component {
             this.move(movement);
         }
     }
-    handleLayerUpdate(layer) {
+    handleLayersUpdate() {
         const canvas = this.getCanvas();
-        if (canvas && this.layer.uuid === layer.uuid) {
-            Object.assign(this.layer, layer);
-            canvas.stopAnimation();
-            this.patch();
-        }
+        this.layer = LayerRepository_1.layerRepository.getByUuid(this.layer.uuid);
+        canvas.stopAnimation();
+        this.patch();
     }
     handleMouseMove(event) {
         const rawX = event.clientX;
@@ -2309,10 +2307,11 @@ exports.LayerItem = void 0;
 const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
+const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
 class LayerItem extends Component_1.Component {
     layer;
     externalListeners = {
-        'layer-update': this.handleLayerUpdate,
+        'layers-update': this.handleLayersUpdate,
         'layer-deleted': this.handleLayerDeleted,
     };
     listeners = {
@@ -2379,11 +2378,9 @@ class LayerItem extends Component_1.Component {
         container.append(name, options);
         return container;
     }
-    handleLayerUpdate(layer) {
-        if (layer.uuid === this.layer.uuid) {
-            this.layer = layer;
-            this.patch();
-        }
+    handleLayersUpdate() {
+        this.layer = LayerRepository_1.layerRepository.getByUuid(this.layer.uuid);
+        this.patch();
     }
     handleLayerDeleted(uuid) {
         if (this.layer.uuid === uuid) {
@@ -2431,15 +2428,17 @@ const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/
 const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
 class LayerListing extends Component_1.Component {
     externalListeners = {
-        [Events_1.Events.openAddNewLayer]: this.handleNewLayers,
-        'layer-update': this.handleLayerUpdate,
+        'layers-created': this.handleNewLayers,
+        'layers-update': this.handleLayersUpdate,
     };
     listeners = {
         '.add-new:click': this.handleClickAddNew,
     };
     layers;
-    handleLayerUpdate() {
-        this.patch();
+    handleLayersUpdate() {
+        LayerRepository_1.layerRepository.getAll().then(layers => {
+            this.patch();
+        });
     }
     async setup() {
         this.layers = await LayerRepository_1.layerRepository.getAll();
@@ -3465,13 +3464,14 @@ class LayerRepository extends Repository_1.Repository {
         }
         return Math.max(...this.layers.map(item => item.order));
     }
-    async persist(...layers) {
+    async create(...layers) {
         for (const layer of layers) {
             const lastOrder = this.getLastOrder();
             layer.order = lastOrder + 1;
             this.layers.push(layer);
         }
         await this.post(this.API_PATH, layers);
+        Events_1.Events.emit('layers-created', layers);
     }
     update(layer) {
         const found = this.layers.find(l => l.uuid === layer.uuid);
@@ -3479,7 +3479,7 @@ class LayerRepository extends Repository_1.Repository {
             Object.assign(found, layer);
         }
         this.patch(this.API_PATH, layer);
-        Events_1.Events.emit('layer-update', layer);
+        Events_1.Events.emit('layers-update', undefined);
     }
     async getAll() {
         if (!this.layers) {
@@ -3488,6 +3488,10 @@ class LayerRepository extends Repository_1.Repository {
         return this.layers.sort((a, b) => a.order - b.order);
     }
     async remove(uuid) {
+        const index = this.layers.findIndex(p => p.uuid === uuid);
+        if (index !== -1) {
+            this.layers.splice(index, 1);
+        }
         await this.delete(this.API_PATH + '/' + uuid);
     }
     setActive(uuid) {

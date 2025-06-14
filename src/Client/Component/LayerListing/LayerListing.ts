@@ -7,8 +7,8 @@ import { Layer } from 'Model/Layer'
 
 export class LayerListing extends Component {
     protected externalListeners: ExternalListeners = {
-        [Events.openAddNewLayer]: this.handleNewLayers,
-        'layer-update': this.handleLayerUpdate,
+        'layers-created': this.handleNewLayers,
+        'layers-update': this.handleLayersUpdate,
     }
 
     protected listeners: Listeners = {
@@ -17,8 +17,10 @@ export class LayerListing extends Component {
 
     private layers!: Layer[]
 
-    private handleLayerUpdate() {
-        this.patch()
+    private handleLayersUpdate() {
+        layerRepository.getAll().then(layers => {
+            this.patch()
+        })
     }
 
     protected async setup(): Promise<void> {

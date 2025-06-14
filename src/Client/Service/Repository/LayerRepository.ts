@@ -14,7 +14,7 @@ class LayerRepository extends Repository {
         return Math.max(...this.layers.map(item => item.order))
     }
 
-    public async persist(...layers: Layer[]): Promise<void> {
+    public async create(...layers: Layer[]): Promise<void> {
         for (const layer of layers) {
             const lastOrder = this.getLastOrder()
 
@@ -27,6 +27,8 @@ class LayerRepository extends Repository {
             this.API_PATH,
             layers,
         )
+
+        Events.emit('layers-created', layers)
     }
 
     public update(layer: Layer): void {
@@ -44,7 +46,7 @@ class LayerRepository extends Repository {
             layer,
         )
 
-        Events.emit('layer-update', layer)
+        Events.emit('layers-update', undefined)
     }
 
     public async getAll(): Promise<Layer[]> {
@@ -56,6 +58,10 @@ class LayerRepository extends Repository {
     }
 
     public async remove(uuid: string): Promise<void> {
+        const index = this.layers.findIndex(p => p.uuid === uuid)
+        if (index !== -1) {
+            this.layers.splice(index, 1)
+        }
         await this.delete(this.API_PATH + '/' + uuid)
     }
 
