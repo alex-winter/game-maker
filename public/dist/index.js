@@ -2337,6 +2337,7 @@ class LayerItem extends Component_1.Component {
         '.delete-button:click': this.handleClickDelete,
         '.up-button:click': this.handleClickUp,
         '.down-button:click': this.handleClickDown,
+        '.name:click': this.handleNameClick,
     };
     async setup() {
         this.layer = this.parsedDataset.layer;
@@ -2345,6 +2346,9 @@ class LayerItem extends Component_1.Component {
         this.style.order = this.layer.order.toString();
         const container = Dom_1.Dom.div('container');
         const name = Dom_1.Dom.div('name');
+        const nameText = Dom_1.Dom.span(this.layer.name, 'name-text');
+        const editIcon = Dom_1.Dom.i('fa-solid', 'fa-pen', 'edit-icon');
+        name.append(nameText, editIcon);
         const options = Dom_1.Dom.div('options');
         const visibleButton = Dom_1.Dom.button('', 'visibility-button');
         const eyeIcon = Dom_1.Dom.i('fa-solid', this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash');
@@ -2356,9 +2360,8 @@ class LayerItem extends Component_1.Component {
         const downIcon = Dom_1.Dom.i('fa-solid', 'fa-arrow-down');
         if (this.layer.type === 'collision') {
             const collisionIcon = Dom_1.Dom.i('fa-solid', 'fa-road-barrier');
-            name.append(collisionIcon);
+            name.prepend(collisionIcon);
         }
-        name.append(document.createTextNode(this.layer.name));
         deleteButton.append(trashIcon);
         visibleButton.append(eyeIcon);
         upButton.append(upIcon);
@@ -2368,6 +2371,33 @@ class LayerItem extends Component_1.Component {
         container.classList.toggle('collision-layer', this.layer.type === 'collision');
         container.append(name, options);
         return container;
+    }
+    handleNameClick(e) {
+        e.stopPropagation();
+        const nameEl = this.findOne('.name');
+        const currentName = this.layer.name;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentName;
+        input.className = 'inline-edit-input';
+        nameEl.innerHTML = '';
+        nameEl.appendChild(input);
+        input.focus();
+        input.select();
+        const finalize = () => {
+            const newName = input.value.trim();
+            if (newName && newName !== currentName) {
+                this.layer.name = newName;
+                LayerRepository_1.layerRepository.update(this.layer);
+            }
+        };
+        input.addEventListener('blur', finalize);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter')
+                input.blur();
+            if (e.key === 'Escape')
+                this.patch();
+        });
     }
     handleLayersUpdate() {
         this.layer = LayerRepository_1.layerRepository.getByUuid(this.layer.uuid);
@@ -2436,6 +2466,24 @@ class LayerItem extends Component_1.Component {
                 font-weight: 500;
                 font-size: 16px;
                 gap: 8px;
+                position: relative;
+            }
+
+            .name-text {
+                flex: 1;
+            }
+
+            .edit-icon {
+                font-size: 12px;
+                opacity: 0;
+                transition: opacity 0.2s;
+                margin-left: 6px;
+                pointer-events: none;
+                color: #888;
+            }
+
+            .name:hover .edit-icon {
+                opacity: 1;
             }
 
             .options {
@@ -2459,6 +2507,16 @@ class LayerItem extends Component_1.Component {
 
             .options i {
                 pointer-events: none;
+            }
+
+            .inline-edit-input {
+                font-size: 16px;
+                font-weight: 500;
+                padding: 4px 6px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                width: 100%;
+                box-sizing: border-box;
             }
         `;
     }
@@ -3499,6 +3557,12 @@ class Dom {
     }
     static label(text, ...classList) {
         const element = document.createElement('label');
+        element.innerText = text;
+        this.addClasses(element, ...classList);
+        return element;
+    }
+    static span(text, ...classList) {
+        const element = document.createElement('span');
         element.innerText = text;
         this.addClasses(element, ...classList);
         return element;

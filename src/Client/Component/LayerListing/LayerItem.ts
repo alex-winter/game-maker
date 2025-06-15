@@ -18,6 +18,7 @@ export class LayerItem extends Component {
         '.delete-button:click': this.handleClickDelete,
         '.up-button:click': this.handleClickUp,
         '.down-button:click': this.handleClickDown,
+        '.name:click': this.handleNameClick,
     }
 
     protected async setup(): Promise<void> {
@@ -29,8 +30,12 @@ export class LayerItem extends Component {
 
         const container = Dom.div('container')
         const name = Dom.div('name')
-        const options = Dom.div('options')
+        const nameText = Dom.span(this.layer.name, 'name-text')
+        const editIcon = Dom.i('fa-solid', 'fa-pen', 'edit-icon')
 
+        name.append(nameText, editIcon)
+
+        const options = Dom.div('options')
         const visibleButton = Dom.button('', 'visibility-button')
         const eyeIcon = Dom.i('fa-solid', this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash')
 
@@ -45,10 +50,8 @@ export class LayerItem extends Component {
 
         if (this.layer.type === 'collision') {
             const collisionIcon = Dom.i('fa-solid', 'fa-road-barrier')
-            name.append(collisionIcon)
+            name.prepend(collisionIcon)
         }
-
-        name.append(document.createTextNode(this.layer.name))
 
         deleteButton.append(trashIcon)
         visibleButton.append(eyeIcon)
@@ -63,6 +66,36 @@ export class LayerItem extends Component {
         container.append(name, options)
 
         return container
+    }
+
+    private handleNameClick(e: Event): void {
+        e.stopPropagation()
+        const nameEl = this.findOne('.name')!
+        const currentName = this.layer.name
+
+        const input = document.createElement('input')
+        input.type = 'text'
+        input.value = currentName
+        input.className = 'inline-edit-input'
+
+        nameEl.innerHTML = ''
+        nameEl.appendChild(input)
+        input.focus()
+        input.select()
+
+        const finalize = () => {
+            const newName = input.value.trim()
+            if (newName && newName !== currentName) {
+                this.layer.name = newName
+                layerRepository.update(this.layer)
+            }
+        }
+
+        input.addEventListener('blur', finalize)
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') input.blur()
+            if (e.key === 'Escape') this.patch()
+        })
     }
 
     private handleLayersUpdate(): void {
@@ -139,6 +172,24 @@ export class LayerItem extends Component {
                 font-weight: 500;
                 font-size: 16px;
                 gap: 8px;
+                position: relative;
+            }
+
+            .name-text {
+                flex: 1;
+            }
+
+            .edit-icon {
+                font-size: 12px;
+                opacity: 0;
+                transition: opacity 0.2s;
+                margin-left: 6px;
+                pointer-events: none;
+                color: #888;
+            }
+
+            .name:hover .edit-icon {
+                opacity: 1;
             }
 
             .options {
@@ -162,6 +213,16 @@ export class LayerItem extends Component {
 
             .options i {
                 pointer-events: none;
+            }
+
+            .inline-edit-input {
+                font-size: 16px;
+                font-weight: 500;
+                padding: 4px 6px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                width: 100%;
+                box-sizing: border-box;
             }
         `
     }

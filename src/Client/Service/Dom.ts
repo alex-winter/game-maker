@@ -30,6 +30,16 @@ export class Dom {
         return element
     }
 
+    public static span(text: string, ...classList: string[]): HTMLSpanElement {
+        const element = document.createElement('span')
+
+        element.innerText = text
+
+        this.addClasses(element, ...classList)
+
+        return element
+    }
+
     public static inputText(...classList: string[]): HTMLInputElement {
         const element = document.createElement('input')
 
