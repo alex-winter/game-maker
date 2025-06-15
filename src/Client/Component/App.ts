@@ -39,6 +39,7 @@ export class App extends Component {
         'mouse-down-window-box': this.handleMouseDownWindowBox,
         'open-sheet-importer': this.handleOpenSheetImporter,
         'open-add-new-layer': this.handleOpenAddNewLayer,
+        'click-open-new-model': this.handleOpenNewModel,
         'click-open-history': this.handleOpenHistory,
         'new-layer-submit': this.handleNewLayerSubmit,
         'new-layer-mapped': this.handleNewLayerMapped,
@@ -301,5 +302,9 @@ export class App extends Component {
             layerRepository.update(layer),
             layerRepository.update(below),
         ])
+    }
+
+    private handleOpenNewModel(): void {
+
     }
 }

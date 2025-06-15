@@ -87,7 +87,10 @@ export class SideMenu extends Component {
         const historyButton = Dom.button('', 'open-history')
         historyButton.appendChild(Dom.i('fa-solid', 'fa-clock-rotate-left'))
 
-        floatingWrapper.append(importButton, historyButton)
+        const newModelButton = Dom.button('', 'open-new-model')
+        newModelButton.appendChild(Dom.i('fa-solid', 'fa-camera'))
+
+        floatingWrapper.append(importButton, historyButton, newModelButton)
 
         container.appendChild(floatingWrapper)
 

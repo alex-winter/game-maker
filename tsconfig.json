@@ -17,8 +17,7 @@
         "forceConsistentCasingInFileNames": true
     },
     "include": [
-        "src/Client",
-        "src/Model"
+        "src/"
     ],
     "exclude": [
         "node_modules"

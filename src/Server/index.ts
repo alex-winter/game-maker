@@ -15,6 +15,7 @@ import { requestHandlerGetPlacementImages } from 'Server/RequestHandlers/get-pla
 import { requestHandlerDeleteLayers } from 'Server/RequestHandlers/delete-layers'
 import { createDataFile } from 'Server/services/create-data-file'
 import { requestHandlerPostFiles } from 'Server/RequestHandlers/post-files'
+import { requestHandlerPostSpriteModel } from 'Server/RequestHandlers/post-sprite-model'
 
 const app = express()
 const port = config.port
@@ -31,6 +32,7 @@ const upload = multer({ storage })
 
 createDataFile(config.layersJsonFileDir)
 createDataFile(config.placementImagesJsonFileDir)
+createDataFile(config.spriteModelsJsonFileDir)
 createDataFile(config.userDataFileDir, UserDataFactory.make())
 
 app.use(express.static(config.publicDir))
@@ -54,6 +56,8 @@ app.patch('/user-data', requestHandlerPatchUserData)
 
 app.post('/placement-images', requestHandlerPostPlacementImages)
 app.get('/placement-images', requestHandlerGetPlacementImages)
+
+app.post('/sprite-model', requestHandlerPostSpriteModel)
 
 
 app.listen(port, () => {

@@ -1314,6 +1314,7 @@ class App extends Component_1.Component {
         'mouse-down-window-box': this.handleMouseDownWindowBox,
         'open-sheet-importer': this.handleOpenSheetImporter,
         'open-add-new-layer': this.handleOpenAddNewLayer,
+        'click-open-new-model': this.handleOpenNewModel,
         'click-open-history': this.handleOpenHistory,
         'new-layer-submit': this.handleNewLayerSubmit,
         'new-layer-mapped': this.handleNewLayerMapped,
@@ -1504,6 +1505,8 @@ class App extends Component_1.Component {
             LayerRepository_1.layerRepository.update(layer),
             LayerRepository_1.layerRepository.update(below),
         ]);
+    }
+    handleOpenNewModel() {
     }
 }
 exports.App = App;
@@ -3081,7 +3084,9 @@ class SideMenu extends Component_1.Component {
         importButton.appendChild(Dom_1.Dom.i('fa-solid', 'fa-images'));
         const historyButton = Dom_1.Dom.button('', 'open-history');
         historyButton.appendChild(Dom_1.Dom.i('fa-solid', 'fa-clock-rotate-left'));
-        floatingWrapper.append(importButton, historyButton);
+        const newModelButton = Dom_1.Dom.button('', 'open-new-model');
+        newModelButton.appendChild(Dom_1.Dom.i('fa-solid', 'fa-camera'));
+        floatingWrapper.append(importButton, historyButton, newModelButton);
         container.appendChild(floatingWrapper);
         return container;
     }
