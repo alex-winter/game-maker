@@ -1658,6 +1658,8 @@ const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Reposi
 const Canvas_1 = __webpack_require__(/*! Client/Component/Canvas/Canvas */ "./src/Client/Component/Canvas/Canvas.ts");
 const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
 const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
+const load_placement_1 = __webpack_require__(/*! Client/Service/load-placement */ "./src/Client/Service/load-placement.ts");
+const snap_1 = __webpack_require__(/*! Client/Service/snap */ "./src/Client/Service/snap.ts");
 class CanvasLayer extends Component_1.Component {
     static TILE_SIZE = 16;
     static COLLISION_IMAGE = (0, generate_image_1.generateImageDataURL)(CanvasLayer.TILE_SIZE, CanvasLayer.TILE_SIZE, { r: 255, g: 0, b: 0, a: 0.3 });
@@ -1670,6 +1672,7 @@ class CanvasLayer extends Component_1.Component {
     viewCoordinates = { x: 0, y: 0 };
     isCollisionLayer = false;
     toolSelection = 'pencil';
+    snap = (0, snap_1.snap)(CanvasLayer.TILE_SIZE);
     externalListeners = {
         'layer-deleted': this.handleDelete,
         'layers-update': this.handleLayersUpdate,
@@ -1717,24 +1720,6 @@ class CanvasLayer extends Component_1.Component {
             }
         `;
     }
-    loadPlacement(placement) {
-        PlacementImageRepository_1.placementImageRepository.getByUuid(placement.imageUuid)
-            .then(image => {
-            if (image) {
-                Dom_1.Dom.image(image.src).then(htmlImage => {
-                    LoadedPlacement_1.loadedPlacementRepository.add({
-                        uuid: placement.uuid,
-                        layerUuid: this.layer.uuid,
-                        image: htmlImage,
-                        x: placement.coordinate.x,
-                        y: placement.coordinate.y,
-                        width: htmlImage.width,
-                        height: htmlImage.height,
-                    });
-                });
-            }
-        });
-    }
     async setup() {
         this.layer = this.parsedDataset.layer;
         this.isCollisionLayer = this.layer.type === layers_1.LAYERS.typeCollision;
@@ -1742,7 +1727,7 @@ class CanvasLayer extends Component_1.Component {
             ? CanvasLayer.COLLISION_IMAGE
             : CanvasLayer.DEFAULT_IMAGE);
         for (const placement of this.layer.placements) {
-            this.loadPlacement(placement);
+            (0, load_placement_1.loadPlacement)(placement, this.layer.uuid);
         }
         this.viewCoordinates.x = this.parsedDataset.userData?.lastViewPosition?.x || 0;
         this.viewCoordinates.y = this.parsedDataset.userData?.lastViewPosition?.y || 0;
@@ -1791,9 +1776,6 @@ class CanvasLayer extends Component_1.Component {
             canvas.drawImage(placement.image, Math.floor(placement.x - this.viewCoordinates.x), Math.floor(placement.y - this.viewCoordinates.y), placement.image.width, placement.image.height);
         }
     }
-    snap(value) {
-        return Math.floor(Math.floor(value / CanvasLayer.TILE_SIZE) * CanvasLayer.TILE_SIZE);
-    }
     async generatePlacement() {
         if (this.getCurrentImage().src === CanvasLayer.DEFAULT_IMAGE) {
             return;
@@ -1814,7 +1796,7 @@ class CanvasLayer extends Component_1.Component {
             return;
         }
         this.layer.placements.push(newPlacement);
-        this.loadPlacement(newPlacement);
+        (0, load_placement_1.loadPlacement)(newPlacement, this.layer.uuid);
     }
     handleMouseUp(event) {
         if (event.button === mouse_events_1.MIDDLE_BUTTON) {
@@ -1836,8 +1818,9 @@ class CanvasLayer extends Component_1.Component {
         }
     }
     handleLayersUpdate() {
-        const canvas = this.getCanvas();
         this.layer = LayerRepository_1.layerRepository.getByUuid(this.layer.uuid);
+        const canvas = this.getCanvas();
+        canvas.stopAnimation();
         this.patch();
     }
     handleMouseMove(event) {
@@ -1995,7 +1978,7 @@ class CanvasLayer extends Component_1.Component {
             imageUuid: mergedImageUuid,
         };
         this.layer.placements.push(placement);
-        await this.loadPlacement(placement);
+        await (0, load_placement_1.loadPlacement)(placement, this.layer.uuid);
         Events_1.Events.emit('layer-placement-made', this.layer);
     }
     handleToolSelection(toolSelection) {
@@ -3017,6 +3000,9 @@ class SideMenu extends Component_1.Component {
         '.open-history:click': () => {
             Events_1.Events.emit('click-open-history', undefined);
         },
+        '.open-new-model:click': () => {
+            Events_1.Events.emit('click-open-new-model', undefined);
+        }
     };
     css() {
         return /*css*/ `
@@ -4049,6 +4035,58 @@ function generateImageDataURL(width, height, color) {
     return dataURL;
 }
 exports.generateImageDataURL = generateImageDataURL;
+
+
+/***/ }),
+
+/***/ "./src/Client/Service/load-placement.ts":
+/*!**********************************************!*\
+  !*** ./src/Client/Service/load-placement.ts ***!
+  \**********************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.loadPlacement = void 0;
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
+const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Repository/PlacementImageRepository */ "./src/Client/Service/Repository/PlacementImageRepository.ts");
+function loadPlacement(placement, layerUuid) {
+    PlacementImageRepository_1.placementImageRepository.getByUuid(placement.imageUuid)
+        .then(image => {
+        if (image) {
+            Dom_1.Dom.image(image.src).then(htmlImage => {
+                LoadedPlacement_1.loadedPlacementRepository.add({
+                    uuid: placement.uuid,
+                    layerUuid,
+                    image: htmlImage,
+                    x: placement.coordinate.x,
+                    y: placement.coordinate.y,
+                    width: htmlImage.width,
+                    height: htmlImage.height,
+                });
+            });
+        }
+    });
+}
+exports.loadPlacement = loadPlacement;
+
+
+/***/ }),
+
+/***/ "./src/Client/Service/snap.ts":
+/*!************************************!*\
+  !*** ./src/Client/Service/snap.ts ***!
+  \************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.snap = void 0;
+const snap = (size) => (value) => {
+    return Math.floor(Math.floor(value / size) * size);
+};
+exports.snap = snap;
 
 
 /***/ }),

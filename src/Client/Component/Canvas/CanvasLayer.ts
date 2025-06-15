@@ -11,6 +11,8 @@ import { Layer } from 'Model/Layer'
 import { Canvas2D } from 'Client/Component/Canvas/Canvas'
 import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
 import { layerRepository } from 'Client/Service/Repository/LayerRepository'
+import { loadPlacement } from 'Client/Service/load-placement'
+import { snap } from 'Client/Service/snap'
 
 type Movement = {
     layerUuid: string
@@ -42,6 +44,8 @@ export class CanvasLayer extends Component {
     private viewCoordinates: Coordinates = { x: 0, y: 0 }
     private isCollisionLayer: boolean = false
     private toolSelection: string = 'pencil'
+
+    private snap = snap(CanvasLayer.TILE_SIZE)
 
     protected readonly externalListeners: ExternalListeners = {
         'layer-deleted': this.handleDelete,
@@ -93,25 +97,6 @@ export class CanvasLayer extends Component {
         `
     }
 
-    private loadPlacement(placement: ImagePlacement): void {
-        placementImageRepository.getByUuid(placement.imageUuid)
-            .then(image => {
-                if (image) {
-                    Dom.image(image.src).then(htmlImage => {
-                        loadedPlacementRepository.add({
-                            uuid: placement.uuid,
-                            layerUuid: this.layer.uuid,
-                            image: htmlImage,
-                            x: placement.coordinate.x,
-                            y: placement.coordinate.y,
-                            width: htmlImage.width,
-                            height: htmlImage.height,
-                        })
-                    })
-                }
-            })
-    }
-
     protected async setup(): Promise<void> {
         this.layer = this.parsedDataset.layer
         this.isCollisionLayer = this.layer.type === LAYERS.typeCollision
@@ -122,7 +107,7 @@ export class CanvasLayer extends Component {
         )
 
         for (const placement of this.layer.placements) {
-            this.loadPlacement(placement)
+            loadPlacement(placement, this.layer.uuid)
         }
 
         this.viewCoordinates.x = this.parsedDataset.userData?.lastViewPosition?.x || 0
@@ -203,16 +188,11 @@ export class CanvasLayer extends Component {
         }
     }
 
-    private snap(value: number): number {
-        return Math.floor(
-            Math.floor(value / CanvasLayer.TILE_SIZE) * CanvasLayer.TILE_SIZE
-        )
-    }
-
     private async generatePlacement(): Promise<void> {
         if (this.getCurrentImage().src === CanvasLayer.DEFAULT_IMAGE) {
             return
         }
+
         const newPlacement: ImagePlacement = {
             uuid: crypto.randomUUID(),
             coordinate: {
@@ -234,7 +214,7 @@ export class CanvasLayer extends Component {
         }
 
         this.layer.placements.push(newPlacement)
-        this.loadPlacement(newPlacement)
+        loadPlacement(newPlacement, this.layer.uuid)
     }
 
     private handleMouseUp(event: MouseEvent): void {
@@ -261,9 +241,10 @@ export class CanvasLayer extends Component {
     }
 
     private handleLayersUpdate(): void {
-        const canvas = this.getCanvas()
-
         this.layer = layerRepository.getByUuid(this.layer.uuid)
+
+        const canvas = this.getCanvas()
+        canvas.stopAnimation()
 
         this.patch()
     }
@@ -491,7 +472,7 @@ export class CanvasLayer extends Component {
         }
 
         this.layer.placements.push(placement)
-        await this.loadPlacement(placement)
+        await loadPlacement(placement, this.layer.uuid)
 
         Events.emit('layer-placement-made', this.layer)
     }

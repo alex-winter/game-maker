@@ -13,6 +13,9 @@ export class SideMenu extends Component {
         '.open-history:click': () => {
             Events.emit('click-open-history', undefined)
         },
+        '.open-new-model:click': () => {
+            Events.emit('click-open-new-model', undefined)
+        }
     }
 
     protected css(): string {
