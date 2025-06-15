@@ -1742,7 +1742,7 @@ class CanvasLayer extends Component_1.Component {
         container.append(canvas, this.currentImage);
         const baseZIndex = 500;
         const orderIndex = this.layer.order ?? 0;
-        const calculatedZIndex = baseZIndex + orderIndex;
+        const calculatedZIndex = baseZIndex - orderIndex;
         this.style.zIndex = calculatedZIndex.toString();
         return container;
     }
@@ -3189,76 +3189,103 @@ class WindowBox extends Component_1.Component {
     }
     css() {
         return /*css*/ `
-            :host {
-                position: fixed;
-                display: block;
-                top: 50%;
-                left: 50%;
-                cursor: default;
-                z-index: 1001;
-                resize: both;
-                overflow: hidden;
-                max-height: 90vh;
-                max-width: 90vw;
-            }
+                  :host {
+            position: fixed;
+            display: block;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1001;
+            resize: both;
+            overflow: hidden;
+            max-height: 90vh;
+            max-width: 90vw;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+            background: white;
+            transition: box-shadow 0.2s ease;
+            font-family: 'Segoe UI', sans-serif;
+        }
 
-            .window-box {
-                width: 100%;
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-            }
+        :host(:hover) {
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+        }
 
-            .header {
-                background: #ccc;
-                padding: 10px;
-                cursor: move;
-                user-select: none;
-                display: flex;
-            }
+        .window-box {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            border-radius: inherit;
+        }
 
-            .header > div {
-                flex: 1;
-            }
+        .header {
+            background: linear-gradient(135deg, #6c63ff, #5a52d6);
+            color: white;
+            padding: 10px 16px;
+            cursor: move;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
 
-            .options {
-                display:flex;
-                justify-content: flex-end;
-            }
+        .header > div {
+            flex: 1;
+            font-weight: 600;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+        }
 
-            .close:hover {
-                color: red;
-                cursor: pointer;
-            }
+        .options {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
 
-            .content {
-                padding: 10px;
-                background: white;
-                border: 1px solid #ccc;
-                width: 100%;
-                height: 100%;
-                overflow: scroll;
-                box-sizing: border-box;
-            }
+        .close {
+            font-size: 1.1rem;
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 6px;
+            transition: background 0.2s ease;
+        }
 
-            @keyframes flash {
-                0% {
-                  box-shadow: 0 0 0px rgba(255, 200, 0, 0.8);
-                  transform: scale(1);
-                }
-                50% {
-                  box-shadow: 0 0 12px rgba(255, 200, 0, 0.9);
-                  transform: scale(1.02);
-                }
-                100% {
-                  box-shadow: 0 0 0px rgba(255, 200, 0, 0);
-                  transform: scale(1);
-                }
-              }
-              
-              :host(.flash) {
-                animation: flash 0.5s ease-in-out;
-              }
+        .close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ff6b6b;
+            cursor: pointer;
+        }
+
+        .content {
+            padding: 14px;
+            background: #fff;
+            border-top: 1px solid #ddd;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            box-sizing: border-box;
+        }
+
+        @keyframes flash {
+            0% {
+                box-shadow: 0 0 0 rgba(255, 200, 0, 0.8);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 16px rgba(255, 200, 0, 0.9);
+                transform: scale(1.02);
+            }
+            100% {
+                box-shadow: 0 0 0 rgba(255, 200, 0, 0);
+                transform: scale(1);
+            }
+        }
+
+        :host(.flash) {
+            animation: flash 0.4s ease-in-out;
+        }
         `;
     }
     async setup() {

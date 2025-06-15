@@ -146,7 +146,7 @@ export class CanvasLayer extends Component {
 
         const baseZIndex = 500
         const orderIndex = this.layer.order ?? 0
-        const calculatedZIndex = baseZIndex + orderIndex
+        const calculatedZIndex = baseZIndex - orderIndex
 
         this.style.zIndex = calculatedZIndex.toString()
 
