@@ -265,8 +265,6 @@ export class CanvasLayer extends Component {
 
         this.layer = layerRepository.getByUuid(this.layer.uuid)
 
-        canvas.stopAnimation()
-
         this.patch()
     }
 

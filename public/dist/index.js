@@ -129,15 +129,26 @@ class ComponentPrototype {
             this.log(`Parsed dataset key="${key}":`, this.parsedDataset[key]);
         }
         if (this.globalStylesheets) {
-            for (const href of this.globalStylesheets) {
-                if (!this.shadow.querySelector(`link[href="${href}"]`)) {
+            const loadPromises = this.globalStylesheets.map(href => {
+                return new Promise((resolve) => {
+                    if (this.shadow.querySelector(`link[href="${href}"]`)) {
+                        return resolve();
+                    }
                     const link = document.createElement('link');
                     link.rel = 'stylesheet';
                     link.href = href;
+                    link.onload = () => {
+                        this.log(`Loaded global stylesheet: ${href}`);
+                        resolve();
+                    };
+                    link.onerror = () => {
+                        this.log(`Failed to load stylesheet: ${href}`);
+                        resolve(); // still resolve to avoid hanging
+                    };
                     this.shadow.appendChild(link);
-                    this.log(`Appended global stylesheet: ${href}`);
-                }
-            }
+                });
+            });
+            await Promise.all(loadPromises);
         }
         this.log('Setup starting...');
         await this.setup();
@@ -327,7 +338,7 @@ function patchDOM(oldNode, newNode) {
     if (oldNode.nodeType === Node.ELEMENT_NODE && newNode.nodeType === Node.ELEMENT_NODE) {
         const oldEl = oldNode;
         const newEl = newNode;
-        // --- NEW: Check for differences in data-* attributes ---
+        // --- Check for differences in data-* attributes ---
         for (let i = 0; i < newEl.attributes.length; i++) {
             const attr = newEl.attributes[i];
             if (attr.name.startsWith('data-')) {
@@ -1824,7 +1835,6 @@ class CanvasLayer extends Component_1.Component {
     handleLayersUpdate() {
         const canvas = this.getCanvas();
         this.layer = LayerRepository_1.layerRepository.getByUuid(this.layer.uuid);
-        canvas.stopAnimation();
         this.patch();
     }
     handleMouseMove(event) {
@@ -2332,6 +2342,7 @@ class LayerItem extends Component_1.Component {
         this.layer = this.parsedDataset.layer;
     }
     build() {
+        this.style.order = this.layer.order.toString();
         const container = Dom_1.Dom.div('container');
         const name = Dom_1.Dom.div('name');
         const options = Dom_1.Dom.div('options');
@@ -2388,6 +2399,10 @@ class LayerItem extends Component_1.Component {
     }
     css() {
         return /*css*/ `
+            :host {
+                display: block;
+                flex: 1;
+            }
             .container {
                 display: flex;
                 align-items: center;
@@ -2398,6 +2413,7 @@ class LayerItem extends Component_1.Component {
                 box-shadow: 0 1px 4px rgba(0,0,0,0.05);
                 transition: background 0.3s ease;
                 cursor: pointer;
+                border: 2px solid rgb(255, 255, 255);
             }
 
             .container:hover {
@@ -2469,7 +2485,6 @@ const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/Laye
 class LayerListing extends Component_1.Component {
     externalListeners = {
         'layers-created': this.handleNewLayers,
-        'layers-update': this.handleLayersUpdate,
     };
     listeners = {
         '.add-new:click': this.handleClickAddNew,
@@ -2482,9 +2497,7 @@ class LayerListing extends Component_1.Component {
         const container = Dom_1.Dom.div('layer-listing-container');
         const listing = Dom_1.Dom.div('listing');
         const addNewLayerButton = Dom_1.Dom.button('+ Add New Layer', 'add-new');
-        listing.append(...this.layers
-            .sort((a, b) => a.order - b.order)
-            .map(this.buildLayer.bind(this)));
+        listing.append(...this.layers.map(this.buildLayer.bind(this)));
         container.append(listing, addNewLayerButton);
         return container;
     }
@@ -2492,12 +2505,6 @@ class LayerListing extends Component_1.Component {
         Events_1.Events.emit(Events_1.Events.openAddNewLayer, undefined);
     }
     handleNewLayers() {
-        LayerRepository_1.layerRepository.getAll().then(layers => {
-            this.layers = layers;
-            this.patch();
-        });
-    }
-    handleLayersUpdate() {
         LayerRepository_1.layerRepository.getAll().then(layers => {
             this.layers = layers;
             this.patch();

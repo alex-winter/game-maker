@@ -25,6 +25,8 @@ export class LayerItem extends Component {
     }
 
     protected build(): HTMLElement {
+        this.style.order = this.layer.order.toString()
+
         const container = Dom.div('container')
         const name = Dom.div('name')
         const options = Dom.div('options')
@@ -100,6 +102,10 @@ export class LayerItem extends Component {
 
     protected css(): string {
         return /*css*/`
+            :host {
+                display: block;
+                flex: 1;
+            }
             .container {
                 display: flex;
                 align-items: center;
@@ -110,6 +116,7 @@ export class LayerItem extends Component {
                 box-shadow: 0 1px 4px rgba(0,0,0,0.05);
                 transition: background 0.3s ease;
                 cursor: pointer;
+                border: 2px solid rgb(255, 255, 255);
             }
 
             .container:hover {
