@@ -61,21 +61,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     canvas.height = window.innerHeight
 
 
-    const layers = await layerRepository.getAll()
+    const layers = (await layerRepository.getAll()).sort((a, b) => b.order - a.order)
 
-    layers.forEach(layer => {
-        layer.placements.forEach(async placement => {
+    console.log('layers', layers)
+
+    for (const layer of layers) {
+        for (const placement of layer.placements) {
             const placementImage = await placementImageRepository.getByUuid(
                 placement.imageUuid
             )
 
             if (!placementImage) {
-                throw new Error('could not find placement image')
+                console.warn('could not find placement image', placement.imageUuid)
+                continue
             }
 
-            const image = await Dom.image(
-                placementImage.src
-            )
+            const image = await Dom.image(placementImage.src)
 
             loadedPlacements.push({
                 uuid: crypto.randomUUID(),
@@ -87,7 +88,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 height: image.height,
                 type: layer.type,
             })
-        })
+        }
+    }
+
+    // build map of layer order and sort placements so draw order matches layer order
+    const layerOrderMap = new Map(layers.map(l => [l.uuid, l.order]))
+    loadedPlacements.sort((a, b) => {
+        const ao = layerOrderMap.get(a.layerUuid) ?? 0
+        const bo = layerOrderMap.get(b.layerUuid) ?? 0
+        return bo - ao
     })
 
     renderLayers(ctx, loadedPlacements, canvas.width, canvas.height)
