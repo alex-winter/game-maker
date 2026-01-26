@@ -3,6 +3,7 @@ import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 import { layerRepository } from 'Client/Service/Repository/LayerRepository'
 import { Layer } from 'Model/Layer'
+import { LAYERS } from 'Client/Constants/layers'
 
 export class LayerItem extends Component {
     private layer!: Layer
@@ -53,6 +54,11 @@ export class LayerItem extends Component {
             name.prepend(collisionIcon)
         }
 
+        if (this.layer.type === LAYERS.typePlayerControlled) {
+            const playerIcon = Dom.i('fa-solid', 'fa-user')
+            name.prepend(playerIcon)
+        }
+
         deleteButton.append(trashIcon)
         visibleButton.append(eyeIcon)
         upButton.append(upIcon)
@@ -62,6 +68,7 @@ export class LayerItem extends Component {
 
         container.classList.toggle('active', this.layer.is_active)
         container.classList.toggle('collision-layer', this.layer.type === 'collision')
+        container.classList.toggle('player-layer', this.layer.type === LAYERS.typePlayerControlled)
 
         container.append(name, options)
 
@@ -164,6 +171,15 @@ export class LayerItem extends Component {
             .container.collision-layer {
                 background: #ffe8e8;
                 border-left: 4px solid #e74c3c;
+            }
+
+            .container.player-layer {
+                background: #fff7e6;
+                border-left: 4px solid #f39c12;
+            }
+
+            .container.player-layer .name {
+                color: #b35f00;
             }
 
             .name {
