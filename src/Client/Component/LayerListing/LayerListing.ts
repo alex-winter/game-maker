@@ -88,6 +88,22 @@ export class LayerListing extends Component {
             .add-new:hover {
                 background-color: #27ae60;
             }
+            .add-player {
+                align-self: center;
+                padding: 10px 20px;
+                font-size: 16px;
+                background-color: #3498db;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: background-color 0.3s ease;
+                margin-left: 8px;
+            }
+
+            .add-player:hover {
+                background-color: #2c80bd;
+            }
         `
     }
 }
