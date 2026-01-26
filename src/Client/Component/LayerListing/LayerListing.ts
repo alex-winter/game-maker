@@ -12,6 +12,7 @@ export class LayerListing extends Component {
 
     protected listeners: Listeners = {
         '.add-new:click': this.handleClickAddNew,
+        '.add-player:click': this.handleClickAddPlayer,
     }
 
     private layers!: Layer[]
@@ -24,18 +25,23 @@ export class LayerListing extends Component {
         const container = Dom.div('layer-listing-container')
         const listing = Dom.div('listing')
         const addNewLayerButton = Dom.button('+ Add New Layer', 'add-new')
+        const addPlayerButton = Dom.button('Add Player', 'add-player')
 
         listing.append(
             ...this.layers.map(this.buildLayer.bind(this))
         )
 
-        container.append(listing, addNewLayerButton)
+        container.append(listing, addNewLayerButton, addPlayerButton)
 
         return container
     }
 
     private handleClickAddNew(): void {
         Events.emit(Events.openAddNewLayer, undefined)
+    }
+
+    private handleClickAddPlayer(): void {
+        Events.emit(Events.openAddPlayer, undefined)
     }
 
     private handleNewLayers(): void {

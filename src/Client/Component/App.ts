@@ -13,6 +13,7 @@ import { LayerInput } from 'Client/Model/LayerInput'
 import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
+import { LAYERS } from 'Client/Constants/layers'
 import { FileUpload } from 'Client/Service/FileUpload'
 import { layerRepository } from 'Client/Service/Repository/LayerRepository'
 import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
@@ -39,6 +40,7 @@ export class App extends Component {
         'mouse-down-window-box': this.handleMouseDownWindowBox,
         'open-sheet-importer': this.handleOpenSheetImporter,
         'open-add-new-layer': this.handleOpenAddNewLayer,
+        'open-add-player': this.handleOpenAddPlayer,
         'click-open-new-model': this.handleOpenNewModel,
         'click-open-history': this.handleOpenHistory,
         'new-layer-submit': this.handleNewLayerSubmit,
@@ -191,6 +193,42 @@ export class App extends Component {
                 .sort((a, b) => b.order - a.order)
                 .map(layer => Dom.makeComponent(CanvasLayer, { layer }))
         )
+    }
+
+    private async handleOpenAddPlayer(): Promise<void> {
+        const layer = Object.assign(
+            LayerFactory.make(),
+            {
+                type: LAYERS.typePlayerControlled,
+                name: 'Player',
+                is_active: true,
+            }
+        ) as Layer
+
+        Events.emit('new-layer-mapped', [layer])
+
+        await layerRepository.create(layer)
+
+        // small delay to ensure the CanvasLayer is mounted
+        setTimeout(async () => {
+            const size = 32
+            const canvas = document.createElement('canvas')
+            canvas.width = size
+            canvas.height = size
+            const ctx = canvas.getContext('2d')!
+
+            ctx.clearRect(0, 0, size, size)
+            ctx.beginPath()
+            ctx.fillStyle = 'blue'
+            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2)
+            ctx.fill()
+
+            const dataUrl = canvas.toDataURL('image/png')
+            const img = await Dom.image(dataUrl)
+
+            Events.emit('sheet-selection-made', img)
+            Events.emit('tool-selection', 'pencil')
+        }, 50)
     }
 
     private handleLayerPlacementMade(layer: Layer): void {
