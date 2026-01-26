@@ -2,11 +2,11 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./node_modules/event-driven-web-components/dist/Component.js":
+/***/ "./node_modules/event-driven-web-components/dist/Component.js"
 /*!********************************************************************!*\
   !*** ./node_modules/event-driven-web-components/dist/Component.js ***!
   \********************************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -68,13 +68,13 @@ class Component extends HTMLElement {
 exports.Component = Component;
 //# sourceMappingURL=Component.js.map
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/event-driven-web-components/dist/ComponentPrototype.js":
+/***/ "./node_modules/event-driven-web-components/dist/ComponentPrototype.js"
 /*!*****************************************************************************!*\
   !*** ./node_modules/event-driven-web-components/dist/ComponentPrototype.js ***!
   \*****************************************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -240,13 +240,13 @@ class ComponentPrototype {
 exports.ComponentPrototype = ComponentPrototype;
 //# sourceMappingURL=ComponentPrototype.js.map
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/event-driven-web-components/dist/Events.js":
+/***/ "./node_modules/event-driven-web-components/dist/Events.js"
 /*!*****************************************************************!*\
   !*** ./node_modules/event-driven-web-components/dist/Events.js ***!
   \*****************************************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -278,13 +278,13 @@ class Events {
 exports.Events = Events;
 //# sourceMappingURL=Events.js.map
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/event-driven-web-components/dist/is-json.js":
+/***/ "./node_modules/event-driven-web-components/dist/is-json.js"
 /*!******************************************************************!*\
   !*** ./node_modules/event-driven-web-components/dist/is-json.js ***!
   \******************************************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -303,13 +303,13 @@ function isJSON(value) {
 }
 //# sourceMappingURL=is-json.js.map
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/event-driven-web-components/dist/patch-dom.js":
+/***/ "./node_modules/event-driven-web-components/dist/patch-dom.js"
 /*!********************************************************************!*\
   !*** ./node_modules/event-driven-web-components/dist/patch-dom.js ***!
   \********************************************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -396,13 +396,13 @@ function patchDOM(oldNode, newNode) {
 }
 //# sourceMappingURL=patch-dom.js.map
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/index.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/index.js"
 /*!*****************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/index.js ***!
   \*****************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -437,26 +437,26 @@ var version_js_1 = __webpack_require__(/*! ./version.js */ "./node_modules/uuid/
 Object.defineProperty(exports, "version", ({ enumerable: true, get: function () { return version_js_1.default; } }));
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/max.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/max.js"
 /*!***************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/max.js ***!
   \***************************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports["default"] = 'ffffffff-ffff-ffff-ffff-ffffffffffff';
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/md5.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/md5.js"
 /*!***************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/md5.js ***!
   \***************************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -597,13 +597,13 @@ function md5ii(a, b, c, d, x, s, t) {
 exports["default"] = md5;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/native.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/native.js"
 /*!******************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/native.js ***!
   \******************************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -611,26 +611,26 @@ const randomUUID = typeof crypto !== 'undefined' && crypto.randomUUID && crypto.
 exports["default"] = { randomUUID };
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/nil.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/nil.js"
 /*!***************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/nil.js ***!
   \***************************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports["default"] = '00000000-0000-0000-0000-000000000000';
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/parse.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/parse.js"
 /*!*****************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/parse.js ***!
   \*****************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -645,26 +645,26 @@ function parse(uuid) {
 exports["default"] = parse;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/regex.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/regex.js"
 /*!*****************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/regex.js ***!
   \*****************************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports["default"] = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/rng.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/rng.js"
 /*!***************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/rng.js ***!
   \***************************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -682,13 +682,13 @@ function rng() {
 exports["default"] = rng;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/sha1.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/sha1.js"
 /*!****************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/sha1.js ***!
   \****************************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -764,13 +764,13 @@ function sha1(bytes) {
 exports["default"] = sha1;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/stringify.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/stringify.js"
 /*!*********************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/stringify.js ***!
   \*********************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -813,13 +813,13 @@ function stringify(arr, offset = 0) {
 exports["default"] = stringify;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/v1.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/v1.js"
 /*!**************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/v1.js ***!
   \**************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -910,13 +910,13 @@ function v1Bytes(rnds, msecs, nsecs, clockseq, node, buf, offset = 0) {
 exports["default"] = v1;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/v1ToV6.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/v1ToV6.js"
 /*!******************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/v1ToV6.js ***!
   \******************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -933,13 +933,13 @@ function _v1ToV6(v1Bytes) {
 }
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/v3.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/v3.js"
 /*!**************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/v3.js ***!
   \**************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -957,13 +957,13 @@ v3.URL = v35_js_1.URL;
 exports["default"] = v3;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/v35.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/v35.js"
 /*!***************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/v35.js ***!
   \***************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -1008,13 +1008,13 @@ function v35(version, hash, value, namespace, buf, offset) {
 exports["default"] = v35;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/v4.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/v4.js"
 /*!**************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/v4.js ***!
   \**************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -1047,13 +1047,13 @@ function v4(options, buf, offset) {
 exports["default"] = v4;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/v5.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/v5.js"
 /*!**************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/v5.js ***!
   \**************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -1071,13 +1071,13 @@ v5.URL = v35_js_1.URL;
 exports["default"] = v5;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/v6.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/v6.js"
 /*!**************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/v6.js ***!
   \**************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -1100,13 +1100,13 @@ function v6(options, buf, offset) {
 exports["default"] = v6;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/v6ToV1.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/v6ToV1.js"
 /*!******************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/v6ToV1.js ***!
   \******************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -1123,13 +1123,13 @@ function _v6ToV1(v6Bytes) {
 }
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/v7.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/v7.js"
 /*!**************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/v7.js ***!
   \**************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -1202,13 +1202,13 @@ function v7Bytes(rnds, msecs, seq, buf, offset = 0) {
 exports["default"] = v7;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/validate.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/validate.js"
 /*!********************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/validate.js ***!
   \********************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -1219,13 +1219,13 @@ function validate(uuid) {
 exports["default"] = validate;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./node_modules/uuid/dist/cjs-browser/version.js":
+/***/ "./node_modules/uuid/dist/cjs-browser/version.js"
 /*!*******************************************************!*\
   !*** ./node_modules/uuid/dist/cjs-browser/version.js ***!
   \*******************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -1239,13 +1239,13 @@ function version(uuid) {
 exports["default"] = version;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Component/Animation/AnimationMaker.ts":
+/***/ "./src/Client/Component/Animation/AnimationMaker.ts"
 /*!**********************************************************!*\
   !*** ./src/Client/Component/Animation/AnimationMaker.ts ***!
   \**********************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -1269,13 +1269,13 @@ class AnimationMaker extends Component_1.Component {
 exports.AnimationMaker = AnimationMaker;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Component/App.ts":
+/***/ "./src/Client/Component/App.ts"
 /*!*************************************!*\
   !*** ./src/Client/Component/App.ts ***!
   \*************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -1512,13 +1512,13 @@ class App extends Component_1.Component {
 exports.App = App;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Component/Canvas/Canvas.ts":
+/***/ "./src/Client/Component/Canvas/Canvas.ts"
 /*!***********************************************!*\
   !*** ./src/Client/Component/Canvas/Canvas.ts ***!
   \***********************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -1637,13 +1637,13 @@ class Canvas2D extends Component_1.Component {
 exports.Canvas2D = Canvas2D;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Component/Canvas/CanvasLayer.ts":
+/***/ "./src/Client/Component/Canvas/CanvasLayer.ts"
 /*!****************************************************!*\
   !*** ./src/Client/Component/Canvas/CanvasLayer.ts ***!
   \****************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -2015,13 +2015,13 @@ class CanvasLayer extends Component_1.Component {
 exports.CanvasLayer = CanvasLayer;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Component/Canvas/CanvasTools.ts":
+/***/ "./src/Client/Component/Canvas/CanvasTools.ts"
 /*!****************************************************!*\
   !*** ./src/Client/Component/Canvas/CanvasTools.ts ***!
   \****************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -2103,13 +2103,13 @@ class CanvasTools extends Component_1.Component {
 exports.CanvasTools = CanvasTools;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Component/File/FileUploader/FileUploader.ts":
+/***/ "./src/Client/Component/File/FileUploader/FileUploader.ts"
 /*!****************************************************************!*\
   !*** ./src/Client/Component/File/FileUploader/FileUploader.ts ***!
   \****************************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -2204,13 +2204,13 @@ class FileUploader extends Component_1.Component {
 exports.FileUploader = FileUploader;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Component/Generic/Modal/BasicModal.ts":
+/***/ "./src/Client/Component/Generic/Modal/BasicModal.ts"
 /*!**********************************************************!*\
   !*** ./src/Client/Component/Generic/Modal/BasicModal.ts ***!
   \**********************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -2262,13 +2262,13 @@ class BasicModal extends Component_1.Component {
 exports.BasicModal = BasicModal;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Component/Generic/handleDragAndDrop.ts":
+/***/ "./src/Client/Component/Generic/handleDragAndDrop.ts"
 /*!***********************************************************!*\
   !*** ./src/Client/Component/Generic/handleDragAndDrop.ts ***!
   \***********************************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -2296,13 +2296,13 @@ function handleDragAndDrop(element, event) {
 exports.handleDragAndDrop = handleDragAndDrop;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Component/LayerListing/LayerItem.ts":
+/***/ "./src/Client/Component/LayerListing/LayerItem.ts"
 /*!********************************************************!*\
   !*** ./src/Client/Component/LayerListing/LayerItem.ts ***!
   \********************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -2510,13 +2510,13 @@ class LayerItem extends Component_1.Component {
 exports.LayerItem = LayerItem;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Component/LayerListing/LayerListing.ts":
+/***/ "./src/Client/Component/LayerListing/LayerListing.ts"
 /*!***********************************************************!*\
   !*** ./src/Client/Component/LayerListing/LayerListing.ts ***!
   \***********************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -2596,13 +2596,13 @@ class LayerListing extends Component_1.Component {
 exports.LayerListing = LayerListing;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Component/NewLayerForm/NewLayerForm.ts":
+/***/ "./src/Client/Component/NewLayerForm/NewLayerForm.ts"
 /*!***********************************************************!*\
   !*** ./src/Client/Component/NewLayerForm/NewLayerForm.ts ***!
   \***********************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -2734,13 +2734,13 @@ class NewLayerForm extends Component_1.Component {
 exports.NewLayerForm = NewLayerForm;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Component/PlacementHistory/PlacementHistory.ts":
+/***/ "./src/Client/Component/PlacementHistory/PlacementHistory.ts"
 /*!*******************************************************************!*\
   !*** ./src/Client/Component/PlacementHistory/PlacementHistory.ts ***!
   \*******************************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -2886,13 +2886,13 @@ class PlacementHistory extends Component_1.Component {
 exports.PlacementHistory = PlacementHistory;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Component/SheetListing/SheetListing.ts":
+/***/ "./src/Client/Component/SheetListing/SheetListing.ts"
 /*!***********************************************************!*\
   !*** ./src/Client/Component/SheetListing/SheetListing.ts ***!
   \***********************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -2977,13 +2977,13 @@ class FileListing extends Component_1.Component {
 exports.FileListing = FileListing;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Component/SideMenu/SideMenu.ts":
+/***/ "./src/Client/Component/SideMenu/SideMenu.ts"
 /*!***************************************************!*\
   !*** ./src/Client/Component/SideMenu/SideMenu.ts ***!
   \***************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3080,13 +3080,13 @@ class SideMenu extends Component_1.Component {
 exports.SideMenu = SideMenu;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts":
+/***/ "./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts"
 /*!**************************************************************************!*\
   !*** ./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts ***!
   \**************************************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3108,13 +3108,13 @@ class SheetImporter extends Component_1.Component {
 exports.SheetImporter = SheetImporter;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Component/SpriteSheets/SheetViewer/SheetViewer.ts":
+/***/ "./src/Client/Component/SpriteSheets/SheetViewer/SheetViewer.ts"
 /*!**********************************************************************!*\
   !*** ./src/Client/Component/SpriteSheets/SheetViewer/SheetViewer.ts ***!
   \**********************************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3211,13 +3211,13 @@ class SheetViewer extends Component_1.Component {
 exports.SheetViewer = SheetViewer;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Component/WindowBox/WindowBox.ts":
+/***/ "./src/Client/Component/WindowBox/WindowBox.ts"
 /*!*****************************************************!*\
   !*** ./src/Client/Component/WindowBox/WindowBox.ts ***!
   \*****************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3398,13 +3398,13 @@ class WindowBox extends Component_1.Component {
 exports.WindowBox = WindowBox;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Constants/components.ts":
+/***/ "./src/Client/Constants/components.ts"
 /*!********************************************!*\
   !*** ./src/Client/Constants/components.ts ***!
   \********************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3455,13 +3455,13 @@ exports.COMPONENT_UUIDS_CONSTRUCT_LOOKUP = new Map(Array.from(exports.COMPONENTS
 ]));
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Constants/layers.ts":
+/***/ "./src/Client/Constants/layers.ts"
 /*!****************************************!*\
   !*** ./src/Client/Constants/layers.ts ***!
   \****************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3482,13 +3482,13 @@ exports.LAYERS = {
 };
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Constants/mouse-events.ts":
+/***/ "./src/Client/Constants/mouse-events.ts"
 /*!**********************************************!*\
   !*** ./src/Client/Constants/mouse-events.ts ***!
   \**********************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3497,13 +3497,13 @@ exports.LEFT_BUTTON = 0;
 exports.MIDDLE_BUTTON = 1;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Service/Component.ts":
+/***/ "./src/Client/Service/Component.ts"
 /*!*****************************************!*\
   !*** ./src/Client/Service/Component.ts ***!
   \*****************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3520,13 +3520,13 @@ class Component extends Component_1.Component {
 exports.Component = Component;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Service/Dom.ts":
+/***/ "./src/Client/Service/Dom.ts"
 /*!***********************************!*\
   !*** ./src/Client/Service/Dom.ts ***!
   \***********************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3650,13 +3650,13 @@ class Dom {
 exports.Dom = Dom;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Service/Events.ts":
+/***/ "./src/Client/Service/Events.ts"
 /*!**************************************!*\
   !*** ./src/Client/Service/Events.ts ***!
   \**************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3668,13 +3668,13 @@ class Events extends Events_1.Events {
 exports.Events = Events;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Service/FileUpload.ts":
+/***/ "./src/Client/Service/FileUpload.ts"
 /*!******************************************!*\
   !*** ./src/Client/Service/FileUpload.ts ***!
   \******************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3694,13 +3694,13 @@ class FileUpload {
 exports.FileUpload = FileUpload;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Service/Repository/LayerRepository.ts":
+/***/ "./src/Client/Service/Repository/LayerRepository.ts"
 /*!**********************************************************!*\
   !*** ./src/Client/Service/Repository/LayerRepository.ts ***!
   \**********************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3767,13 +3767,13 @@ class LayerRepository extends Repository_1.Repository {
 exports.layerRepository = new LayerRepository();
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Service/Repository/LoadedPlacement.ts":
+/***/ "./src/Client/Service/Repository/LoadedPlacement.ts"
 /*!**********************************************************!*\
   !*** ./src/Client/Service/Repository/LoadedPlacement.ts ***!
   \**********************************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3799,13 +3799,13 @@ class LoadedPlacementRepository {
 exports.loadedPlacementRepository = new LoadedPlacementRepository();
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Service/Repository/PlacementImageRepository.ts":
+/***/ "./src/Client/Service/Repository/PlacementImageRepository.ts"
 /*!*******************************************************************!*\
   !*** ./src/Client/Service/Repository/PlacementImageRepository.ts ***!
   \*******************************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3849,13 +3849,13 @@ class PlacementImageRepository extends Repository_1.Repository {
 exports.placementImageRepository = new PlacementImageRepository();
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Service/Repository/Repository.ts":
+/***/ "./src/Client/Service/Repository/Repository.ts"
 /*!*****************************************************!*\
   !*** ./src/Client/Service/Repository/Repository.ts ***!
   \*****************************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3892,13 +3892,13 @@ class Repository {
 exports.Repository = Repository;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Service/Repository/SheetRepository.ts":
+/***/ "./src/Client/Service/Repository/SheetRepository.ts"
 /*!**********************************************************!*\
   !*** ./src/Client/Service/Repository/SheetRepository.ts ***!
   \**********************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3920,13 +3920,13 @@ class SheetRepository extends Repository_1.Repository {
 exports.sheetRepository = new SheetRepository();
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Service/Repository/UserDataRepository.ts":
+/***/ "./src/Client/Service/Repository/UserDataRepository.ts"
 /*!*************************************************************!*\
   !*** ./src/Client/Service/Repository/UserDataRepository.ts ***!
   \*************************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3949,13 +3949,13 @@ class UserDataRepsitory extends Repository_1.Repository {
 exports.userDataRepository = new UserDataRepsitory();
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Service/WindowBoxFactory.ts":
+/***/ "./src/Client/Service/WindowBoxFactory.ts"
 /*!************************************************!*\
   !*** ./src/Client/Service/WindowBoxFactory.ts ***!
   \************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -3989,13 +3989,13 @@ class WindowBoxFactory {
 exports.WindowBoxFactory = WindowBoxFactory;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Service/extract-image-from-canvas-area.ts":
+/***/ "./src/Client/Service/extract-image-from-canvas-area.ts"
 /*!**************************************************************!*\
   !*** ./src/Client/Service/extract-image-from-canvas-area.ts ***!
   \**************************************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -4011,13 +4011,13 @@ async function extractImageFromCanvasArea(sourceCanvas, x, y, width, height) {
 exports.extractImageFromCanvasArea = extractImageFromCanvasArea;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Service/generate-image.ts":
+/***/ "./src/Client/Service/generate-image.ts"
 /*!**********************************************!*\
   !*** ./src/Client/Service/generate-image.ts ***!
   \**********************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -4037,13 +4037,13 @@ function generateImageDataURL(width, height, color) {
 exports.generateImageDataURL = generateImageDataURL;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Service/load-placement.ts":
+/***/ "./src/Client/Service/load-placement.ts"
 /*!**********************************************!*\
   !*** ./src/Client/Service/load-placement.ts ***!
   \**********************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+(__unused_webpack_module, exports, __webpack_require__) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -4072,13 +4072,13 @@ function loadPlacement(placement, layerUuid) {
 exports.loadPlacement = loadPlacement;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/Service/snap.ts":
+/***/ "./src/Client/Service/snap.ts"
 /*!************************************!*\
   !*** ./src/Client/Service/snap.ts ***!
   \************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -4089,25 +4089,25 @@ const snap = (size) => (value) => {
 exports.snap = snap;
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Client/styles.css":
+/***/ "./src/Client/styles.css"
 /*!*******************************!*\
   !*** ./src/Client/styles.css ***!
   \*******************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 __webpack_require__.r(__webpack_exports__);
 // extracted by mini-css-extract-plugin
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/Model/Factory/LayerFactory.ts":
+/***/ "./src/Model/Factory/LayerFactory.ts"
 /*!*******************************************!*\
   !*** ./src/Model/Factory/LayerFactory.ts ***!
   \*******************************************/
-/***/ ((__unused_webpack_module, exports) => {
+(__unused_webpack_module, exports) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -4129,7 +4129,7 @@ class LayerFactory {
 exports.LayerFactory = LayerFactory;
 
 
-/***/ })
+/***/ }
 
 /******/ 	});
 /************************************************************************/
@@ -4142,6 +4142,12 @@ exports.LayerFactory = LayerFactory;
 /******/ 		var cachedModule = __webpack_module_cache__[moduleId];
 /******/ 		if (cachedModule !== undefined) {
 /******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Check if module exists (development only)
+/******/ 		if (__webpack_modules__[moduleId] === undefined) {
+/******/ 			var e = new Error("Cannot find module '" + moduleId + "'");
+/******/ 			e.code = 'MODULE_NOT_FOUND';
+/******/ 			throw e;
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
