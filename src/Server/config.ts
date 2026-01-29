@@ -13,6 +13,8 @@ export const config = {
 
     uploadsDir: path.join(projectRootDir, 'uploads'),
 
+    projectsDir: path.join(dataDir, 'projects.json'),
+
     layersJsonFileDir: path.join(dataDir, 'layers.json'),
 
     placementImagesJsonFileDir: path.join(dataDir, 'placement-images.json'),

@@ -22,10 +22,6 @@ export class SideMenu extends Component {
         return /*css*/`
             :host {
                 background-color: #f4f4f4;
-                position: fixed;
-                left: 0;
-                top: 0;
-                bottom: 0;
                 width: 300px;
                 padding: 20px;
                 box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);

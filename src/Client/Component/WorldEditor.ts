@@ -27,7 +27,7 @@ import { LayerFactory } from 'Model/Factory/LayerFactory'
 import { Layer } from 'Model/Layer'
 import { UserData, WindowConfiguration } from 'Model/UserData'
 
-export class App extends Component {
+export class WorldEditor extends Component {
     private openSheets: string[] = []
     private windowBoxes: { [key: string]: WindowBox } = {}
     private layers: Layer[] = []
@@ -54,6 +54,19 @@ export class App extends Component {
         'request-placement-deletion': this.handleRequestPlacementDeletion,
         'layer-order-up': this.handleLayerOrderUp,
         'layer-order-down': this.handleLayerOrderDown,
+    }
+
+    protected css(): string {
+        return /*css*/`
+            .container {
+                display: block;
+                position: relative;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                display: flex;
+            }
+        `
     }
 
     protected async setup(): Promise<void> {
@@ -85,9 +98,10 @@ export class App extends Component {
     }
 
     protected build(): HTMLElement {
-        const container = Dom.div()
+        const container = Dom.div('container')
         const sideMenu = Dom.makeComponent(SideMenu)
         const layerListing = Dom.makeComponent(LayerListing, { layers: this.layers })
+        const canvasContainer = Dom.div('canvas-container')
 
         sideMenu.append(layerListing)
 
@@ -97,10 +111,14 @@ export class App extends Component {
 
         const tools = Dom.makeComponent(CanvasTools, { currentTool: this.userData.currentTool })
 
+        canvasContainer.append(
+            ...layerElements
+        )
+
         container.append(
             sideMenu,
             tools,
-            ...layerElements
+            canvasContainer
         )
 
         return container

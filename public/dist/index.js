@@ -1271,249 +1271,6 @@ exports.AnimationMaker = AnimationMaker;
 
 /***/ },
 
-/***/ "./src/Client/Component/App.ts"
-/*!*************************************!*\
-  !*** ./src/Client/Component/App.ts ***!
-  \*************************************/
-(__unused_webpack_module, exports, __webpack_require__) {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.App = void 0;
-const CanvasLayer_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasLayer */ "./src/Client/Component/Canvas/CanvasLayer.ts");
-const CanvasTools_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasTools */ "./src/Client/Component/Canvas/CanvasTools.ts");
-const BasicModal_1 = __webpack_require__(/*! Client/Component/Generic/Modal/BasicModal */ "./src/Client/Component/Generic/Modal/BasicModal.ts");
-const LayerListing_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerListing */ "./src/Client/Component/LayerListing/LayerListing.ts");
-const NewLayerForm_1 = __webpack_require__(/*! Client/Component/NewLayerForm/NewLayerForm */ "./src/Client/Component/NewLayerForm/NewLayerForm.ts");
-const PlacementHistory_1 = __webpack_require__(/*! Client/Component/PlacementHistory/PlacementHistory */ "./src/Client/Component/PlacementHistory/PlacementHistory.ts");
-const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */ "./src/Client/Component/SideMenu/SideMenu.ts");
-const SheetImporter_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetImporter/SheetImporter */ "./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts");
-const SheetViewer_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetViewer/SheetViewer */ "./src/Client/Component/SpriteSheets/SheetViewer/SheetViewer.ts");
-const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
-const components_1 = __webpack_require__(/*! Client/Constants/components */ "./src/Client/Constants/components.ts");
-const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
-const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
-const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
-const FileUpload_1 = __webpack_require__(/*! Client/Service/FileUpload */ "./src/Client/Service/FileUpload.ts");
-const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
-const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
-const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Repository/PlacementImageRepository */ "./src/Client/Service/Repository/PlacementImageRepository.ts");
-const SheetRepository_1 = __webpack_require__(/*! Client/Service/Repository/SheetRepository */ "./src/Client/Service/Repository/SheetRepository.ts");
-const UserDataRepository_1 = __webpack_require__(/*! Client/Service/Repository/UserDataRepository */ "./src/Client/Service/Repository/UserDataRepository.ts");
-const WindowBoxFactory_1 = __webpack_require__(/*! Client/Service/WindowBoxFactory */ "./src/Client/Service/WindowBoxFactory.ts");
-const LayerFactory_1 = __webpack_require__(/*! Model/Factory/LayerFactory */ "./src/Model/Factory/LayerFactory.ts");
-class App extends Component_1.Component {
-    openSheets = [];
-    windowBoxes = {};
-    layers = [];
-    userData;
-    externalListeners = {
-        'upload-files-submission': this.handleUploadFilesSubmission,
-        'open-sheet': this.handleOpenSheet,
-        'window-destroyed': this.handleWindowDestroyed,
-        'mouse-down-window-box': this.handleMouseDownWindowBox,
-        'open-sheet-importer': this.handleOpenSheetImporter,
-        'open-add-new-layer': this.handleOpenAddNewLayer,
-        'click-open-new-model': this.handleOpenNewModel,
-        'click-open-history': this.handleOpenHistory,
-        'new-layer-submit': this.handleNewLayerSubmit,
-        'new-layer-mapped': this.handleNewLayerMapped,
-        'layer-placement-made': this.handleLayerPlacementMade,
-        'layer-active': this.handleLayerActive,
-        'layer-visible-toggle': this.handleLayerVisibleToggle,
-        'layer-delete': this.handleLayerDelete,
-        'updated-view-coordinates': this.handleUpdateViewCoordinates,
-        'window-update': this.handleWindowUpdate,
-        'request-placement-deletion': this.handleRequestPlacementDeletion,
-        'layer-order-up': this.handleLayerOrderUp,
-        'layer-order-down': this.handleLayerOrderDown,
-    };
-    async setup() {
-        this.userData = await UserDataRepository_1.userDataRepository.getAll();
-        this.layers = await LayerRepository_1.layerRepository.getAll();
-        await SheetRepository_1.sheetRepository.getAll();
-        await PlacementImageRepository_1.placementImageRepository.getAll();
-        for (const layer of this.layers) {
-            for (const placement of layer.placements) {
-                const placementImage = await PlacementImageRepository_1.placementImageRepository.getByUuid(placement.imageUuid);
-                if (placementImage) {
-                    const image = await Dom_1.Dom.image(placementImage.src);
-                    LoadedPlacement_1.loadedPlacementRepository.add({
-                        uuid: placement.uuid,
-                        layerUuid: layer.uuid,
-                        image,
-                        x: placement.coordinate.x,
-                        y: placement.coordinate.y,
-                        width: image.width,
-                        height: image.height,
-                    });
-                }
-            }
-        }
-    }
-    build() {
-        const container = Dom_1.Dom.div();
-        const sideMenu = Dom_1.Dom.makeComponent(SideMenu_1.SideMenu);
-        const layerListing = Dom_1.Dom.makeComponent(LayerListing_1.LayerListing, { layers: this.layers });
-        sideMenu.append(layerListing);
-        const layerElements = this.layers.map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer, userData: this.userData }));
-        const tools = Dom_1.Dom.makeComponent(CanvasTools_1.CanvasTools, { currentTool: this.userData.currentTool });
-        container.append(sideMenu, tools, ...layerElements);
-        return container;
-    }
-    handleUploadFilesSubmission(files) {
-        FileUpload_1.FileUpload.uploadMultiple(files);
-    }
-    handleOpenSheet(sheetName) {
-        const sheet = SheetRepository_1.sheetRepository.getByName(sheetName);
-        if (this.openSheets.includes(sheet.name)) {
-            this.windowBoxes[sheet.name].flash();
-            return;
-        }
-        const sheetViewerDataset = { imageSrc: sheet.imageSrc };
-        const component = Dom_1.Dom.makeComponent(SheetViewer_1.SheetViewer, sheetViewerDataset);
-        const windowBox = WindowBoxFactory_1.WindowBoxFactory.make(component, sheet.name, {
-            uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetViewer_1.SheetViewer),
-            componentConfigration: { dataset: sheetViewerDataset },
-            title: sheet.name,
-        });
-        if (windowBox) {
-            this.openSheets.push(sheet.name);
-            this.windowBoxes[sheet.name] = windowBox;
-            this.shadowRoot?.append(windowBox);
-        }
-    }
-    handleWindowDestroyed(name) {
-        if (this.openSheets.includes(name)) {
-            this.openSheets = this.openSheets.filter(item => item !== name);
-        }
-        if (this.windowBoxes[name]) {
-            delete this.windowBoxes[name];
-        }
-    }
-    handleMouseDownWindowBox(windowBox) {
-        const all = Dom_1.Dom.getAllOfComponent(WindowBox_1.WindowBox);
-        for (const one of all) {
-            one.zIndexMoveDown();
-        }
-        windowBox.zIndexMoveUp();
-    }
-    handleOpenSheetImporter() {
-        const component = Dom_1.Dom.makeComponent(SheetImporter_1.SheetImporter);
-        const windowBox = WindowBoxFactory_1.WindowBoxFactory.make(component, 'Import Sheets', {
-            uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetImporter_1.SheetImporter),
-            componentConfigration: { dataset: {} },
-            title: 'Import Sheets',
-        });
-        if (windowBox) {
-            this.shadowRoot?.append(windowBox);
-        }
-    }
-    handleOpenAddNewLayer() {
-        const modal = Dom_1.Dom.makeComponent(BasicModal_1.BasicModal);
-        const newLayerForm = Dom_1.Dom.makeComponent(NewLayerForm_1.NewLayerForm);
-        modal.append(newLayerForm);
-        this.shadowRoot?.append(modal);
-    }
-    handleNewLayerSubmit(input) {
-        const layer = Object.assign(LayerFactory_1.LayerFactory.make(), input);
-        Events_1.Events.emit('new-layer-mapped', [layer]);
-        LayerRepository_1.layerRepository.create(layer);
-    }
-    handleNewLayerMapped(layers) {
-        this.shadowRoot?.append(...layers
-            .sort((a, b) => b.order - a.order)
-            .map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer })));
-    }
-    handleLayerPlacementMade(layer) {
-        LayerRepository_1.layerRepository.update(layer);
-    }
-    handleLayerActive(layer) {
-        LayerRepository_1.layerRepository.setActive(layer.uuid);
-    }
-    handleLayerVisibleToggle(layer) {
-        LayerRepository_1.layerRepository.toggleVisible(layer.uuid);
-    }
-    handleLayerDelete(uuid) {
-        LayerRepository_1.layerRepository.remove(uuid)
-            .then(() => {
-            Events_1.Events.emit('layer-deleted', uuid);
-        });
-    }
-    async handleUpdateViewCoordinates(corrdinates) {
-        const userData = await UserDataRepository_1.userDataRepository.getAll();
-        userData.lastViewPosition.x = corrdinates.x;
-        userData.lastViewPosition.y = corrdinates.y;
-        UserDataRepository_1.userDataRepository.persist(userData);
-    }
-    async handleWindowUpdate(windowConfiguration) {
-        const userData = await UserDataRepository_1.userDataRepository.getAll();
-        userData.windows[windowConfiguration.uuid] = windowConfiguration;
-        UserDataRepository_1.userDataRepository.persist(userData);
-    }
-    handleOpenHistory() {
-        const windowBox = WindowBoxFactory_1.WindowBoxFactory.make(Dom_1.Dom.makeComponent(PlacementHistory_1.PlacementHistory), 'Placement History', {
-            uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(PlacementHistory_1.PlacementHistory),
-            componentConfigration: { dataset: {} },
-            title: 'Placement History',
-        });
-        if (windowBox) {
-            this.shadowRoot?.append(windowBox);
-        }
-    }
-    async handleRequestPlacementDeletion(placementUuid) {
-        const layers = await LayerRepository_1.layerRepository.getAll();
-        LoadedPlacement_1.loadedPlacementRepository.removeByUuid(placementUuid);
-        for (const layer of layers) {
-            const index = layer.placements.findIndex(p => p.uuid === placementUuid);
-            if (index !== -1) {
-                layer.placements.splice(index, 1);
-                LayerRepository_1.layerRepository.update(layer);
-                Events_1.Events.emit('placement-removed', placementUuid);
-                break;
-            }
-        }
-    }
-    async handleLayerOrderUp(layerUuid) {
-        const layer = await LayerRepository_1.layerRepository.getByUuid(layerUuid);
-        const layers = await LayerRepository_1.layerRepository.getAll();
-        layers.sort((a, b) => a.order - b.order);
-        const index = layers.findIndex(l => l.uuid === layer.uuid);
-        if (index <= 0)
-            return;
-        const above = layers[index - 1];
-        const tempOrder = layer.order;
-        layer.order = above.order;
-        above.order = tempOrder;
-        await Promise.all([
-            LayerRepository_1.layerRepository.update(layer),
-            LayerRepository_1.layerRepository.update(above),
-        ]);
-    }
-    async handleLayerOrderDown(layerUuid) {
-        const layer = await LayerRepository_1.layerRepository.getByUuid(layerUuid);
-        const layers = await LayerRepository_1.layerRepository.getAll();
-        layers.sort((a, b) => a.order - b.order);
-        const index = layers.findIndex(l => l.uuid === layer.uuid);
-        if (index === -1 || index >= layers.length - 1)
-            return; // Already at the bottom or not found
-        const below = layers[index + 1];
-        const tempOrder = layer.order;
-        layer.order = below.order;
-        below.order = tempOrder;
-        await Promise.all([
-            LayerRepository_1.layerRepository.update(layer),
-            LayerRepository_1.layerRepository.update(below),
-        ]);
-    }
-    handleOpenNewModel() {
-    }
-}
-exports.App = App;
-
-
-/***/ },
-
 /***/ "./src/Client/Component/Canvas/Canvas.ts"
 /*!***********************************************!*\
   !*** ./src/Client/Component/Canvas/Canvas.ts ***!
@@ -2298,6 +2055,97 @@ exports.handleDragAndDrop = handleDragAndDrop;
 
 /***/ },
 
+/***/ "./src/Client/Component/Ide.ts"
+/*!*************************************!*\
+  !*** ./src/Client/Component/Ide.ts ***!
+  \*************************************/
+(__unused_webpack_module, exports, __webpack_require__) {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Ide = void 0;
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const WorldEditor_1 = __webpack_require__(/*! ./WorldEditor */ "./src/Client/Component/WorldEditor.ts");
+class Ide extends Component_1.Component {
+    css() {
+        return `
+            :host {       
+                display: block;
+                width: 100%;
+                height: 100vh; /* don't exceed the browser window height */
+                box-sizing: border-box;
+                overflow: hidden;
+            }
+
+            :host > .container {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+            }
+
+            .menu {
+                flex: none;
+                background-color: grey;
+                padding: 4px 8px;
+            }
+
+            .menu-bar {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                user-select: none;
+            }
+
+            .menu-item {
+                padding: 6px 10px;
+                border-radius: 4px;
+                cursor: default;
+            }
+
+            .menu-item:hover {
+                background: rgba(0,0,0,0.1);
+            }
+
+            .content {
+                flex: 1 1 auto; /* take remaining space */
+                min-height: 0;  /* allow proper overflow inside flex item */
+                overflow: auto;
+            }
+        `;
+    }
+    build() {
+        const container = Dom_1.Dom.div();
+        container.className = 'container';
+        const menu = Dom_1.Dom.div();
+        menu.className = 'menu';
+        // top nav/menu bar with options
+        const menuBar = Dom_1.Dom.div();
+        menuBar.className = 'menu-bar';
+        const menuItems = ['File', 'View', 'Settings'];
+        for (const name of menuItems) {
+            const item = document.createElement('div');
+            item.className = 'menu-item';
+            item.textContent = name;
+            // attach simple click handlers if needed later
+            // item.addEventListener('click', () => console.log(`${name} clicked`))
+            menuBar.appendChild(item);
+        }
+        menu.appendChild(menuBar);
+        const content = Dom_1.Dom.div();
+        content.className = 'content';
+        const gameMaker = Dom_1.Dom.makeComponent(WorldEditor_1.WorldEditor);
+        content.appendChild(gameMaker);
+        container.appendChild(menu);
+        container.appendChild(content);
+        return container;
+    }
+}
+exports.Ide = Ide;
+
+
+/***/ },
+
 /***/ "./src/Client/Component/LayerListing/LayerItem.ts"
 /*!********************************************************!*\
   !*** ./src/Client/Component/LayerListing/LayerItem.ts ***!
@@ -2311,6 +2159,7 @@ const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/C
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
 const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
+const layers_1 = __webpack_require__(/*! Client/Constants/layers */ "./src/Client/Constants/layers.ts");
 class LayerItem extends Component_1.Component {
     layer;
     externalListeners = {
@@ -2348,6 +2197,10 @@ class LayerItem extends Component_1.Component {
             const collisionIcon = Dom_1.Dom.i('fa-solid', 'fa-road-barrier');
             name.prepend(collisionIcon);
         }
+        if (this.layer.type === layers_1.LAYERS.typePlayerControlled) {
+            const playerIcon = Dom_1.Dom.i('fa-solid', 'fa-user');
+            name.prepend(playerIcon);
+        }
         deleteButton.append(trashIcon);
         visibleButton.append(eyeIcon);
         upButton.append(upIcon);
@@ -2355,6 +2208,7 @@ class LayerItem extends Component_1.Component {
         options.append(visibleButton, upButton, downButton, deleteButton);
         container.classList.toggle('active', this.layer.is_active);
         container.classList.toggle('collision-layer', this.layer.type === 'collision');
+        container.classList.toggle('player-layer', this.layer.type === layers_1.LAYERS.typePlayerControlled);
         container.append(name, options);
         return container;
     }
@@ -2446,6 +2300,15 @@ class LayerItem extends Component_1.Component {
                 border-left: 4px solid #e74c3c;
             }
 
+            .container.player-layer {
+                background: #fff7e6;
+                border-left: 4px solid #f39c12;
+            }
+
+            .container.player-layer .name {
+                color: #b35f00;
+            }
+
             .name {
                 display: flex;
                 align-items: center;
@@ -2532,6 +2395,7 @@ class LayerListing extends Component_1.Component {
     };
     listeners = {
         '.add-new:click': this.handleClickAddNew,
+        '.add-player:click': this.handleClickAddPlayer,
     };
     layers;
     async setup() {
@@ -2541,12 +2405,16 @@ class LayerListing extends Component_1.Component {
         const container = Dom_1.Dom.div('layer-listing-container');
         const listing = Dom_1.Dom.div('listing');
         const addNewLayerButton = Dom_1.Dom.button('+ Add New Layer', 'add-new');
+        const addPlayerButton = Dom_1.Dom.button('Add Player', 'add-player');
         listing.append(...this.layers.map(this.buildLayer.bind(this)));
-        container.append(listing, addNewLayerButton);
+        container.append(listing, addNewLayerButton, addPlayerButton);
         return container;
     }
     handleClickAddNew() {
         Events_1.Events.emit(Events_1.Events.openAddNewLayer, undefined);
+    }
+    handleClickAddPlayer() {
+        Events_1.Events.emit(Events_1.Events.openAddPlayer, undefined);
     }
     handleNewLayers() {
         LayerRepository_1.layerRepository.getAll().then(layers => {
@@ -2589,6 +2457,22 @@ class LayerListing extends Component_1.Component {
 
             .add-new:hover {
                 background-color: #27ae60;
+            }
+            .add-player {
+                align-self: center;
+                padding: 10px 20px;
+                font-size: 16px;
+                background-color: #3498db;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: background-color 0.3s ease;
+                margin-left: 8px;
+            }
+
+            .add-player:hover {
+                background-color: #2c80bd;
             }
         `;
     }
@@ -3008,10 +2892,6 @@ class SideMenu extends Component_1.Component {
         return /*css*/ `
             :host {
                 background-color: #f4f4f4;
-                position: fixed;
-                left: 0;
-                top: 0;
-                bottom: 0;
                 width: 300px;
                 padding: 20px;
                 box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
@@ -3400,6 +3280,291 @@ exports.WindowBox = WindowBox;
 
 /***/ },
 
+/***/ "./src/Client/Component/WorldEditor.ts"
+/*!*********************************************!*\
+  !*** ./src/Client/Component/WorldEditor.ts ***!
+  \*********************************************/
+(__unused_webpack_module, exports, __webpack_require__) {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.WorldEditor = void 0;
+const CanvasLayer_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasLayer */ "./src/Client/Component/Canvas/CanvasLayer.ts");
+const CanvasTools_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasTools */ "./src/Client/Component/Canvas/CanvasTools.ts");
+const BasicModal_1 = __webpack_require__(/*! Client/Component/Generic/Modal/BasicModal */ "./src/Client/Component/Generic/Modal/BasicModal.ts");
+const LayerListing_1 = __webpack_require__(/*! Client/Component/LayerListing/LayerListing */ "./src/Client/Component/LayerListing/LayerListing.ts");
+const NewLayerForm_1 = __webpack_require__(/*! Client/Component/NewLayerForm/NewLayerForm */ "./src/Client/Component/NewLayerForm/NewLayerForm.ts");
+const PlacementHistory_1 = __webpack_require__(/*! Client/Component/PlacementHistory/PlacementHistory */ "./src/Client/Component/PlacementHistory/PlacementHistory.ts");
+const SideMenu_1 = __webpack_require__(/*! Client/Component/SideMenu/SideMenu */ "./src/Client/Component/SideMenu/SideMenu.ts");
+const SheetImporter_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetImporter/SheetImporter */ "./src/Client/Component/SpriteSheets/SheetImporter/SheetImporter.ts");
+const SheetViewer_1 = __webpack_require__(/*! Client/Component/SpriteSheets/SheetViewer/SheetViewer */ "./src/Client/Component/SpriteSheets/SheetViewer/SheetViewer.ts");
+const WindowBox_1 = __webpack_require__(/*! Client/Component/WindowBox/WindowBox */ "./src/Client/Component/WindowBox/WindowBox.ts");
+const components_1 = __webpack_require__(/*! Client/Constants/components */ "./src/Client/Constants/components.ts");
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
+const layers_1 = __webpack_require__(/*! Client/Constants/layers */ "./src/Client/Constants/layers.ts");
+const FileUpload_1 = __webpack_require__(/*! Client/Service/FileUpload */ "./src/Client/Service/FileUpload.ts");
+const LayerRepository_1 = __webpack_require__(/*! Client/Service/Repository/LayerRepository */ "./src/Client/Service/Repository/LayerRepository.ts");
+const LoadedPlacement_1 = __webpack_require__(/*! Client/Service/Repository/LoadedPlacement */ "./src/Client/Service/Repository/LoadedPlacement.ts");
+const PlacementImageRepository_1 = __webpack_require__(/*! Client/Service/Repository/PlacementImageRepository */ "./src/Client/Service/Repository/PlacementImageRepository.ts");
+const SheetRepository_1 = __webpack_require__(/*! Client/Service/Repository/SheetRepository */ "./src/Client/Service/Repository/SheetRepository.ts");
+const UserDataRepository_1 = __webpack_require__(/*! Client/Service/Repository/UserDataRepository */ "./src/Client/Service/Repository/UserDataRepository.ts");
+const WindowBoxFactory_1 = __webpack_require__(/*! Client/Service/WindowBoxFactory */ "./src/Client/Service/WindowBoxFactory.ts");
+const LayerFactory_1 = __webpack_require__(/*! Model/Factory/LayerFactory */ "./src/Model/Factory/LayerFactory.ts");
+class WorldEditor extends Component_1.Component {
+    openSheets = [];
+    windowBoxes = {};
+    layers = [];
+    userData;
+    externalListeners = {
+        'upload-files-submission': this.handleUploadFilesSubmission,
+        'open-sheet': this.handleOpenSheet,
+        'window-destroyed': this.handleWindowDestroyed,
+        'mouse-down-window-box': this.handleMouseDownWindowBox,
+        'open-sheet-importer': this.handleOpenSheetImporter,
+        'open-add-new-layer': this.handleOpenAddNewLayer,
+        'open-add-player': this.handleOpenAddPlayer,
+        'click-open-new-model': this.handleOpenNewModel,
+        'click-open-history': this.handleOpenHistory,
+        'new-layer-submit': this.handleNewLayerSubmit,
+        'new-layer-mapped': this.handleNewLayerMapped,
+        'layer-placement-made': this.handleLayerPlacementMade,
+        'layer-active': this.handleLayerActive,
+        'layer-visible-toggle': this.handleLayerVisibleToggle,
+        'layer-delete': this.handleLayerDelete,
+        'updated-view-coordinates': this.handleUpdateViewCoordinates,
+        'window-update': this.handleWindowUpdate,
+        'request-placement-deletion': this.handleRequestPlacementDeletion,
+        'layer-order-up': this.handleLayerOrderUp,
+        'layer-order-down': this.handleLayerOrderDown,
+    };
+    css() {
+        return /*css*/ `
+            .container {
+                display: block;
+                position: relative;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                display: flex;
+            }
+        `;
+    }
+    async setup() {
+        this.userData = await UserDataRepository_1.userDataRepository.getAll();
+        this.layers = await LayerRepository_1.layerRepository.getAll();
+        await SheetRepository_1.sheetRepository.getAll();
+        await PlacementImageRepository_1.placementImageRepository.getAll();
+        for (const layer of this.layers) {
+            for (const placement of layer.placements) {
+                const placementImage = await PlacementImageRepository_1.placementImageRepository.getByUuid(placement.imageUuid);
+                if (placementImage) {
+                    const image = await Dom_1.Dom.image(placementImage.src);
+                    LoadedPlacement_1.loadedPlacementRepository.add({
+                        uuid: placement.uuid,
+                        layerUuid: layer.uuid,
+                        image,
+                        x: placement.coordinate.x,
+                        y: placement.coordinate.y,
+                        width: image.width,
+                        height: image.height,
+                    });
+                }
+            }
+        }
+    }
+    build() {
+        const container = Dom_1.Dom.div('container');
+        const sideMenu = Dom_1.Dom.makeComponent(SideMenu_1.SideMenu);
+        const layerListing = Dom_1.Dom.makeComponent(LayerListing_1.LayerListing, { layers: this.layers });
+        const canvasContainer = Dom_1.Dom.div('canvas-container');
+        sideMenu.append(layerListing);
+        const layerElements = this.layers.map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer, userData: this.userData }));
+        const tools = Dom_1.Dom.makeComponent(CanvasTools_1.CanvasTools, { currentTool: this.userData.currentTool });
+        canvasContainer.append(...layerElements);
+        container.append(sideMenu, tools, canvasContainer);
+        return container;
+    }
+    handleUploadFilesSubmission(files) {
+        FileUpload_1.FileUpload.uploadMultiple(files);
+    }
+    handleOpenSheet(sheetName) {
+        const sheet = SheetRepository_1.sheetRepository.getByName(sheetName);
+        if (this.openSheets.includes(sheet.name)) {
+            this.windowBoxes[sheet.name].flash();
+            return;
+        }
+        const sheetViewerDataset = { imageSrc: sheet.imageSrc };
+        const component = Dom_1.Dom.makeComponent(SheetViewer_1.SheetViewer, sheetViewerDataset);
+        const windowBox = WindowBoxFactory_1.WindowBoxFactory.make(component, sheet.name, {
+            uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetViewer_1.SheetViewer),
+            componentConfigration: { dataset: sheetViewerDataset },
+            title: sheet.name,
+        });
+        if (windowBox) {
+            this.openSheets.push(sheet.name);
+            this.windowBoxes[sheet.name] = windowBox;
+            this.shadowRoot?.append(windowBox);
+        }
+    }
+    handleWindowDestroyed(name) {
+        if (this.openSheets.includes(name)) {
+            this.openSheets = this.openSheets.filter(item => item !== name);
+        }
+        if (this.windowBoxes[name]) {
+            delete this.windowBoxes[name];
+        }
+    }
+    handleMouseDownWindowBox(windowBox) {
+        const all = Dom_1.Dom.getAllOfComponent(WindowBox_1.WindowBox);
+        for (const one of all) {
+            one.zIndexMoveDown();
+        }
+        windowBox.zIndexMoveUp();
+    }
+    handleOpenSheetImporter() {
+        const component = Dom_1.Dom.makeComponent(SheetImporter_1.SheetImporter);
+        const windowBox = WindowBoxFactory_1.WindowBoxFactory.make(component, 'Import Sheets', {
+            uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetImporter_1.SheetImporter),
+            componentConfigration: { dataset: {} },
+            title: 'Import Sheets',
+        });
+        if (windowBox) {
+            this.shadowRoot?.append(windowBox);
+        }
+    }
+    handleOpenAddNewLayer() {
+        const modal = Dom_1.Dom.makeComponent(BasicModal_1.BasicModal);
+        const newLayerForm = Dom_1.Dom.makeComponent(NewLayerForm_1.NewLayerForm);
+        modal.append(newLayerForm);
+        this.shadowRoot?.append(modal);
+    }
+    handleNewLayerSubmit(input) {
+        const layer = Object.assign(LayerFactory_1.LayerFactory.make(), input);
+        Events_1.Events.emit('new-layer-mapped', [layer]);
+        LayerRepository_1.layerRepository.create(layer);
+    }
+    handleNewLayerMapped(layers) {
+        this.shadowRoot?.append(...layers
+            .sort((a, b) => b.order - a.order)
+            .map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer })));
+    }
+    async handleOpenAddPlayer() {
+        const layer = Object.assign(LayerFactory_1.LayerFactory.make(), {
+            type: layers_1.LAYERS.typePlayerControlled,
+            name: 'Player',
+            is_active: true,
+        });
+        Events_1.Events.emit('new-layer-mapped', [layer]);
+        await LayerRepository_1.layerRepository.create(layer);
+        // small delay to ensure the CanvasLayer is mounted
+        setTimeout(async () => {
+            const size = 32;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, size, size);
+            ctx.beginPath();
+            ctx.fillStyle = 'blue';
+            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+            ctx.fill();
+            const dataUrl = canvas.toDataURL('image/png');
+            const img = await Dom_1.Dom.image(dataUrl);
+            Events_1.Events.emit('sheet-selection-made', img);
+            Events_1.Events.emit('tool-selection', 'pencil');
+        }, 50);
+    }
+    handleLayerPlacementMade(layer) {
+        LayerRepository_1.layerRepository.update(layer);
+    }
+    handleLayerActive(layer) {
+        LayerRepository_1.layerRepository.setActive(layer.uuid);
+    }
+    handleLayerVisibleToggle(layer) {
+        LayerRepository_1.layerRepository.toggleVisible(layer.uuid);
+    }
+    handleLayerDelete(uuid) {
+        LayerRepository_1.layerRepository.remove(uuid)
+            .then(() => {
+            Events_1.Events.emit('layer-deleted', uuid);
+        });
+    }
+    async handleUpdateViewCoordinates(corrdinates) {
+        const userData = await UserDataRepository_1.userDataRepository.getAll();
+        userData.lastViewPosition.x = corrdinates.x;
+        userData.lastViewPosition.y = corrdinates.y;
+        UserDataRepository_1.userDataRepository.persist(userData);
+    }
+    async handleWindowUpdate(windowConfiguration) {
+        const userData = await UserDataRepository_1.userDataRepository.getAll();
+        userData.windows[windowConfiguration.uuid] = windowConfiguration;
+        UserDataRepository_1.userDataRepository.persist(userData);
+    }
+    handleOpenHistory() {
+        const windowBox = WindowBoxFactory_1.WindowBoxFactory.make(Dom_1.Dom.makeComponent(PlacementHistory_1.PlacementHistory), 'Placement History', {
+            uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(PlacementHistory_1.PlacementHistory),
+            componentConfigration: { dataset: {} },
+            title: 'Placement History',
+        });
+        if (windowBox) {
+            this.shadowRoot?.append(windowBox);
+        }
+    }
+    async handleRequestPlacementDeletion(placementUuid) {
+        const layers = await LayerRepository_1.layerRepository.getAll();
+        LoadedPlacement_1.loadedPlacementRepository.removeByUuid(placementUuid);
+        for (const layer of layers) {
+            const index = layer.placements.findIndex(p => p.uuid === placementUuid);
+            if (index !== -1) {
+                layer.placements.splice(index, 1);
+                LayerRepository_1.layerRepository.update(layer);
+                Events_1.Events.emit('placement-removed', placementUuid);
+                break;
+            }
+        }
+    }
+    async handleLayerOrderUp(layerUuid) {
+        const layer = await LayerRepository_1.layerRepository.getByUuid(layerUuid);
+        const layers = await LayerRepository_1.layerRepository.getAll();
+        layers.sort((a, b) => a.order - b.order);
+        const index = layers.findIndex(l => l.uuid === layer.uuid);
+        if (index <= 0)
+            return;
+        const above = layers[index - 1];
+        const tempOrder = layer.order;
+        layer.order = above.order;
+        above.order = tempOrder;
+        await Promise.all([
+            LayerRepository_1.layerRepository.update(layer),
+            LayerRepository_1.layerRepository.update(above),
+        ]);
+    }
+    async handleLayerOrderDown(layerUuid) {
+        const layer = await LayerRepository_1.layerRepository.getByUuid(layerUuid);
+        const layers = await LayerRepository_1.layerRepository.getAll();
+        layers.sort((a, b) => a.order - b.order);
+        const index = layers.findIndex(l => l.uuid === layer.uuid);
+        if (index === -1 || index >= layers.length - 1)
+            return; // Already at the bottom or not found
+        const below = layers[index + 1];
+        const tempOrder = layer.order;
+        layer.order = below.order;
+        below.order = tempOrder;
+        await Promise.all([
+            LayerRepository_1.layerRepository.update(layer),
+            LayerRepository_1.layerRepository.update(below),
+        ]);
+    }
+    handleOpenNewModel() {
+    }
+}
+exports.WorldEditor = WorldEditor;
+
+
+/***/ },
+
 /***/ "./src/Client/Constants/components.ts"
 /*!********************************************!*\
   !*** ./src/Client/Constants/components.ts ***!
@@ -3425,10 +3590,12 @@ const uuid_1 = __webpack_require__(/*! uuid */ "./node_modules/uuid/dist/cjs-bro
 const CanvasTools_1 = __webpack_require__(/*! Client/Component/Canvas/CanvasTools */ "./src/Client/Component/Canvas/CanvasTools.ts");
 const PlacementHistory_1 = __webpack_require__(/*! Client/Component/PlacementHistory/PlacementHistory */ "./src/Client/Component/PlacementHistory/PlacementHistory.ts");
 const AnimationMaker_1 = __webpack_require__(/*! Client/Component/Animation/AnimationMaker */ "./src/Client/Component/Animation/AnimationMaker.ts");
-const App_1 = __webpack_require__(/*! Client/Component/App */ "./src/Client/Component/App.ts");
+const WorldEditor_1 = __webpack_require__(/*! Client/Component/WorldEditor */ "./src/Client/Component/WorldEditor.ts");
+const Ide_1 = __webpack_require__(/*! Client/Component/Ide */ "./src/Client/Component/Ide.ts");
 const UUID_NAMESPACE = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
 exports.COMPONENTS = new Map([
-    [App_1.App, 'main-app'],
+    [Ide_1.Ide, 'ide-wrapper'],
+    [WorldEditor_1.WorldEditor, 'world-editor'],
     [SideMenu_1.SideMenu, 'side-menu'],
     [LayerListing_1.LayerListing, 'layer-listing'],
     [WindowBox_1.WindowBox, 'window-box'],
@@ -3664,6 +3831,7 @@ exports.Events = void 0;
 const Events_1 = __webpack_require__(/*! event-driven-web-components/dist/Events */ "./node_modules/event-driven-web-components/dist/Events.js");
 class Events extends Events_1.Events {
     static openAddNewLayer = 'open-add-new-layer';
+    static openAddPlayer = 'open-add-player';
 }
 exports.Events = Events;
 
@@ -4188,14 +4356,14 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 __webpack_require__(/*! Client/styles.css */ "./src/Client/styles.css");
 const components_1 = __webpack_require__(/*! Client/Constants/components */ "./src/Client/Constants/components.ts");
 const Events_1 = __webpack_require__(/*! Client/Service/Events */ "./src/Client/Service/Events.ts");
-const App_1 = __webpack_require__(/*! Client/Component/App */ "./src/Client/Component/App.ts");
 const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+const Ide_1 = __webpack_require__(/*! ./Component/Ide */ "./src/Client/Component/Ide.ts");
 for (const [constructor, tag] of components_1.COMPONENTS) {
     customElements.define(tag, constructor);
 }
 document.addEventListener('DOMContentLoaded', async () => {
     window.addEventListener('resize', () => Events_1.Events.emit('window-resize', undefined));
-    document.body.append(Dom_1.Dom.makeComponent(App_1.App));
+    document.body.append(Dom_1.Dom.makeComponent(Ide_1.Ide));
 });
 
 })();

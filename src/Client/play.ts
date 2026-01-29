@@ -33,8 +33,8 @@ function renderLayers(
     ctx.clearRect(0, 0, width, height)
 
     loadedPlacements.forEach(loadedPlacement => {
-        const dx: number = loadedPlacement.type === LAYERS.typePlayerControlled ? loadedPlacement.x : loadedPlacement.x - viewCoordinates.x
-        const dy: number = loadedPlacement.type === LAYERS.typePlayerControlled ? loadedPlacement.y : loadedPlacement.y - viewCoordinates.y
+        const dx: number = loadedPlacement.x - viewCoordinates.x
+        const dy: number = loadedPlacement.y - viewCoordinates.y
         const dWidth: number = loadedPlacement.image.width
         const dHeight: number = loadedPlacement.image.height
 
