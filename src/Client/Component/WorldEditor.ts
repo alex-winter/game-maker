@@ -66,6 +66,10 @@ export class WorldEditor extends Component {
                 overflow: hidden;
                 display: flex;
             }
+
+            .canvas-container {
+                flex-grow: 1;
+            }
         `
     }
 

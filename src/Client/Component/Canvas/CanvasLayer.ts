@@ -68,9 +68,6 @@ export class CanvasLayer extends Component {
             :host {
                 z-index: 500;
                 display: block;
-                position: absolute;
-                top: 0;
-                left: 0;
                 width: 100%;
                 height: 100%;
                 pointer-events: none;
@@ -88,7 +85,6 @@ export class CanvasLayer extends Component {
             .current-image.hide {
                 display: none;
             }
-
        
             .container {
                 width: 100%;

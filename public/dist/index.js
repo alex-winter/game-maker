@@ -1449,9 +1449,6 @@ class CanvasLayer extends Component_1.Component {
             :host {
                 z-index: 500;
                 display: block;
-                position: absolute;
-                top: 0;
-                left: 0;
                 width: 100%;
                 height: 100%;
                 pointer-events: none;
@@ -1469,7 +1466,6 @@ class CanvasLayer extends Component_1.Component {
             .current-image.hide {
                 display: none;
             }
-
        
             .container {
                 width: 100%;
@@ -3348,6 +3344,10 @@ class WorldEditor extends Component_1.Component {
                 height: 100%;
                 overflow: hidden;
                 display: flex;
+            }
+
+            .canvas-container {
+                flex-grow: 1;
             }
         `;
     }
