@@ -19,7 +19,7 @@ export class CanvasTools extends Component {
                 padding: 10px;
                 border-radius: 4px;
                 background-color: whitesmoke;
-                top: 10px;
+                top: 50px;
                 left: 50%;
                 transform: translateX(-50%);
                 z-index: 800;
