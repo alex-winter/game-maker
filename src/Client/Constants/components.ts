@@ -18,6 +18,7 @@ import { PlacementHistory } from 'Client/Component/PlacementHistory/PlacementHis
 import { AnimationMaker } from 'Client/Component/Animation/AnimationMaker'
 import { WorldEditor } from 'Client/Component/WorldEditor'
 import { Ide } from 'Client/Component/Ide'
+import { DialogCreator } from 'Client/Component/Dialog/DialogCreator'
 
 const UUID_NAMESPACE = '6fa459ea-ee8a-3ca4-894e-db77e160355e'
 
@@ -39,6 +40,7 @@ export const COMPONENTS = new Map<CustomElementConstructor, string>([
   [CanvasTools, 'canvas-tools'],
   [PlacementHistory, 'placement-history'],
   [AnimationMaker, 'animation-maker'],
+  [DialogCreator, 'dialog-creator'],
 ])
 
 export const COMPONENT_UUID_LOOKUP = new Map<string, CustomElementConstructor>(

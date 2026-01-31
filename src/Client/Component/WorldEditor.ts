@@ -26,6 +26,7 @@ import { Coordinates } from 'Model/Coordinates'
 import { LayerFactory } from 'Model/Factory/LayerFactory'
 import { Layer } from 'Model/Layer'
 import { UserData, WindowConfiguration } from 'Model/UserData'
+import { DialogCreator } from './Dialog/DialogCreator'
 
 export class WorldEditor extends Component {
     private openSheets: string[] = []
@@ -106,6 +107,18 @@ export class WorldEditor extends Component {
         const sideMenu = Dom.makeComponent(SideMenu)
         const layerListing = Dom.makeComponent(LayerListing, { layers: this.layers })
         const canvasContainer = Dom.div('canvas-container')
+
+        const dialogCreator = Dom.makeComponent(DialogCreator)
+
+        const dialog = WindowBoxFactory.make(dialogCreator, 'dialog', {
+            uuid: COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(DialogCreator)!,
+            componentConfigration: { dataset: {} },
+            title: 'Dialog',
+        })
+
+        if(dialog){
+            this.shadowRoot?.append(dialog)
+        }
 
         sideMenu.append(layerListing)
 

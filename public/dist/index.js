@@ -1858,6 +1858,44 @@ exports.CanvasTools = CanvasTools;
 
 /***/ },
 
+/***/ "./src/Client/Component/Dialog/DialogCreator.ts"
+/*!******************************************************!*\
+  !*** ./src/Client/Component/Dialog/DialogCreator.ts ***!
+  \******************************************************/
+(__unused_webpack_module, exports, __webpack_require__) {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.DialogCreator = void 0;
+const Component_1 = __webpack_require__(/*! Client/Service/Component */ "./src/Client/Service/Component.ts");
+const Dom_1 = __webpack_require__(/*! Client/Service/Dom */ "./src/Client/Service/Dom.ts");
+class DialogCreator extends Component_1.Component {
+    build() {
+        const container = Dom_1.Dom.div();
+        const textArea = Dom_1.Dom.inputTextArea();
+        textArea.placeholder = "Enter dialog text...";
+        container.append(textArea);
+        const repliesLabel = Dom_1.Dom.label("Replies:");
+        container.append(repliesLabel);
+        const repliesContainer = Dom_1.Dom.div();
+        repliesContainer.className = "replies-container";
+        container.append(repliesContainer);
+        const addReplyButton = Dom_1.Dom.button("Add Reply");
+        addReplyButton.onclick = () => {
+            const replyInput = Dom_1.Dom.inputTextArea();
+            replyInput.placeholder = "Enter reply text...";
+            replyInput.className = "reply-input";
+            repliesContainer.append(replyInput);
+        };
+        container.append(addReplyButton);
+        return container;
+    }
+}
+exports.DialogCreator = DialogCreator;
+
+
+/***/ },
+
 /***/ "./src/Client/Component/File/FileUploader/FileUploader.ts"
 /*!****************************************************************!*\
   !*** ./src/Client/Component/File/FileUploader/FileUploader.ts ***!
@@ -3308,6 +3346,7 @@ const SheetRepository_1 = __webpack_require__(/*! Client/Service/Repository/Shee
 const UserDataRepository_1 = __webpack_require__(/*! Client/Service/Repository/UserDataRepository */ "./src/Client/Service/Repository/UserDataRepository.ts");
 const WindowBoxFactory_1 = __webpack_require__(/*! Client/Service/WindowBoxFactory */ "./src/Client/Service/WindowBoxFactory.ts");
 const LayerFactory_1 = __webpack_require__(/*! Model/Factory/LayerFactory */ "./src/Model/Factory/LayerFactory.ts");
+const DialogCreator_1 = __webpack_require__(/*! ./Dialog/DialogCreator */ "./src/Client/Component/Dialog/DialogCreator.ts");
 class WorldEditor extends Component_1.Component {
     openSheets = [];
     windowBoxes = {};
@@ -3379,6 +3418,15 @@ class WorldEditor extends Component_1.Component {
         const sideMenu = Dom_1.Dom.makeComponent(SideMenu_1.SideMenu);
         const layerListing = Dom_1.Dom.makeComponent(LayerListing_1.LayerListing, { layers: this.layers });
         const canvasContainer = Dom_1.Dom.div('canvas-container');
+        const dialogCreator = Dom_1.Dom.makeComponent(DialogCreator_1.DialogCreator);
+        const dialog = WindowBoxFactory_1.WindowBoxFactory.make(dialogCreator, 'dialog', {
+            uuid: components_1.COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(DialogCreator_1.DialogCreator),
+            componentConfigration: { dataset: {} },
+            title: 'Dialog',
+        });
+        if (dialog) {
+            this.shadowRoot?.append(dialog);
+        }
         sideMenu.append(layerListing);
         const layerElements = this.layers.map(layer => Dom_1.Dom.makeComponent(CanvasLayer_1.CanvasLayer, { layer, userData: this.userData }));
         const tools = Dom_1.Dom.makeComponent(CanvasTools_1.CanvasTools, { currentTool: this.userData.currentTool });
@@ -3592,6 +3640,7 @@ const PlacementHistory_1 = __webpack_require__(/*! Client/Component/PlacementHis
 const AnimationMaker_1 = __webpack_require__(/*! Client/Component/Animation/AnimationMaker */ "./src/Client/Component/Animation/AnimationMaker.ts");
 const WorldEditor_1 = __webpack_require__(/*! Client/Component/WorldEditor */ "./src/Client/Component/WorldEditor.ts");
 const Ide_1 = __webpack_require__(/*! Client/Component/Ide */ "./src/Client/Component/Ide.ts");
+const DialogCreator_1 = __webpack_require__(/*! Client/Component/Dialog/DialogCreator */ "./src/Client/Component/Dialog/DialogCreator.ts");
 const UUID_NAMESPACE = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
 exports.COMPONENTS = new Map([
     [Ide_1.Ide, 'ide-wrapper'],
@@ -3611,6 +3660,7 @@ exports.COMPONENTS = new Map([
     [CanvasTools_1.CanvasTools, 'canvas-tools'],
     [PlacementHistory_1.PlacementHistory, 'placement-history'],
     [AnimationMaker_1.AnimationMaker, 'animation-maker'],
+    [DialogCreator_1.DialogCreator, 'dialog-creator'],
 ]);
 exports.COMPONENT_UUID_LOOKUP = new Map(Array.from(exports.COMPONENTS).map(([component, tag]) => [
     (0, uuid_1.v5)(tag, UUID_NAMESPACE),
@@ -3728,6 +3778,11 @@ class Dom {
     static inputText(...classList) {
         const element = document.createElement('input');
         element.type = 'text';
+        this.addClasses(element, ...classList);
+        return element;
+    }
+    static inputTextArea(...classList) {
+        const element = document.createElement('textarea');
         this.addClasses(element, ...classList);
         return element;
     }

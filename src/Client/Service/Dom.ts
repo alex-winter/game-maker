@@ -50,6 +50,14 @@ export class Dom {
         return element
     }
 
+    public static inputTextArea(...classList: string[]): HTMLTextAreaElement {
+        const element = document.createElement('textarea')
+
+        this.addClasses(element, ...classList)
+
+        return element
+    }
+
     public static canvas(width: number = 0, height: number = 0): HTMLCanvasElement {
         const element = document.createElement('canvas')
 
