@@ -21,6 +21,7 @@ import { requestHandlerPutTileMap } from 'Server/RequestHandlers/put-tile-map'
 import { requestHandlerDeleteMap, requestHandlerPutMapConnections, requestHandlerPutMapEvents, requestHandlerPutMapSize, requestHandlerPutStartMap } from 'Server/RequestHandlers/map-lifecycle'
 import { ensureProjectFile } from 'Server/services/project-store'
 import { requestHandlerPatchMetatile, requestHandlerPostTilesets, requestHandlerPutMapTileset } from 'Server/RequestHandlers/tilesets'
+import { requestHandlerDeleteSave, requestHandlerGetSave, requestHandlerPutSave } from 'Server/RequestHandlers/save'
 import { requestHandlerDeleteItem, requestHandlerPostItems, requestHandlerPutItem } from 'Server/RequestHandlers/items'
 import { requestHandlerDeleteFlag, requestHandlerPostFlags, requestHandlerPutFlag } from 'Server/RequestHandlers/flags'
 import { requestHandlerDeleteDialog, requestHandlerPostDialogs, requestHandlerPutDialog } from 'Server/RequestHandlers/dialogs'
@@ -115,6 +116,9 @@ app.delete('/project/items/:itemId', requestHandlerDeleteItem)
 app.post('/upload-files', uploadSheets, requestHandlerPostFiles)
 
 app.get('/user-data', requestHandlerGetUserData)
+app.get('/save', requestHandlerGetSave)
+app.put('/save', requestHandlerPutSave)
+app.delete('/save', requestHandlerDeleteSave)
 app.patch('/user-data', requestHandlerPatchUserData)
 
 app.get('/placement-images', requestHandlerGetPlacementImages)

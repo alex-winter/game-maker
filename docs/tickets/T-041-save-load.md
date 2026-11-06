@@ -1,7 +1,7 @@
 ---
 id: T-041
 title: Save and load a play session
-status: ready
+status: done
 priority: P1
 phase: 6
 type: feat
@@ -46,9 +46,16 @@ Out:
 
 ## Acceptance
 
-- [ ] A test round-trips a session through serialize and parse.
-- [ ] Manual: pick up an item, walk into the house, save, reload the browser, load, and find the same cell, the item gone, and the bag intact.
+- [x] A test round-trips a session through serialize and parse.
+- [x] Manual: pick up an item, walk into the house, save, reload the browser, load, and find the same cell, the item gone, and the bag intact.
 
 ## Test plan
 
 - Domain round-trip test. The manual script above.
+
+## Result
+
+- `domain/save.ts`: `SavedSession`, `SAVE_VERSION` 1, `SaveDocument { version, slots }` (one slot; the list is ready for more), `serializeSave(session, savedAt)`, `isSavedSession`, `parseSave(value) → { ok, session } | { ok: false, reason }`.
+- Server: `GET/PUT/DELETE /save` on `data/save.json` through `writeJson` (rename). An unreadable file answers 404 and logs why.
+- Session: `snapshotField`, `restoreField(session)` (via `newField`'s memory and bag), `afterSave`. `play.ts` saves from the menu's SAVE entry (now enabled), shows “Saved the game.”, and at boot — unless `?map=` — offers Continue / New game when a save exists; New game forgets it.
+- Tests: round trip and the refusals; snapshot of a mid-step session lands on the target cell, restore keeps bag and flag. Manual script in headless Chrome: picked up the potion, walked through the door, saved, reloaded, continued on the house map at (5,5) facing up, walked back, bag and flag intact; New game left `/save` 404.

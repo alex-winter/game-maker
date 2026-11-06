@@ -6,7 +6,7 @@ import { newItemEvent, newSign, newWarp } from '../domain/warp'
 import { bagCount } from '../domain/item'
 import { hasFlag } from '../domain/flags'
 import { FADE_MS, fadeOpacity } from './fade'
-import { advanceField, FieldInput, FieldState, FieldWorld, isTransitioning, newField } from './field'
+import { advanceField, afterSave, FieldInput, FieldState, FieldWorld, isTransitioning, newField, restoreField, snapshotField } from './field'
 
 const town = { width: 10, height: 10 }
 const house = { width: 6, height: 6 }
@@ -250,4 +250,37 @@ test('the menu does not open over a message or mid-step', () => {
     const midStep = advanceField(stepping, { ...right, menu: true }, 16, world)
 
     assert.equal(midStep.menu, null)
+})
+
+test('a save snapshots the standing cell, memory, and bag, and restoring it resumes there', () => {
+    const potion = newItemEvent('ball', { x: 6, y: 5 }, 'potion', 'took-potion', 7)
+    const floor: FieldWorld = { ...world, eventsOf: () => [potion] }
+    const found = advanceField(newField('town', { x: 5, y: 5 }, 'right'), { ...none, interact: true }, 16, floor)
+    const closed = advanceField(found, { ...none, interact: true }, 16, floor)
+    const stepping = advanceField(closed, down, 16, floor)
+
+    assert.notEqual(stepping.player.step, null)
+
+    const saved = snapshotField(stepping)
+
+    assert.deepEqual(saved, {
+        mapId: 'town',
+        cell: { x: 5, y: 6 },
+        facing: 'down',
+        memory: { flags: ['took-potion'], variables: {} },
+        bag: [{ itemId: 'potion', count: 1 }],
+    })
+
+    const restored = restoreField(saved)
+
+    assert.deepEqual(restored.player.cell, { x: 5, y: 6 })
+    assert.equal(restored.player.facing, 'down')
+    assert.equal(bagCount(restored.bag, 'potion'), 1)
+    assert.equal(hasFlag(restored.memory, 'took-potion'), true)
+    assert.equal(restored.menu, null)
+
+    const notice = afterSave({ ...restored, menu: { highlight: 2 } })
+
+    assert.equal(notice.menu, null)
+    assert.equal(notice.message?.pages[0]?.text, 'Saved the game.')
 })

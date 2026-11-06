@@ -10,7 +10,7 @@ import { HeldDirections } from 'Client/Service/held-directions'
 import { findDialog, findItem, findMap, GameMap, playerSprite, Project, startMap } from 'domain/project'
 import { isSolid } from 'domain/map'
 import { Scene } from 'engine/scene'
-import { PortSize } from 'engine/draw-port'
+import { DrawPort, PortSize } from 'engine/draw-port'
 import { CanEnter } from 'domain/movement'
 import { Id } from 'domain/id'
 import { stepRule } from 'domain/collision'
@@ -19,11 +19,14 @@ import { Direction, insideMap, Player, playerPixel } from 'domain/movement'
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { cameraFor, GBA_VIEW, integerScale } from 'engine/camera'
 import { fadeOpacity } from 'engine/fade'
-import { advanceField, FieldWorld, itemsOnMap, newField } from 'engine/field'
+import { advanceField, afterSave, FieldState, FieldWorld, itemsOnMap, newField, restoreField, snapshotField } from 'engine/field'
 import { startLoop } from 'engine/loop'
 import { playerActor } from 'engine/player-actor'
 import { renderFrame } from 'engine/render'
-import { drawMessageBox } from 'engine/message'
+import { currentPage, drawMessageBox, MessageState, moveHighlight, openMessage } from 'engine/message'
+import { newPage } from 'domain/dialog'
+import { saveRepository } from 'Client/Service/Repository/SaveRepository'
+import { SavedSession } from 'domain/save'
 import { drawMenu, MenuEntry } from 'engine/menu'
 import { itemActor } from 'engine/item-actor'
 import { View } from 'engine/view'
@@ -57,7 +60,7 @@ const INTERACT_CODES: readonly string[] = ['KeyZ', 'Space']
 const MENU_CODES: readonly string[] = ['Enter', 'Escape']
 
 /** Menu entries that open something today. The rest show greyed until their tickets land. */
-const ENABLED_ENTRIES: ReadonlySet<MenuEntry> = new Set(['close'])
+const ENABLED_ENTRIES: ReadonlySet<MenuEntry> = new Set(['save', 'close'])
 
 function releaseAllKeys(): void {
     held.clear()
@@ -174,6 +177,50 @@ function openMap(
     }
 }
 
+/** The boot question when a save exists: continue it or start over. Drawn with the message box on black. */
+const CONTINUE = 'continue'
+const NEW_GAME = 'new-game'
+
+function bootQuestion(): MessageState {
+    return openMessage([newPage('A saved game was found.', [
+        { label: 'Continue', nextDialogId: CONTINUE },
+        { label: 'New game', nextDialogId: NEW_GAME },
+    ])])
+}
+
+/**
+ * Shows the boot question until the player confirms. Resolves to the saved
+ * session to resume, or undefined for a new game (the save is forgotten).
+ */
+function askToContinue(port: DrawPort<CanvasImageSource>, zoomOf: () => number, saved: SavedSession): Promise<SavedSession | undefined> {
+    return new Promise(resolve => {
+        let question = bootQuestion()
+        let lastDirection: Direction | null = null
+
+        const stop = startLoop(() => {
+            const direction = held.latest()
+            const pressed = direction !== null && direction !== lastDirection ? direction : null
+
+            lastDirection = direction
+            question = pressed === 'up' ? moveHighlight(question, -1) : pressed === 'down' ? moveHighlight(question, 1) : question
+
+            const confirmed = interactPressed
+
+            interactPressed = false
+            menuPressed = false
+            port.clear()
+            drawMessageBox(port, question, GBA_VIEW, zoomOf())
+
+            if (confirmed) {
+                const choice = currentPage(question).choices[question.highlight]
+
+                stop()
+                resolve(choice?.nextDialogId === CONTINUE ? saved : undefined)
+            }
+        }, callback => window.requestAnimationFrame(callback))
+    })
+}
+
 /** A plain message in place of the canvas, for a project that cannot start. */
 function showMessage(canvas: HTMLCanvasElement, text: string): void {
     const message = document.createElement('p')
@@ -198,9 +245,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     })
 
     const project = await projectRepository.load()
-    const map = sessionMap(window.location.search, project)
+    const startAt = sessionMap(window.location.search, project)
 
-    if (map === undefined) {
+    if (startAt === undefined) {
         showMessage(canvas, 'This project has no maps to play. Create one in the editor and mark it as the start map.')
         return
     }
@@ -214,13 +261,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     )
     const port = canvasDrawPort(ctx)
     const world = worldOf(project)
+    // The editor's "try this map" starts fresh there; otherwise a save, if any, offers to continue.
+    const tryingMap = new URLSearchParams(window.location.search).has(MAP_QUERY_PARAM)
+    const saved = tryingMap ? undefined : await saveRepository.load()
+    const resume = saved === undefined ? undefined : await askToContinue(port, () => zoom, saved)
+
+    if (saved !== undefined && resume === undefined) {
+        await saveRepository.forget()
+    }
+
+    const savedMap = resume === undefined ? undefined : findMap(project, resume.mapId)
+    const map = savedMap ?? startAt
     let open = openMap(map, sheetById, legacyPlacements)
-    let field = newField(map.id, map.spawn)
+    let field: FieldState = resume !== undefined && savedMap !== undefined ? restoreField(resume) : newField(map.id, map.spawn)
 
     startLoop(deltaSeconds => {
         field = advanceField(field, { direction: held.latest(), running, interact: interactPressed, menu: menuPressed }, deltaSeconds * 1000, world)
         interactPressed = false
         menuPressed = false
+
+        if (field.menuChoice === 'save') {
+            void saveRepository.save(snapshotField(field))
+            field = afterSave(field)
+        }
 
         // The session changed map at the black point of a fade: draw the new one from now on.
         if (field.mapId !== open.map.id) {

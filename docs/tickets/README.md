@@ -62,7 +62,7 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-038](T-038-items.md) | 6 | P1 | done | domain | Define items and pick them up once |
 | [T-039](T-039-bag.md) | 6 | P1 | backlog | play | Open a bag from the field |
 | [T-040](T-040-flags.md) | 6 | P1 | done | domain | Store story flags and variables |
-| [T-041](T-041-save-load.md) | 6 | P1 | ready | play | Save and load a play session |
+| [T-041](T-041-save-load.md) | 6 | P1 | done | play | Save and load a play session |
 | [T-042](T-042-place-npcs.md) | 7 | P1 | ready | editor | Place NPC object events |
 | [T-043](T-043-npc-talk.md) | 7 | P1 | backlog | engine | Talk to an NPC |
 | [T-044](T-044-npc-movement.md) | 7 | P2 | backlog | engine | Let NPCs look around or wander |
@@ -82,8 +82,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 ## Counts
 
-- ready: 2
+- ready: 1
 - in_progress: 0
 - backlog: 16
-- done: 40
+- done: 41
 - total: 57

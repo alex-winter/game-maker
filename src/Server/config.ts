@@ -24,6 +24,9 @@ export const config = {
 
     userDataFileDir: path.join(dataDir, 'user-data.json'),
 
+    /** The play session's one save slot (T-041). */
+    saveFileDir: path.join(dataDir, 'save.json'),
+
     allowedExtensions: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'],
 
     fileUploadSizeLimit: '50mb',

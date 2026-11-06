@@ -11,6 +11,7 @@ import { Memory, newMemory } from '../domain/flags'
 import { Bag, isTaken, newBag, pickUp } from '../domain/item'
 import { advanceMessage, MessageState, missingDialogPages, moveHighlight, openMessage } from './message'
 import { MenuEntry, MenuState, moveMenu, openMenu, selectedEntry } from './menu'
+import { SavedSession } from '../domain/save'
 
 /** Where the player will be once the screen is black. */
 export type Transition = {
@@ -84,6 +85,23 @@ export type FieldWorld = {
 
 export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down', memory: Memory = newMemory(), bag: Bag = newBag()): FieldState {
     return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined }
+}
+
+/** What a save keeps of the session (T-041): the standing cell, never a half-finished step. */
+export function snapshotField(state: FieldState): SavedSession {
+    const cell = state.player.step === null ? state.player.cell : state.player.step.to
+
+    return { mapId: state.mapId, cell, facing: state.player.facing, memory: state.memory, bag: state.bag }
+}
+
+/** A session resumed from a save: standing where it was saved, with its memory and bag. */
+export function restoreField(session: SavedSession): FieldState {
+    return newField(session.mapId, session.cell, session.facing, session.memory, session.bag)
+}
+
+/** After the host has written the save: the menu closes and the box says so. */
+export function afterSave(state: FieldState): FieldState {
+    return { ...state, menu: null, menuChoice: undefined, message: openMessage([newPage('Saved the game.')]) }
 }
 
 /** The map's events as the session sees them now: an item already taken is not there. */
