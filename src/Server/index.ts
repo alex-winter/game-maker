@@ -9,20 +9,16 @@ import { requestHandlerIndex } from 'Server/RequestHandlers'
 import { requestHandlerGetSheets } from 'Server/RequestHandlers/get-sheets'
 import { requestHandlerGetAsset } from 'Server/RequestHandlers/get-asset'
 import { ASSETS_PATH } from 'domain/asset-url'
-import { requestHandlerGetLayers } from 'Server/RequestHandlers/get-layers'
-import { requestHandlerPostLayers } from 'Server/RequestHandlers/post-layers'
 import { requestHandlerGetUserData } from 'Server/RequestHandlers/get-user-data'
 import { requestHandlerPatchUserData } from 'Server/RequestHandlers/patch-user-data'
-import { requestHandlerPatchLayers } from 'Server/RequestHandlers/patch-layers'
-import { requestHandlerPostPlacementImages } from 'Server/RequestHandlers/post-placement-images'
 import { requestHandlerGetPlacementImages } from 'Server/RequestHandlers/get-placement-images'
-import { requestHandlerDeleteLayers } from 'Server/RequestHandlers/delete-layers'
 import { createDataFile } from 'Server/services/create-data-file'
 import { requestHandlerPostFiles } from 'Server/RequestHandlers/post-files'
 import { requestHandlerPostSpriteModel } from 'Server/RequestHandlers/post-sprite-model'
 import { requestHandlerGetProject } from 'Server/RequestHandlers/get-project'
 import { requestHandlerPostMaps } from 'Server/RequestHandlers/post-maps'
 import { requestHandlerPatchMap } from 'Server/RequestHandlers/patch-map'
+import { requestHandlerPutTileMap } from 'Server/RequestHandlers/put-tile-map'
 import { ensureProjectFile } from 'Server/services/project-store'
 import { requestHandlerPatchMetatile, requestHandlerPostTilesets, requestHandlerPutMapTileset } from 'Server/RequestHandlers/tilesets'
 import { RequestHandler } from 'Server/types'
@@ -90,20 +86,16 @@ app.get('/project', requestHandlerGetProject)
 app.post('/project/maps', requestHandlerPostMaps)
 app.patch('/project/maps/:mapId', requestHandlerPatchMap)
 app.put('/project/maps/:mapId/tileset', requestHandlerPutMapTileset)
+app.put('/project/maps/:mapId/tile-map', requestHandlerPutTileMap)
 app.post('/project/tilesets', requestHandlerPostTilesets)
 app.patch('/project/tilesets/:tilesetId/metatiles/:metatileId', requestHandlerPatchMetatile)
 
-app.get('/maps/:mapId/layers', requestHandlerGetLayers)
-app.post('/maps/:mapId/layers', requestHandlerPostLayers)
-app.patch('/maps/:mapId/layers', requestHandlerPatchLayers)
-app.delete('/maps/:mapId/layers/:uuid', requestHandlerDeleteLayers)
 
 app.post('/upload-files', uploadSheets, requestHandlerPostFiles)
 
 app.get('/user-data', requestHandlerGetUserData)
 app.patch('/user-data', requestHandlerPatchUserData)
 
-app.post('/placement-images', requestHandlerPostPlacementImages)
 app.get('/placement-images', requestHandlerGetPlacementImages)
 
 app.post('/sprite-model', requestHandlerPostSpriteModel)

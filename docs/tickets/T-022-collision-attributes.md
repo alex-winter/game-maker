@@ -1,7 +1,7 @@
 ---
 id: T-022
 title: Paint collision and elevation as attributes
-status: backlog
+status: ready
 priority: P1
 phase: 2
 type: feat

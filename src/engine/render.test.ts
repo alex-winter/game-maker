@@ -93,7 +93,7 @@ test('tile layers draw back to front and cut the metatile from its sheet', () =>
     ])
 })
 
-test('tile layers draw before placement layers', () => {
+test('legacy placement layers are a frozen background: they draw before tile layers', () => {
     const port = recordingPort()
     const map = emptyTileMap({ width: 4, height: 4 })
 
@@ -103,7 +103,7 @@ test('tile layers draw before placement layers', () => {
 
     renderFrame(port, scene({ tileMap: map, placementLayers: placements }), { x: 0, y: 0 })
 
-    assert.deepEqual(port.calls.map(call => call.image), ['sheet-image', 'placed'])
+    assert.deepEqual(port.calls.map(call => call.image), ['placed', 'sheet-image'])
 })
 
 test('cells outside the view are culled and a missing sheet is skipped', () => {

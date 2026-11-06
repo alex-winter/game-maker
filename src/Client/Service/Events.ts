@@ -8,7 +8,6 @@ type AnyCallback = EventCallback<never>
  */
 export class Events {
     public static openAddNewLayer = 'open-add-new-layer'
-    public static openAddPlayer = 'open-add-player'
 
     private static listeners = new Map<string, AnyCallback[]>()
 

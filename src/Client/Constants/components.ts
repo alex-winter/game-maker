@@ -11,7 +11,6 @@ import { MapCanvas } from 'Client/Component/Canvas/MapCanvas'
 import { LayerItem } from 'Client/Component/LayerListing/LayerItem'
 import { Canvas2D } from 'Client/Component/Canvas/Canvas'
 import { CanvasTools } from 'Client/Component/Canvas/CanvasTools'
-import { PlacementHistory } from 'Client/Component/PlacementHistory/PlacementHistory'
 import { AnimationMaker } from 'Client/Component/Animation/AnimationMaker'
 import { WorldEditor } from 'Client/Component/WorldEditor'
 import { Ide } from 'Client/Component/Ide'
@@ -36,7 +35,6 @@ export const COMPONENTS = new Map<ComponentConstructor, string>([
   [LayerItem, 'layer-item'],
   [Canvas2D, 'canvas-2d'],
   [CanvasTools, 'canvas-tools'],
-  [PlacementHistory, 'placement-history'],
   [AnimationMaker, 'animation-maker'],
   [DialogCreator, 'dialog-creator'],
   [MapSelect, 'map-select'],

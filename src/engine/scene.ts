@@ -3,12 +3,12 @@ import { Id } from '../domain/id'
 import { TileMap } from '../domain/map'
 import { Tileset } from '../domain/tileset'
 
-/** A decoded legacy placement: one picture at one pixel position. Dies with T-020. */
+/** A decoded legacy placement: one picture at one pixel position. Read-only since T-020. */
 export type PlacedImage<TImage> = Rect & {
     readonly image: TImage
 }
 
-/** One legacy placement layer, already filtered to the visible ones and sorted back to front. */
+/** One legacy placement layer, sorted back to front. Drawn as a frozen background under the tile layers. */
 export type PlacementLayer<TImage> = {
     readonly placements: readonly PlacedImage<TImage>[]
 }

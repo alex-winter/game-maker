@@ -1,17 +1,13 @@
-import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
+import { Component, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
-import { Events } from 'Client/Service/Events'
-import { LayerChange, layerRepository } from 'Client/Service/Repository/LayerRepository'
-import { Layer } from 'Model/Layer'
-import { LAYERS } from 'Client/Constants/layers'
+import { mapSession } from 'Client/Service/map-session'
+import { moveTileLayer, removeTileLayer, renameTileLayer, TileLayer } from 'domain/map'
 
-export class LayerItem extends Component<{ layer: Layer }> {
-    private layer!: Layer
+/** One row of the layer listing. Each action computes the next grid with a domain function and commits it. */
+type LayerView = { isActive: boolean; isHidden: boolean }
 
-    protected externalListeners: ExternalListeners = {
-        'layer-changed': this.handleLayerChanged,
-        'layer-deleted': this.handleLayerDeleted,
-    }
+export class LayerItem extends Component<{ layer: TileLayer; view: LayerView }> {
+    private layer!: TileLayer
 
     protected listeners: Listeners = {
         '.container:click': this.handleContainerClick,
@@ -27,127 +23,110 @@ export class LayerItem extends Component<{ layer: Layer }> {
     }
 
     protected build(): HTMLElement {
-        this.style.order = this.layer.order.toString()
-
+        const { isActive, isHidden } = this.parsedDataset.view
         const container = Dom.div('container')
         const name = Dom.div('name')
         const nameText = Dom.span(this.layer.name, 'name-text')
         const editIcon = Dom.i('fa-solid', 'fa-pen', 'edit-icon')
+        const kindIcon = Dom.i('fa-solid', this.layer.kind === 'overhead' ? 'fa-cloud' : 'fa-layer-group', 'kind-icon')
 
-        name.append(nameText, editIcon)
+        kindIcon.title = this.layer.kind
+        name.append(kindIcon, nameText, editIcon)
 
         const options = Dom.div('options')
         const visibleButton = Dom.button('', 'visibility-button')
-        const eyeIcon = Dom.i('fa-solid', this.layer.is_visible ? 'fa-eye' : 'fa-eye-slash')
-
         const deleteButton = Dom.button('', 'delete-button')
-        const trashIcon = Dom.i('fa-solid', 'fa-trash')
-
         const upButton = Dom.button('', 'up-button')
-        const upIcon = Dom.i('fa-solid', 'fa-arrow-up')
-
         const downButton = Dom.button('', 'down-button')
-        const downIcon = Dom.i('fa-solid', 'fa-arrow-down')
 
-        if (this.layer.type === 'collision') {
-            const collisionIcon = Dom.i('fa-solid', 'fa-road-barrier')
-            name.prepend(collisionIcon)
-        }
+        visibleButton.title = isHidden ? 'Show' : 'Hide'
+        upButton.title = 'Bring forward'
+        downButton.title = 'Send back'
+        deleteButton.title = 'Delete layer'
 
-        if (this.layer.type === LAYERS.typePlayerControlled) {
-            const playerIcon = Dom.i('fa-solid', 'fa-user')
-            name.prepend(playerIcon)
-        }
-
-        deleteButton.append(trashIcon)
-        visibleButton.append(eyeIcon)
-        upButton.append(upIcon)
-        downButton.append(downIcon)
+        visibleButton.append(Dom.i('fa-solid', isHidden ? 'fa-eye-slash' : 'fa-eye'))
+        deleteButton.append(Dom.i('fa-solid', 'fa-trash'))
+        upButton.append(Dom.i('fa-solid', 'fa-arrow-up'))
+        downButton.append(Dom.i('fa-solid', 'fa-arrow-down'))
 
         options.append(visibleButton, upButton, downButton, deleteButton)
 
-        container.classList.toggle('active', this.layer.is_active)
-        container.classList.toggle('collision-layer', this.layer.type === 'collision')
-        container.classList.toggle('player-layer', this.layer.type === LAYERS.typePlayerControlled)
-
+        container.classList.toggle('active', isActive)
+        container.classList.toggle('hidden-layer', isHidden)
+        container.classList.toggle('overhead', this.layer.kind === 'overhead')
         container.append(name, options)
 
         return container
     }
 
-    private handleNameClick(e: Event): void {
-        e.stopPropagation()
-        const nameEl = this.findOne('.name')!
-        const currentName = this.layer.name
+    private handleNameClick(event: Event): void {
+        event.stopPropagation()
 
+        const nameElement = this.findOne('.name')
+
+        if (nameElement === null) {
+            return
+        }
+
+        const currentName = this.layer.name
         const input = document.createElement('input')
+
         input.type = 'text'
         input.value = currentName
         input.className = 'inline-edit-input'
 
-        nameEl.innerHTML = ''
-        nameEl.appendChild(input)
+        nameElement.innerHTML = ''
+        nameElement.appendChild(input)
         input.focus()
         input.select()
 
         const finalize = () => {
             const newName = input.value.trim()
+
             if (newName && newName !== currentName) {
-                this.layer.name = newName
-                layerRepository.update(this.layer, 'name')
+                void mapSession.commit(renameTileLayer(mapSession.tileMap, this.layer.id, newName))
+            } else {
+                this.patch()
             }
         }
 
         input.addEventListener('blur', finalize)
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') input.blur()
-            if (e.key === 'Escape') this.patch()
+        input.addEventListener('keydown', (keyEvent) => {
+            if (keyEvent.key === 'Enter') input.blur()
+            if (keyEvent.key === 'Escape') this.patch()
         })
     }
 
-    private handleLayerChanged(change: LayerChange): void {
-        if (change.uuid !== this.layer.uuid) {
-            return
-        }
-
-        const layer = layerRepository.getByUuid(change.uuid)
-
-        if (layer === undefined) {
-            return
-        }
-
-        this.layer = layer
-        this.patch()
-    }
-
-    private handleLayerDeleted(uuid: string): void {
-        if (this.layer.uuid === uuid) {
-            this.remove()
-        }
-    }
-
     private handleContainerClick(): void {
-        Events.emit('layer-active', this.layer)
+        mapSession.setActiveLayer(this.layer.id)
     }
 
-    private handleVisibleButtonClick(e: Event): void {
-        e.stopPropagation()
-        Events.emit('layer-visible-toggle', this.layer)
+    private handleVisibleButtonClick(event: Event): void {
+        event.stopPropagation()
+        mapSession.toggleHidden(this.layer.id)
     }
 
-    private handleClickDelete(e: Event): void {
-        e.stopPropagation()
-        Events.emit('layer-delete', this.layer.uuid)
+    private handleClickDelete(event: Event): void {
+        event.stopPropagation()
+
+        if (mapSession.tileMap.layers.length <= 1) {
+            return
+        }
+
+        if (window.confirm(`Delete layer "${this.layer.name}"? Its tiles are lost.`)) {
+            void mapSession.commit(removeTileLayer(mapSession.tileMap, this.layer.id))
+        }
     }
 
-    private handleClickUp(e: Event): void {
-        e.stopPropagation()
-        Events.emit('layer-order-up', this.layer.uuid)
+    /** Up in the list is toward the front of the draw order. */
+    private handleClickUp(event: Event): void {
+        event.stopPropagation()
+        void mapSession.commit(moveTileLayer(mapSession.tileMap, this.layer.id, 1))
     }
 
-    private handleClickDown(e: Event): void {
-        e.stopPropagation()
-        Events.emit('layer-order-down', this.layer.uuid)
+    private handleClickDown(event: Event): void {
+        event.stopPropagation()
+        void mapSession.commit(moveTileLayer(mapSession.tileMap, this.layer.id, -1))
     }
 
     protected css(): string {
@@ -178,18 +157,12 @@ export class LayerItem extends Component<{ layer: Layer }> {
                 background: #ecf6fd;
             }
 
-            .container.collision-layer {
-                background: #ffe8e8;
-                border-left: 4px solid #e74c3c;
+            .container.hidden-layer .name {
+                opacity: 0.5;
             }
 
-            .container.player-layer {
-                background: #fff7e6;
-                border-left: 4px solid #f39c12;
-            }
-
-            .container.player-layer .name {
-                color: #b35f00;
+            .container.overhead {
+                border-left: 4px solid #9b59b6;
             }
 
             .name {
@@ -199,6 +172,11 @@ export class LayerItem extends Component<{ layer: Layer }> {
                 font-size: 16px;
                 gap: 8px;
                 position: relative;
+            }
+
+            .kind-icon {
+                color: #888;
+                font-size: 12px;
             }
 
             .name-text {

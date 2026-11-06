@@ -72,17 +72,17 @@ function drawPlacements<TImage>(port: DrawPort<TImage>, scene: Scene<TImage>, ca
 }
 
 /**
- * Paints one frame: tile layers back to front, then the legacy placement
- * layers back to front. Both hosts call this and nothing else draws a map.
+ * Paints one frame: the frozen legacy placements as a background, then the
+ * tile layers back to front. Both hosts call this and nothing else draws a map.
  */
 export function renderFrame<TImage>(port: DrawPort<TImage>, scene: Scene<TImage>, camera: Coordinates): void {
     port.clear()
+
+    drawPlacements(port, scene, camera)
 
     if (scene.tileset !== undefined) {
         for (const layer of scene.tileMap.layers) {
             drawTileLayer(port, scene, scene.tileset, layer, camera)
         }
     }
-
-    drawPlacements(port, scene, camera)
 }

@@ -2,7 +2,9 @@
 
 A dependency-light TypeScript tool for building and playing 2D games in the style of a Pokémon generation 3 overworld: tile maps, walking, entering houses, finding items, and talking to people. The editor and the playable game share one engine.
 
-This repository is early. The editor can import sprite sheets, paint snapped images onto layers, and open a play page that pans a camera over those images. It cannot yet represent a real map, a walking player, a door, or an item.
+This repository is early. The editor can import sprite sheets, slice one into a tileset, paint metatiles onto a map's tile layers (pencil, fill, rectangle, eraser), and open a play page that pans a camera over the same map. It cannot yet represent a walking player, a door, or an item.
+
+Maps painted before metatiles existed (free images pasted at pixel positions) are still shown, as a frozen background under the tile layers, in both the editor and the play page. They cannot be edited or deleted; paint over them with metatiles.
 
 ## Run it
 
@@ -12,7 +14,7 @@ npm run build     # webpack: public/dist (editor and play pages) and dist/server
 npm start         # node dist/server.js, on http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) for the editor and [http://localhost:3000/play](http://localhost:3000/play) for the play page. Layers, placement images, and user data are written under `data/`; uploaded sheets under `uploads/`.
+Open [http://localhost:3000](http://localhost:3000) for the editor and [http://localhost:3000/play](http://localhost:3000/play) for the play page. The project (maps, tilesets, tile grids) and user data are written under `data/`; uploaded sheets under `uploads/`.
 
 Before marking work done:
 

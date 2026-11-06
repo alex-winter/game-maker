@@ -1,7 +1,7 @@
 ---
 id: T-023
 title: Draw an overhead layer above actors
-status: backlog
+status: ready
 priority: P1
 phase: 2
 type: feat

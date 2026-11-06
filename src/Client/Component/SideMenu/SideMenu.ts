@@ -12,9 +12,6 @@ export class SideMenu extends Component {
         '.open-palette:click': () => {
             Events.emit('open-tileset-palette', undefined)
         },
-        '.open-history:click': () => {
-            Events.emit('click-open-history', undefined)
-        },
         '.open-new-model:click': () => {
             Events.emit('click-open-new-model', undefined)
         }
@@ -89,13 +86,11 @@ export class SideMenu extends Component {
         paletteButton.title = 'Tileset palette'
         paletteButton.appendChild(Dom.i('fa-solid', 'fa-table-cells'))
 
-        const historyButton = Dom.button('', 'open-history')
-        historyButton.appendChild(Dom.i('fa-solid', 'fa-clock-rotate-left'))
 
         const newModelButton = Dom.button('', 'open-new-model')
         newModelButton.appendChild(Dom.i('fa-solid', 'fa-camera'))
 
-        floatingWrapper.append(importButton, paletteButton, historyButton, newModelButton)
+        floatingWrapper.append(importButton, paletteButton, newModelButton)
 
         container.appendChild(floatingWrapper)
 

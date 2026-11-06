@@ -110,6 +110,14 @@ export function withTileset(project: Project, tileset: Tileset): Project {
     }
 }
 
+/** A new project with one map's grid replaced. */
+export function withMapTileMap(project: Project, mapId: Id, tileMap: TileMap): Project {
+    return {
+        ...project,
+        maps: project.maps.map(map => map.id === mapId ? { ...map, tileMap } : map),
+    }
+}
+
 /** A new project with one map pointing at a tileset. */
 export function withMapTileset(project: Project, mapId: Id, tilesetId: Id | null): Project {
     return {

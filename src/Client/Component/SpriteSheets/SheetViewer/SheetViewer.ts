@@ -1,13 +1,11 @@
-import { LEFT_BUTTON } from 'Client/Constants/mouse-events'
 import { Component, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
-import { extractImageFromCanvasArea } from 'Client/Service/extract-image-from-canvas-area'
 import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
-import { GRID_SIZE, snap } from 'domain/grid'
 import { Id } from 'domain/id'
 import { sliceSheet } from 'domain/tileset'
 
+/** Shows one imported sheet. Since T-020 the only action is turning it into a tileset; the free-region stamp is gone. */
 export class SheetViewer extends Component<{ sheetId: Id; sheetName: string; imageSrc: string }> {
     private image: HTMLImageElement | null = null
     private canvas!: HTMLCanvasElement
@@ -21,15 +19,6 @@ export class SheetViewer extends Component<{ sheetId: Id; sheetName: string; ima
             :host {
                 position: relative;
                 display: block;
-            }
-
-            .selector-box {
-                position: absolute;
-                border: 1px solid #0078D7;
-                background-color: rgba(0, 120, 215, 0.2);
-                pointer-events: none;
-                display: none;
-                z-index: 10;
             }
 
             .toolbar {
@@ -61,10 +50,9 @@ export class SheetViewer extends Component<{ sheetId: Id; sheetName: string; ima
             element.offsetHeight,
             element.offsetWidth,
         )
-        const context = this.canvas.getContext('2d')!
-        const selectorBox = this.buildSelectorBox()
+        const context = this.canvas.getContext('2d')
 
-        if (this.image) {
+        if (this.image && context) {
             this.canvas.width = this.image.width
             this.canvas.height = this.image.height
 
@@ -75,7 +63,7 @@ export class SheetViewer extends Component<{ sheetId: Id; sheetName: string; ima
         const toolbar = Dom.div('toolbar')
 
         picture.style.position = 'relative'
-        picture.append(this.canvas, selectorBox)
+        picture.append(this.canvas)
         toolbar.append(Dom.button('Use as tileset', 'use-as-tileset'))
         element.append(picture, toolbar)
 
@@ -100,78 +88,5 @@ export class SheetViewer extends Component<{ sheetId: Id; sheetName: string; ima
         })()
 
         Events.emit('open-tileset-palette', tileset.id)
-    }
-
-    protected buildSelectorBox(): HTMLDivElement {
-        const box = Dom.div('selector-box')
-
-        let startX = 0
-        let startY = 0
-        let isDragging = false
-
-        const snapToCell = snap(GRID_SIZE)
-
-        const onMouseMove = (event: MouseEvent) => {
-            if (!isDragging) return
-
-            const rect = this.getBoundingClientRect()
-            const currentX = event.clientX - rect.left + this.scrollLeft
-            const currentY = event.clientY - rect.top + this.scrollTop
-
-            // The selection spans the cells that contain both corners of the drag.
-            const left = snapToCell(Math.min(currentX, startX))
-            const top = snapToCell(Math.min(currentY, startY))
-            const right = snapToCell(Math.max(currentX, startX)) + GRID_SIZE
-            const bottom = snapToCell(Math.max(currentY, startY)) + GRID_SIZE
-
-            box.style.display = 'block'
-            box.style.left = left + 'px'
-            box.style.top = top + 'px'
-            box.style.width = (right - left) + 'px'
-            box.style.height = (bottom - top) + 'px'
-        }
-
-        const onMouseUp = async (event: MouseEvent) => {
-            if (event.button === LEFT_BUTTON) {
-                isDragging = false
-                document.removeEventListener('mousemove', onMouseMove)
-                document.removeEventListener('mouseup', onMouseUp)
-
-                const boxX = parseInt(box.style.left || '0', 10)
-                const boxY = parseInt(box.style.top || '0', 10)
-                const boxWidth = parseInt(box.style.width || '0', 10)
-                const boxHeight = parseInt(box.style.height || '0', 10)
-
-                Events.emit(
-                    'sheet-selection-made',
-                    await extractImageFromCanvasArea(
-                        this.canvas,
-                        boxX,
-                        boxY,
-                        boxWidth,
-                        boxHeight
-                    )
-                )
-            }
-        }
-
-        this.addEventListener('mousedown', (event: MouseEvent) => {
-            // The host sees itself as the target; the real one is at the front of the composed path.
-            const pressed = event.composedPath()[0]
-
-            if (event.button === LEFT_BUTTON && !(pressed instanceof HTMLButtonElement)) {
-                const rect = this.getBoundingClientRect()
-                isDragging = true
-                startX = event.clientX - rect.left + this.scrollLeft
-                startY = event.clientY - rect.top + this.scrollTop
-
-                box.style.display = 'none'
-
-                document.addEventListener('mousemove', onMouseMove)
-                document.addEventListener('mouseup', onMouseUp)
-            }
-        })
-
-        return box
     }
 }

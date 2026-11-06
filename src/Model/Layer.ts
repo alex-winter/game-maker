@@ -1,6 +1,11 @@
-import { CollisionPlacement, ImagePlacement } from 'Model/Placement'
+import { ImagePlacement } from 'Model/Placement'
 
-type BaseLayer = {
+/**
+ * A legacy placement layer: free images pasted at pixel coordinates. Read-only
+ * since T-020; maps painted this way show it as a frozen background. New
+ * authoring writes metatiles into `TileMap` (`domain/map.ts`).
+ */
+export type Layer = {
     uuid: string
 
     type: string
@@ -14,16 +19,6 @@ type BaseLayer = {
     is_active: boolean
 
     order: number
-}
-
-export type Layer = BaseLayer & {
 
     placements: ImagePlacement[]
-
-}
-
-export interface CollisionsLayer extends BaseLayer {
-
-    placements: CollisionPlacement[]
-
 }

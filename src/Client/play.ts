@@ -1,15 +1,12 @@
 import './play.css'
 import { Dom } from 'Client/Service/Dom'
-import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
-import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { Coordinates } from 'domain/coordinates'
-import { layerRepository } from 'Client/Service/Repository/LayerRepository'
+import { loadLegacyPlacements } from 'Client/Service/load-legacy-placements'
 import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
 import { sheetRepository } from 'Client/Service/Repository/SheetRepository'
 import { activeMapId } from 'Client/Service/active-map'
 import { buildScene } from 'Client/Service/build-scene'
 import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
-import { Layer } from 'Model/Layer'
 import { directionFromKeys, HeldKeys } from 'Client/Service/direction-from-keys'
 import { findMap } from 'domain/project'
 import { Id } from 'domain/id'
@@ -56,37 +53,6 @@ function moveCamera(deltaSeconds: number): void {
     viewCoordinates.y += direction.y * pixelsPerSecond * deltaSeconds
 }
 
-async function loadPlacements(layers: Layer[]): Promise<LoadedPlacement[]> {
-    const loadedPlacements: LoadedPlacement[] = []
-
-    for (const layer of layers) {
-        for (const placement of layer.placements) {
-            const placementImage = await placementImageRepository.getByUuid(
-                placement.imageUuid
-            )
-
-            if (!placementImage) {
-                console.warn('could not find placement image', placement.imageUuid)
-                continue
-            }
-
-            const image = await Dom.image(placementImage.src)
-
-            loadedPlacements.push({
-                uuid: placement.uuid,
-                layerUuid: layer.uuid,
-                image,
-                x: placement.coordinate.x,
-                y: placement.coordinate.y,
-                width: image.width,
-                height: image.height,
-            })
-        }
-    }
-
-    return loadedPlacements
-}
-
 async function loadSheets(): Promise<Map<Id, CanvasImageSource>> {
     const sheets = await sheetRepository.getAll()
     const images = await Promise.all(sheets.map(sheet => Dom.image(sheet.imageSrc)))
@@ -113,15 +79,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         return
     }
 
-    layerRepository.useMap(map.id)
-
-    const layers = await layerRepository.getAll()
     const scene = buildScene({
         tileMap: map.tileMap,
         tileset: projectRepository.cachedTileset(map.tileMap.tilesetId),
         sheetById: await loadSheets(),
-        layers,
-        loadedPlacements: await loadPlacements(layers),
+        layers: map.layers,
+        loadedPlacements: await loadLegacyPlacements(map.layers),
     })
     const port = canvasDrawPort(ctx)
 

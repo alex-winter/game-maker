@@ -4,39 +4,34 @@ import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 import { LayerListing } from 'Client/Component/LayerListing/LayerListing'
 import { MapSelect } from 'Client/Component/MapSelect/MapSelect'
 import { NewLayerForm } from 'Client/Component/NewLayerForm/NewLayerForm'
-import { PlacementHistory } from 'Client/Component/PlacementHistory/PlacementHistory'
 import { SideMenu } from 'Client/Component/SideMenu/SideMenu'
 import { SheetImporter } from 'Client/Component/SpriteSheets/SheetImporter/SheetImporter'
 import { SheetViewer } from 'Client/Component/SpriteSheets/SheetViewer/SheetViewer'
 import { TilesetPalette } from 'Client/Component/Tileset/TilesetPalette'
 import { WindowBox } from 'Client/Component/WindowBox/WindowBox'
 import { componentId } from 'Client/Constants/components'
-import { LayerInput } from 'Client/Model/LayerInput'
 import { Component, ExternalListeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
-import { Events } from 'Client/Service/Events'
-import { LAYERS } from 'Client/Constants/layers'
 import { camera } from 'Client/Service/camera'
-import { loadPlacement } from 'Client/Service/load-placement'
-import { layerRepository } from 'Client/Service/Repository/LayerRepository'
+import { mapSession } from 'Client/Service/map-session'
 import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
 import { activeMapId, urlForMap } from 'Client/Service/active-map'
 import { Id } from 'domain/id'
 import { findMap, GameMap } from 'domain/project'
-import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
-import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { sheetRepository } from 'Client/Service/Repository/SheetRepository'
 import { userDataRepository } from 'Client/Service/Repository/UserDataRepository'
 import { WindowBoxFactory } from 'Client/Service/WindowBoxFactory'
 import { Coordinates } from 'domain/coordinates'
-import { LayerFactory } from 'Model/Factory/LayerFactory'
-import { Layer } from 'Model/Layer'
 import { UserData, WindowConfiguration } from 'Model/UserData'
 import { DialogCreator } from './Dialog/DialogCreator'
 
+/**
+ * The editor page: picks the map, mounts the side menu, tool bar, and the one
+ * map canvas, and opens floating windows. Map edits live in `mapSession` and
+ * the components that own them, not here.
+ */
 export class WorldEditor extends Component {
     private windowBoxes: { [key: string]: WindowBox } = {}
-    private layers: Layer[] = []
     private userData!: UserData
     private mapId!: Id
     private map!: GameMap
@@ -48,19 +43,9 @@ export class WorldEditor extends Component {
         'mouse-down-window-box': this.handleMouseDownWindowBox,
         'open-sheet-importer': this.handleOpenSheetImporter,
         'open-add-new-layer': this.handleOpenAddNewLayer,
-        'open-add-player': this.handleOpenAddPlayer,
         'click-open-new-model': this.handleOpenNewModel,
-        'click-open-history': this.handleOpenHistory,
-        'new-layer-submit': this.handleNewLayerSubmit,
-        'layer-placement-made': this.handleLayerPlacementMade,
-        'layer-active': this.handleLayerActive,
-        'layer-visible-toggle': this.handleLayerVisibleToggle,
-        'layer-delete': this.handleLayerDelete,
         'updated-view-coordinates': this.handleUpdateViewCoordinates,
         'window-update': this.handleWindowUpdate,
-        'request-placement-deletion': this.handleRequestPlacementDeletion,
-        'layer-order-up': this.handleLayerOrderUp,
-        'layer-order-down': this.handleLayerOrderDown,
     }
 
     protected css(): string {
@@ -92,28 +77,19 @@ export class WorldEditor extends Component {
 
         this.mapId = mapId
         this.map = map
-        layerRepository.useMap(mapId)
+        mapSession.open(map)
         this.pointPlayLinkAtMap(mapId)
 
         this.userData = await userDataRepository.getAll()
-        this.layers = await layerRepository.getAll()
 
         camera.set(this.userData.lastViewPosition)
 
         await sheetRepository.getAll()
-        await placementImageRepository.getAll()
-
-        for (const layer of this.layers) {
-            for (const placement of layer.placements) {
-                await loadPlacement(placement, layer.uuid)
-            }
-        }
     }
 
     protected build(): HTMLElement {
         const container = Dom.div('container')
         const sideMenu = Dom.makeComponent(SideMenu)
-        const layerListing = Dom.makeComponent(LayerListing, { layers: this.layers })
         const canvasContainer = Dom.div('canvas-container')
 
         const dialogCreator = Dom.makeComponent(DialogCreator)
@@ -124,20 +100,18 @@ export class WorldEditor extends Component {
             title: 'Dialog',
         })
 
-        if(dialog){
+        if (dialog) {
             this.shadowRoot?.append(dialog)
         }
 
         sideMenu.append(
             Dom.makeComponent(MapSelect, { activeMapId: this.mapId }),
-            layerListing,
+            Dom.makeComponent(LayerListing),
         )
 
         const tools = Dom.makeComponent(CanvasTools, { currentTool: this.userData.currentTool })
 
-        canvasContainer.append(
-            Dom.makeComponent(MapCanvas, { map: this.map })
-        )
+        canvasContainer.append(Dom.makeComponent(MapCanvas, { map: this.map }))
 
         container.append(
             sideMenu,
@@ -266,75 +240,11 @@ export class WorldEditor extends Component {
         )
     }
 
-    private async handleNewLayerSubmit(input: LayerInput): Promise<void> {
-        const layer = Object.assign(
-            LayerFactory.make(),
-            input
-        )
-
-        // create assigns the order the layer is drawn in
-        await layerRepository.create(layer)
-    }
-
-    private async handleOpenAddPlayer(): Promise<void> {
-        const layer = Object.assign(
-            LayerFactory.make(),
-            {
-                type: LAYERS.typePlayerControlled,
-                name: 'Player',
-                is_active: true,
-            }
-        ) as Layer
-
-        await layerRepository.create(layer)
-        layerRepository.setActive(layer.uuid)
-
-        const size = 32
-        const canvas = document.createElement('canvas')
-        canvas.width = size
-        canvas.height = size
-        const ctx = canvas.getContext('2d')
-
-        if (!ctx) {
-            return
-        }
-
-        ctx.clearRect(0, 0, size, size)
-        ctx.beginPath()
-        ctx.fillStyle = 'blue'
-        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2)
-        ctx.fill()
-
-        const img = await Dom.image(canvas.toDataURL('image/png'))
-
-        Events.emit('sheet-selection-made', img)
-        Events.emit('tool-selection', 'pencil')
-    }
-
-    private handleLayerPlacementMade(layer: Layer): void {
-        layerRepository.update(layer, 'placements')
-    }
-
-    private handleLayerActive(layer: Layer): void {
-        layerRepository.setActive(layer.uuid)
-    }
-
-    private handleLayerVisibleToggle(layer: Layer): void {
-        layerRepository.toggleVisible(layer.uuid)
-    }
-
-    private handleLayerDelete(uuid: string): void {
-        layerRepository.remove(uuid)
-            .then(() => {
-                Events.emit('layer-deleted', uuid)
-            })
-    }
-
-    private async handleUpdateViewCoordinates(corrdinates: Coordinates): Promise<void> {
+    private async handleUpdateViewCoordinates(coordinates: Coordinates): Promise<void> {
         const userData = await userDataRepository.getAll()
 
-        userData.lastViewPosition.x = corrdinates.x
-        userData.lastViewPosition.y = corrdinates.y
+        userData.lastViewPosition.x = coordinates.x
+        userData.lastViewPosition.y = coordinates.y
 
         userDataRepository.persist(userData)
     }
@@ -345,72 +255,6 @@ export class WorldEditor extends Component {
         userData.windows[windowConfiguration.uuid] = windowConfiguration
 
         userDataRepository.persist(userData)
-    }
-
-    private handleOpenHistory(): void {
-        const windowBox = WindowBoxFactory.make(
-            Dom.makeComponent(PlacementHistory),
-            'Placement History',
-            {
-                uuid: componentId(PlacementHistory),
-                componentConfigration: { dataset: {} },
-                title: 'Placement History',
-            }
-        )
-        if (windowBox) {
-            this.shadowRoot?.append(windowBox)
-        }
-    }
-
-    private async handleRequestPlacementDeletion(placementUuid: string): Promise<void> {
-        const layers = await layerRepository.getAll()
-
-        loadedPlacementRepository.removeByUuid(placementUuid)
-
-        for (const layer of layers) {
-            const index = layer.placements.findIndex(p => p.uuid === placementUuid)
-            if (index !== -1) {
-                layer.placements.splice(index, 1)
-                layerRepository.update(layer, 'placements')
-                Events.emit('placement-removed', placementUuid)
-                break
-            }
-        }
-    }
-
-    private async handleLayerOrderUp(layerUuid: string): Promise<void> {
-        const layers: Layer[] = await layerRepository.getAll()
-
-        layers.sort((a, b) => a.order - b.order)
-
-        const index = layers.findIndex(l => l.uuid === layerUuid)
-
-        if (index <= 0) return
-
-        await this.swapOrder(layers[index], layers[index - 1])
-    }
-
-    private async handleLayerOrderDown(layerUuid: string): Promise<void> {
-        const layers: Layer[] = await layerRepository.getAll()
-
-        layers.sort((a, b) => a.order - b.order)
-
-        const index = layers.findIndex(l => l.uuid === layerUuid)
-
-        if (index === -1 || index >= layers.length - 1) return
-
-        await this.swapOrder(layers[index], layers[index + 1])
-    }
-
-    private async swapOrder(a: Layer, b: Layer): Promise<void> {
-        const tempOrder = a.order
-        a.order = b.order
-        b.order = tempOrder
-
-        await Promise.all([
-            layerRepository.update(a, 'order'),
-            layerRepository.update(b, 'order'),
-        ])
     }
 
     private handleOpenNewModel(): void {

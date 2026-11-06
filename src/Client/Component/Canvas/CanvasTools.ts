@@ -1,14 +1,22 @@
 import { Component, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
+import { isTool, Tool } from 'Client/Service/tool'
 
+const TOOLS: ReadonlyArray<{ tool: Tool; icon: string; title: string }> = [
+    { tool: 'pencil', icon: 'fa-pencil', title: 'Pencil' },
+    { tool: 'fill', icon: 'fa-fill-drip', title: 'Fill' },
+    { tool: 'rect', icon: 'fa-vector-square', title: 'Rectangle' },
+    { tool: 'rubber', icon: 'fa-eraser', title: 'Eraser' },
+]
+
+/** The tool bar. Emits `tool-selection` with the tool name; `MapCanvas` listens. */
 export class CanvasTools extends Component<{ currentTool: string }> {
-    private currentTool: string = 'pencil'
+    private currentTool: Tool = 'pencil'
     public isSingleton: boolean = true
+
     protected readonly listeners: Listeners = {
-        '.pencil-button:click': this.handlePencilToolClick,
-        '.fill-button:click': this.handleFillToolClick,
-        '.rubber-button:click': this.handleRubberToolClick,
+        'button:click': this.handleToolClick,
     }
 
     protected css(): string {
@@ -34,57 +42,53 @@ export class CanvasTools extends Component<{ currentTool: string }> {
                 padding: 10px;
                 flex: 1;
                 border: 4px solid whitesmoke;
+                cursor: pointer;
             }
 
             button.active {
                 border-color: black;
             }
+
+            i {
+                pointer-events: none;
+            }
         `
     }
 
     protected async setup(): Promise<void> {
-        this.currentTool = this.parsedDataset.currentTool
+        const saved = this.parsedDataset.currentTool
+
+        if (isTool(saved)) {
+            this.currentTool = saved
+        }
     }
 
     protected build(): HTMLElement {
         const container = Dom.div('container')
 
-        const pencilButton = Dom.button('', 'pencil-button')
-        const pencilIcon = Dom.i('fa-solid', 'fa-pencil')
-        pencilButton.append(pencilIcon)
-        pencilButton.classList.toggle('active', this.currentTool === 'pencil')
+        for (const { tool, icon, title } of TOOLS) {
+            const button = Dom.button('', tool + '-button')
 
-        const fillButton = Dom.button('', 'fill-button')
-        const fillIcon = Dom.i('fa-solid', 'fa-fill-drip')
-        fillButton.append(fillIcon)
-        fillButton.classList.toggle('active', this.currentTool === 'fill')
+            button.dataset.tool = tool
+            button.title = title
+            button.append(Dom.i('fa-solid', icon))
+            button.classList.toggle('active', this.currentTool === tool)
 
-        const rubberButton = Dom.button('', 'rubber-button')
-        const rubberIcon = Dom.i('fa-solid', 'fa-eraser')
-        rubberButton.append(rubberIcon)
-        rubberButton.classList.toggle('active', this.currentTool === 'rubber')
-
-        container.append(
-            pencilButton,
-            fillButton,
-            rubberButton,
-        )
+            container.append(button)
+        }
 
         return container
     }
 
-    private handlePencilToolClick(event: Event): void {
-        Events.emit('tool-selection', this.currentTool = 'pencil')
-        this.patch()
-    }
+    private handleToolClick(event: Event): void {
+        const tool = event.target instanceof HTMLButtonElement ? event.target.dataset.tool : undefined
 
-    private handleFillToolClick(event: Event): void {
-        Events.emit('tool-selection', this.currentTool = 'fill')
-        this.patch()
-    }
+        if (tool === undefined || !isTool(tool)) {
+            return
+        }
 
-    private handleRubberToolClick(event: Event): void {
-        Events.emit('tool-selection', this.currentTool = 'rubber')
+        this.currentTool = tool
+        Events.emit('tool-selection', tool)
         this.patch()
     }
 }

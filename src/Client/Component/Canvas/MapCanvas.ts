@@ -1,64 +1,50 @@
-import { LAYERS } from 'Client/Constants/layers'
 import { LEFT_BUTTON, MIDDLE_BUTTON } from 'Client/Constants/mouse-events'
 import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
+import { Brush, BRUSH_CHANGED, brush } from 'Client/Service/brush'
 import { buildScene } from 'Client/Service/build-scene'
 import { camera } from 'Client/Service/camera'
 import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
-import { CellBounds } from 'Client/Service/flood-fill-cells'
-import { generateImageDataURL } from 'Client/Service/generate-image'
-import { erase, fill, pencil } from 'Client/Service/placement-painter'
+import { loadLegacyPlacements } from 'Client/Service/load-legacy-placements'
+import { MAP_SESSION_CHANGED, mapSession } from 'Client/Service/map-session'
 import { pointerToWorld } from 'Client/Service/pointer-to-world'
-import { layerRepository } from 'Client/Service/Repository/LayerRepository'
-import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
-import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
 import { sheetRepository } from 'Client/Service/Repository/SheetRepository'
-import { Coordinates } from 'domain/coordinates'
-import { GRID_SIZE, snapToGrid } from 'domain/grid'
+import { isTool, Tool } from 'Client/Service/tool'
+import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
+import { Cell, Coordinates } from 'domain/coordinates'
+import { GRID_SIZE, pixelToCell } from 'domain/grid'
 import { Id } from 'domain/id'
+import { floodFill, TileLayer, TileMap, withRect, withTile } from 'domain/map'
 import { GameMap } from 'domain/project'
+import { EMPTY_METATILE_ID, metatileById, MetatileId } from 'domain/tileset'
 import { DrawPort } from 'engine/draw-port'
 import { startLoop } from 'engine/loop'
 import { renderFrame } from 'engine/render'
 import { Scene } from 'engine/scene'
-import { Layer } from 'Model/Layer'
 
 /**
  * The one canvas the editor draws the active map into, through the engine's
- * `renderFrame`. It also owns the pointer: pencil, fill, and rubber act on
- * the active layer; the middle button pans the shared camera.
+ * `renderFrame`. It owns the pointer: pencil, fill, rectangle, and rubber
+ * write metatile ids onto the session's active layer; the middle button pans.
  */
 export class MapCanvas extends Component<{ map: GameMap }> {
-    private static readonly COLLISION_IMAGE: string = generateImageDataURL(
-        GRID_SIZE,
-        GRID_SIZE,
-        { r: 255, g: 0, b: 0, a: 0.3 },
-    )
-    private static readonly DEFAULT_IMAGE: string = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII='
-
-    private map!: GameMap
     private sheetById = new Map<Id, CanvasImageSource>()
-    private layers: Layer[] = []
+    private background: LoadedPlacement[] = []
     private scene: Scene<CanvasImageSource> | undefined
     private port: DrawPort<CanvasImageSource> | undefined
     private stopLoop: (() => void) | undefined
     private resizeObserver: ResizeObserver | undefined
 
-    private selectedImageSrc: string = MapCanvas.DEFAULT_IMAGE
-    private toolSelection: string = 'pencil'
+    private tool: Tool = 'pencil'
     private isPanning: boolean = false
     private lastMousePosition: Coordinates = { x: 0, y: 0 }
 
     protected readonly externalListeners: ExternalListeners = {
-        'layers-created': this.invalidate,
-        'layer-changed': this.invalidate,
-        'layer-deleted': this.invalidate,
-        'placement-removed': this.invalidate,
-        'sheet-selection-made': this.handleCurrentImageChange,
+        [MAP_SESSION_CHANGED]: this.invalidate,
+        [BRUSH_CHANGED]: this.redrawGhost,
         'tool-selection': this.handleToolSelection,
-        'request-focus-on-placement': this.handleRequestFocusOnPlacement,
     }
 
     protected readonly listeners: Listeners = {
@@ -66,6 +52,7 @@ export class MapCanvas extends Component<{ map: GameMap }> {
         '.container:mousedown': this.handleMouseDown,
         '.container:mousemove': this.handleMouseMove,
         '.container:mouseup': this.handleMouseUp,
+        '.container:contextmenu': this.handleContextMenu,
     }
 
     protected css(): string {
@@ -81,6 +68,7 @@ export class MapCanvas extends Component<{ map: GameMap }> {
                 width: 100%;
                 height: 100%;
                 overflow: hidden;
+                background: #2b2b2b;
             }
 
             canvas {
@@ -88,33 +76,41 @@ export class MapCanvas extends Component<{ map: GameMap }> {
                 image-rendering: pixelated;
             }
 
-            .current-image {
+            .ghost {
                 position: absolute;
                 pointer-events: none;
+                width: ${GRID_SIZE}px;
+                height: ${GRID_SIZE}px;
+                opacity: 0.7;
+                outline: 1px solid rgba(255, 255, 255, 0.8);
             }
 
-            .current-image.hide {
+            .ghost.hide, .selection.hide {
                 display: none;
+            }
+
+            .selection {
+                position: absolute;
+                pointer-events: none;
+                border: 1px solid #ffd54f;
+                background: rgba(255, 213, 79, 0.25);
             }
         `
     }
 
     protected async setup(): Promise<void> {
-        this.map = this.parsedDataset.map
-        this.layers = await layerRepository.getAll()
-
-        await this.loadSheets()
+        await Promise.all([this.loadSheets(), this.loadBackground()])
     }
 
     protected build(): HTMLElement {
         const container = Dom.div('container')
         const canvas = Dom.canvas()
-        const ghost = document.createElement('img')
+        const ghost = Dom.canvas(GRID_SIZE, GRID_SIZE)
+        const selection = Dom.div('selection', 'hide')
 
-        ghost.classList.add('current-image', 'hide')
-        ghost.src = this.selectedImageSrc
+        ghost.classList.add('ghost', 'hide')
 
-        container.append(canvas, ghost)
+        container.append(canvas, ghost, selection)
 
         return container
     }
@@ -132,6 +128,7 @@ export class MapCanvas extends Component<{ map: GameMap }> {
         this.resizeObserver = new ResizeObserver(() => this.fitCanvas())
         this.resizeObserver.observe(this)
         this.fitCanvas()
+        this.redrawGhost()
 
         this.stopLoop = startLoop(() => this.frame(), callback => window.requestAnimationFrame(callback))
     }
@@ -150,6 +147,11 @@ export class MapCanvas extends Component<{ map: GameMap }> {
         sheets.forEach((sheet, index) => this.sheetById.set(sheet.id, images[index]))
     }
 
+    /** A map painted before metatiles keeps its pictures as a frozen, read-only background. */
+    private async loadBackground(): Promise<void> {
+        this.background = await loadLegacyPlacements(this.parsedDataset.map.layers)
+    }
+
     private fitCanvas(): void {
         const canvas = this.getCanvas()
 
@@ -159,21 +161,21 @@ export class MapCanvas extends Component<{ map: GameMap }> {
         }
     }
 
-    /** Marks the scene stale; the next frame rebuilds it from the repositories. */
+    /** Marks the scene stale; the next frame rebuilds it from the session. */
     private invalidate(): void {
         this.scene = undefined
     }
 
     private currentScene(): Scene<CanvasImageSource> {
         if (this.scene === undefined) {
-            const tileset = projectRepository.cachedTileset(this.map.tileMap.tilesetId)
+            const map = mapSession.current
 
             this.scene = buildScene({
-                tileMap: this.map.tileMap,
-                tileset,
+                tileMap: mapSession.visibleTileMap(),
+                tileset: projectRepository.cachedTileset(map.tileMap.tilesetId),
                 sheetById: this.sheetById,
-                layers: this.layers,
-                loadedPlacements: loadedPlacementRepository.get(),
+                layers: map.layers,
+                loadedPlacements: this.background,
             })
         }
 
@@ -189,68 +191,126 @@ export class MapCanvas extends Component<{ map: GameMap }> {
     }
 
     private getCanvas(): HTMLCanvasElement | null {
-        return this.findOne('canvas')
+        return this.findOne('canvas:not(.ghost)')
     }
 
-    private getGhost(): HTMLImageElement | null {
-        return this.findOne('.current-image')
+    private getGhost(): HTMLCanvasElement | null {
+        return this.findOne('canvas.ghost')
+    }
+
+    private getSelection(): HTMLDivElement | null {
+        return this.findOne('.selection')
     }
 
     private getContainer(): HTMLDivElement | null {
         return this.findOne('.container')
     }
 
-    private activeLayer(): Layer | undefined {
-        return this.layers.find(layer => layer.is_active)
-    }
-
-    /** Collision layers always paint the translucent red marker. */
-    private brushSrcFor(layer: Layer): string {
-        return layer.type === LAYERS.typeCollision ? MapCanvas.COLLISION_IMAGE : this.selectedImageSrc
-    }
-
-    private hasBrush(layer: Layer): boolean {
-        return this.brushSrcFor(layer) !== MapCanvas.DEFAULT_IMAGE
-    }
-
-    private brushImageUuid(layer: Layer): Promise<string> {
-        return placementImageRepository
-            .findOrCreateBySrc(this.brushSrcFor(layer))
-            .then(image => image.uuid)
-    }
-
-    private snappedWorldPointAt(event: MouseEvent): Coordinates {
+    private cellAt(event: MouseEvent): Cell {
         const container = this.getContainer()
         const rect = container ? container.getBoundingClientRect() : { left: 0, top: 0 }
         const world = pointerToWorld(event, rect, camera.get())
 
-        return {
-            x: snapToGrid(world.x),
-            y: snapToGrid(world.y),
+        return pixelToCell(world)
+    }
+
+    /**
+     * The id the current tool writes, or undefined when it cannot paint: no
+     * brush, or a brush from a different tileset than the map already uses.
+     * A map without a tileset adopts the brush's tileset on the first stroke.
+     */
+    private paintIdFor(tool: Tool, current: Brush | undefined): MetatileId | undefined {
+        if (tool === 'rubber') {
+            return EMPTY_METATILE_ID
         }
+
+        if (current === undefined) {
+            return undefined
+        }
+
+        const tileMap = mapSession.tileMap
+
+        if (tileMap.tilesetId === null) {
+            mapSession.update({ ...tileMap, tilesetId: current.tilesetId })
+        } else if (tileMap.tilesetId !== current.tilesetId) {
+            console.info('The map uses a different tileset than the brush; pick a metatile from the map\'s tileset.')
+            return undefined
+        }
+
+        return current.metatileId
+    }
+
+    /** Redraws the one-cell ghost preview from the brush's rectangle on its sheet. */
+    private redrawGhost(): void {
+        const ghost = this.getGhost()
+        const ctx = ghost?.getContext('2d')
+        const current = brush.get()
+
+        if (!ghost || !ctx) {
+            return
+        }
+
+        ctx.clearRect(0, 0, GRID_SIZE, GRID_SIZE)
+
+        if (current === undefined) {
+            return
+        }
+
+        const tileset = projectRepository.cachedTileset(current.tilesetId)
+        const metatile = tileset === undefined ? undefined : metatileById(tileset, current.metatileId)
+        const sheet = metatile === undefined ? undefined : this.sheetById.get(metatile.sheetId)
+
+        if (metatile === undefined || sheet === undefined) {
+            return
+        }
+
+        ctx.imageSmoothingEnabled = false
+        ctx.drawImage(sheet, metatile.x, metatile.y, metatile.w, metatile.h, 0, 0, GRID_SIZE, GRID_SIZE)
     }
 
     /** Moves the ghost preview to the cell under the pointer. */
     private trackPointer(event: MouseEvent): void {
         const ghost = this.getGhost()
-        const layer = this.activeLayer()
 
-        if (!ghost || layer === undefined) {
-            ghost?.classList.add('hide')
+        if (!ghost) {
             return
         }
 
-        const cell = this.snappedWorldPointAt(event)
-        const view = camera.get()
-        const src = this.brushSrcFor(layer)
-
-        if (ghost.getAttribute('src') !== src) {
-            ghost.src = src
+        if (this.tool === 'rubber' || brush.get() === undefined || mapSession.activeLayer === undefined) {
+            ghost.classList.add('hide')
+            return
         }
 
+        const cell = this.cellAt(event)
+        const view = camera.get()
+
         ghost.classList.remove('hide')
-        ghost.style.left = (cell.x - view.x) + 'px'
-        ghost.style.top = (cell.y - view.y) + 'px'
+        ghost.style.left = (cell.x * GRID_SIZE - view.x) + 'px'
+        ghost.style.top = (cell.y * GRID_SIZE - view.y) + 'px'
+    }
+
+    private showSelection(a: Cell, b: Cell): void {
+        const selection = this.getSelection()
+
+        if (!selection) {
+            return
+        }
+
+        const view = camera.get()
+        const left = Math.min(a.x, b.x) * GRID_SIZE
+        const top = Math.min(a.y, b.y) * GRID_SIZE
+        const width = (Math.abs(a.x - b.x) + 1) * GRID_SIZE
+        const height = (Math.abs(a.y - b.y) + 1) * GRID_SIZE
+
+        selection.classList.remove('hide')
+        selection.style.left = (left - view.x) + 'px'
+        selection.style.top = (top - view.y) + 'px'
+        selection.style.width = width + 'px'
+        selection.style.height = height + 'px'
+    }
+
+    private hideSelection(): void {
+        this.getSelection()?.classList.add('hide')
     }
 
     private panTo(clientX: number, clientY: number): void {
@@ -263,86 +323,73 @@ export class MapCanvas extends Component<{ map: GameMap }> {
         this.lastMousePosition.y = clientY
     }
 
-    /** The visible map, in cells. Fill does not run off into the infinite plane. */
-    private visibleCellBounds(): CellBounds {
-        const view = camera.get()
-        const width = this.port?.width ?? 0
-        const height = this.port?.height ?? 0
+    /** The active layer as it is right now; strokes re-read it because each step replaces it. */
+    private withActiveLayer(edit: (tileMap: TileMap, layer: TileLayer) => TileLayer): void {
+        const tileMap = mapSession.tileMap
+        const layer = mapSession.activeLayer
 
-        return {
-            minX: snapToGrid(view.x),
-            minY: snapToGrid(view.y),
-            maxX: snapToGrid(view.x + width),
-            maxY: snapToGrid(view.y + height),
+        if (layer === undefined) {
+            return
+        }
+
+        const next = edit(tileMap, layer)
+
+        if (next !== layer) {
+            mapSession.update({ ...tileMap, layers: tileMap.layers.map(existing => existing.id === layer.id ? next : existing) })
         }
     }
 
-    /**
-     * Runs `step` for the mousedown and every mousemove until mouseup, then
-     * persists the layer once every step has settled.
-     */
-    private runStroke(
-        firstEvent: MouseEvent,
-        layer: Layer,
-        step: (cell: Coordinates) => Promise<void>,
-        onDone: () => void,
-    ): void {
-        const stepAndRedraw = async (cell: Coordinates): Promise<void> => {
-            await step(cell)
-            this.invalidate()
+    /** Pencil and rubber: one cell per pointer sample until mouseup, then one save. */
+    private startStroke(firstEvent: MouseEvent, id: MetatileId): void {
+        const paint = (event: MouseEvent) => {
+            const cell = this.cellAt(event)
+
+            this.withActiveLayer((tileMap, layer) => withTile(tileMap, layer, cell, id))
         }
 
-        const pending: Promise<void>[] = [stepAndRedraw(this.snappedWorldPointAt(firstEvent))]
+        const mouseMove = (event: MouseEvent) => paint(event)
 
-        const mouseMove = (event: MouseEvent) => {
-            pending.push(stepAndRedraw(this.snappedWorldPointAt(event)))
-        }
-
-        const mouseUp = async () => {
+        const mouseUp = () => {
             document.removeEventListener('mouseup', mouseUp)
             document.removeEventListener('mousemove', mouseMove)
 
-            await Promise.all(pending)
+            void mapSession.save()
+        }
 
-            Events.emit('layer-placement-made', layer)
-            onDone()
+        document.addEventListener('mouseup', mouseUp)
+        document.addEventListener('mousemove', mouseMove)
+
+        paint(firstEvent)
+    }
+
+    /** Rectangle: drag two corners, preview the span, fill it on mouseup. */
+    private startRect(firstEvent: MouseEvent, id: MetatileId): void {
+        const start = this.cellAt(firstEvent)
+
+        this.showSelection(start, start)
+
+        const mouseMove = (event: MouseEvent) => this.showSelection(start, this.cellAt(event))
+
+        const mouseUp = (event: MouseEvent) => {
+            document.removeEventListener('mouseup', mouseUp)
+            document.removeEventListener('mousemove', mouseMove)
+
+            this.hideSelection()
+            this.withActiveLayer((tileMap, layer) => withRect(tileMap, layer, start, this.cellAt(event), id))
+
+            void mapSession.save()
         }
 
         document.addEventListener('mouseup', mouseUp)
         document.addEventListener('mousemove', mouseMove)
     }
 
-    /** Listeners attach synchronously on mousedown; the brush id resolves once, inside the first step. */
-    private startPencil(event: MouseEvent, layer: Layer): void {
-        if (!this.hasBrush(layer)) {
-            return
-        }
+    private fillAt(event: MouseEvent, id: MetatileId): void {
+        const cell = this.cellAt(event)
 
-        const imageUuid = this.brushImageUuid(layer)
+        this.withActiveLayer((tileMap, layer) => floodFill(tileMap, layer, cell, id))
 
-        this.runStroke(
-            event,
-            layer,
-            async cell => pencil(layer, cell, await imageUuid),
-            () => Events.emit('placement-added', undefined),
-        )
-    }
-
-    private async startFill(event: MouseEvent, layer: Layer): Promise<void> {
-        if (!this.hasBrush(layer)) {
-            return
-        }
-
-        const imageUuid = await this.brushImageUuid(layer)
-        const filled = await fill(layer, this.snappedWorldPointAt(event), imageUuid, this.visibleCellBounds())
-
-        if (!filled) {
-            return
-        }
-
-        this.invalidate()
-        Events.emit('layer-placement-made', layer)
-        Events.emit('placement-added', undefined)
+        void mapSession.save()
     }
 
     private handleMouseDown(event: MouseEvent): void {
@@ -355,22 +402,22 @@ export class MapCanvas extends Component<{ map: GameMap }> {
             return
         }
 
-        const layer = this.activeLayer()
-
-        if (event.button !== LEFT_BUTTON || layer === undefined) {
+        if (event.button !== LEFT_BUTTON || mapSession.activeLayer === undefined) {
             return
         }
 
-        if (this.toolSelection === 'pencil') {
-            this.startPencil(event, layer)
+        const id = this.paintIdFor(this.tool, brush.get())
+
+        if (id === undefined) {
+            return
         }
 
-        if (this.toolSelection === 'fill') {
-            void this.startFill(event, layer)
-        }
-
-        if (this.toolSelection === 'rubber') {
-            this.runStroke(event, layer, async cell => erase(layer, cell), () => undefined)
+        if (this.tool === 'fill') {
+            this.fillAt(event, id)
+        } else if (this.tool === 'rect') {
+            this.startRect(event, id)
+        } else {
+            this.startStroke(event, id)
         }
     }
 
@@ -393,48 +440,13 @@ export class MapCanvas extends Component<{ map: GameMap }> {
         this.getGhost()?.classList.add('hide')
     }
 
-    private handleCurrentImageChange(newImage: HTMLImageElement): void {
-        this.selectedImageSrc = newImage.src
+    private handleContextMenu(event: Event): void {
+        event.preventDefault()
     }
 
-    private handleToolSelection(toolSelection: string): void {
-        this.toolSelection = toolSelection
-    }
-
-    private handleRequestFocusOnPlacement(uuid: string): void {
-        const target = loadedPlacementRepository.getByUuid(uuid)
-
-        if (!target || this.port === undefined) {
-            return
+    private handleToolSelection(tool: string): void {
+        if (isTool(tool)) {
+            this.tool = tool
         }
-
-        const targetViewX = target.x + target.width / 2 - this.port.width / 2
-        const targetViewY = target.y + target.height / 2 - this.port.height / 2
-
-        const start = camera.get()
-        const deltaX = targetViewX - start.x
-        const deltaY = targetViewY - start.y
-
-        const duration = 300
-        const startTime = performance.now()
-
-        const animate = (currentTime: number) => {
-            const elapsed = currentTime - startTime
-            const progress = Math.min(elapsed / duration, 1)
-            const easeOut = 1 - Math.pow(1 - progress, 3)
-
-            camera.set({
-                x: start.x + deltaX * easeOut,
-                y: start.y + deltaY * easeOut,
-            })
-
-            if (progress < 1) {
-                requestAnimationFrame(animate)
-            } else {
-                Events.emit('updated-view-coordinates', camera.get())
-            }
-        }
-
-        requestAnimationFrame(animate)
     }
 }

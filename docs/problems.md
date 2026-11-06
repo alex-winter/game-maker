@@ -44,9 +44,9 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 ## Structural
 
-18. **There is no project and no map.** One global `layers.json` is the whole game. `Project` and `projectsDir` are unused. Ticket T-013.
+18. **Fixed (T-013).** **There is no project and no map.** One global `layers.json` is the whole game. `Project` and `projectsDir` are unused. Ticket T-013.
 
-19. **A placement is not a tile.** Coordinates are pixels, pictures are data URLs, and fill destroys tile identity. Collision cannot be queried without decoding images. A walking actor cannot ask "what is in the cell in front of me" cheaply. Ticket T-014.
+19. **Fixed (T-014, T-020).** **A placement is not a tile.** Coordinates are pixels, pictures are data URLs, and fill destroys tile identity. Collision cannot be queried without decoding images. A walking actor cannot ask "what is in the cell in front of me" cheaply. Ticket T-014.
 
 20. **Fixed (T-017).** **Two programs draw the world.** Editor loops live in `Canvas2D` per layer. Play loops in `play.ts`. They will diverge further every time a rule is added. Ticket T-017.
 
@@ -59,5 +59,5 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 ## Not bugs, and not to be "fixed" early
 
 - The menu bar does nothing. It stays inert until a ticket needs it.
-- Placement history will not scale to a town. Do not virtualize it. Metatile editing (T-020) replaces it.
+- Placement history was deleted with the placement paint path (T-020). Undo/redo of strokes is T-024.
 - `AnimationMaker` is an empty shell. Player animation is T-027, built from domain data, not by filling this shell in place.

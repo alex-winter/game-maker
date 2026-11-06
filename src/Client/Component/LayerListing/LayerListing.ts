@@ -1,37 +1,32 @@
 import { LayerItem } from 'Client/Component/LayerListing/LayerItem'
+import { LayerInput } from 'Client/Model/LayerInput'
 import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
-import { layerRepository } from 'Client/Service/Repository/LayerRepository'
-import { Layer } from 'Model/Layer'
+import { MAP_SESSION_CHANGED, mapSession } from 'Client/Service/map-session'
+import { addTileLayer, TileLayer } from 'domain/map'
 
+/** The open map's tile layers, front-most first. Edits go through `mapSession`. */
 export class LayerListing extends Component {
     protected externalListeners: ExternalListeners = {
-        'layers-created': this.handleNewLayers,
+        [MAP_SESSION_CHANGED]: this.patch,
+        'new-layer-submit': this.handleNewLayerSubmit,
     }
 
     protected listeners: Listeners = {
         '.add-new:click': this.handleClickAddNew,
-        '.add-player:click': this.handleClickAddPlayer,
-    }
-
-    private layers!: Layer[]
-
-    protected async setup(): Promise<void> {
-        this.layers = await layerRepository.getAll()
     }
 
     protected build(): HTMLElement {
         const container = Dom.div('layer-listing-container')
         const listing = Dom.div('listing')
         const addNewLayerButton = Dom.button('+ Add New Layer', 'add-new')
-        const addPlayerButton = Dom.button('Add Player', 'add-player')
 
         listing.append(
-            ...this.layers.map(this.buildLayer.bind(this))
+            ...[...mapSession.tileMap.layers].reverse().map(this.buildLayer.bind(this))
         )
 
-        container.append(listing, addNewLayerButton, addPlayerButton)
+        container.append(listing, addNewLayerButton)
 
         return container
     }
@@ -40,19 +35,22 @@ export class LayerListing extends Component {
         Events.emit(Events.openAddNewLayer, undefined)
     }
 
-    private handleClickAddPlayer(): void {
-        Events.emit(Events.openAddPlayer, undefined)
+    private handleNewLayerSubmit(input: LayerInput): void {
+        const name = input.name.trim()
+
+        if (name === '') {
+            return
+        }
+
+        void mapSession.commit(addTileLayer(mapSession.tileMap, name, input.kind))
     }
 
-    private handleNewLayers(): void {
-        layerRepository.getAll().then(layers => {
-            this.layers = layers
-            this.patch()
+    private buildLayer(layer: TileLayer): HTMLElement {
+        // Grouped in one object: the dataset round-trip keeps objects, but a bare boolean would come back as text.
+        return Dom.makeComponent(LayerItem, {
+            layer,
+            view: { isActive: mapSession.isActive(layer.id), isHidden: mapSession.isHidden(layer.id) },
         })
-    }
-
-    private buildLayer(layer: Layer): HTMLElement {
-        return Dom.makeComponent(LayerItem, { layer })
     }
 
     protected css(): string {
@@ -87,22 +85,6 @@ export class LayerListing extends Component {
 
             .add-new:hover {
                 background-color: #27ae60;
-            }
-            .add-player {
-                align-self: center;
-                padding: 10px 20px;
-                font-size: 16px;
-                background-color: #3498db;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                cursor: pointer;
-                transition: background-color 0.3s ease;
-                margin-left: 8px;
-            }
-
-            .add-player:hover {
-                background-color: #2c80bd;
             }
         `
     }

@@ -1,11 +1,17 @@
-import { LAYERS } from 'Client/Constants/layers'
 import { Component, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
+import { LayerInput } from 'Client/Model/LayerInput'
+import { TileLayerKind } from 'domain/map'
+
+const KINDS: ReadonlyArray<{ kind: TileLayerKind; label: string }> = [
+    { kind: 'ground', label: 'Ground (under actors)' },
+    { kind: 'overhead', label: 'Overhead (over actors)' },
+]
 
 export class NewLayerForm extends Component {
     private name: string = ''
-    private type: string = LAYERS.defaultType
+    private kind: TileLayerKind = 'ground'
 
     protected listeners: Listeners = {
         '.layer-name-input:keyup': this.handleNameChange,
@@ -101,12 +107,12 @@ export class NewLayerForm extends Component {
         const typeSelect = document.createElement('select')
         typeSelect.className = 'text-input'
 
-        LAYERS.types.forEach(type => {
+        for (const { kind, label } of KINDS) {
             const option = document.createElement('option')
-            option.value = type
-            option.innerText = type.toUpperCase()
+            option.value = kind
+            option.innerText = label
             typeSelect.appendChild(option)
-        })
+        }
 
         typeGroup.append(typeLabel, typeSelect)
 
@@ -124,7 +130,7 @@ export class NewLayerForm extends Component {
 
     private handleSelectChange(event: Event): void {
         const select = event.target as HTMLSelectElement
-        this.type = select.value
+        this.kind = select.value === 'overhead' ? 'overhead' : 'ground'
     }
 
     private handleNameChange(event: Event): void {
@@ -134,9 +140,8 @@ export class NewLayerForm extends Component {
 
     private handleSubmit(): void {
         Events.emit('close-modal', this)
-        Events.emit('new-layer-submit', {
-            name: this.name,
-            type: this.type,
-        })
+        const input: LayerInput = { name: this.name, kind: this.kind }
+
+        Events.emit('new-layer-submit', input)
     }
 }

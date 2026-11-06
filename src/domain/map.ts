@@ -117,6 +117,167 @@ export function withTile(map: GridSize, layer: TileLayer, cell: Cell, id: Metati
     return { ...layer, tiles }
 }
 
+/** The inclusive cell rectangle spanned by two corners, clamped to the grid. */
+function cellSpan(map: GridSize, a: Cell, b: Cell) {
+    return {
+        minX: Math.max(0, Math.min(a.x, b.x)),
+        minY: Math.max(0, Math.min(a.y, b.y)),
+        maxX: Math.min(map.width - 1, Math.max(a.x, b.x)),
+        maxY: Math.min(map.height - 1, Math.max(a.y, b.y)),
+    }
+}
+
+/** A new layer with every cell in the rectangle `a`..`b` (inclusive) set to `id`. */
+export function withRect(map: GridSize, layer: TileLayer, a: Cell, b: Cell, id: MetatileId): TileLayer {
+    const span = cellSpan(map, a, b)
+    const tiles = [...layer.tiles]
+
+    for (let y = span.minY; y <= span.maxY; y++) {
+        for (let x = span.minX; x <= span.maxX; x++) {
+            tiles[y * map.width + x] = id
+        }
+    }
+
+    return { ...layer, tiles }
+}
+
+/**
+ * Flood fill on ids: every cell 4-connected to `start` that shares its id
+ * becomes `id`. Bounded by the map, never by a view. A fill with the id the
+ * region already has, or from outside the map, returns the layer unchanged.
+ */
+export function floodFill(map: GridSize, layer: TileLayer, start: Cell, id: MetatileId): TileLayer {
+    const startIndex = cellIndex(map, start)
+
+    if (startIndex === undefined) {
+        return layer
+    }
+
+    const target = layer.tiles[startIndex] ?? EMPTY_METATILE_ID
+
+    if (target === id) {
+        return layer
+    }
+
+    const tiles = [...layer.tiles]
+    const stack: number[] = [startIndex]
+
+    while (stack.length > 0) {
+        const index = stack.pop()
+
+        if (index === undefined || tiles[index] !== target) {
+            continue
+        }
+
+        tiles[index] = id
+
+        const x = index % map.width
+        const y = Math.floor(index / map.width)
+
+        if (x > 0) stack.push(index - 1)
+        if (x < map.width - 1) stack.push(index + 1)
+        if (y > 0) stack.push(index - map.width)
+        if (y < map.height - 1) stack.push(index + map.width)
+    }
+
+    return { ...layer, tiles }
+}
+
+export function findTileLayer(map: TileMap, layerId: Id): TileLayer | undefined {
+    return map.layers.find(layer => layer.id === layerId)
+}
+
+/** A new map with the layer of the same id replaced. Unknown ids leave the map unchanged. */
+export function withTileLayer(map: TileMap, layer: TileLayer): TileMap {
+    return { ...map, layers: map.layers.map(existing => existing.id === layer.id ? layer : existing) }
+}
+
+/** A new map with an empty layer appended at the front. */
+export function addTileLayer(map: TileMap, name: string, kind: TileLayerKind): TileMap {
+    return { ...map, layers: [...map.layers, emptyTileLayer(name, kind, map)] }
+}
+
+/** A new map without the layer. The last layer cannot be removed. */
+export function removeTileLayer(map: TileMap, layerId: Id): TileMap {
+    if (map.layers.length <= 1) {
+        return map
+    }
+
+    return { ...map, layers: map.layers.filter(layer => layer.id !== layerId) }
+}
+
+export function renameTileLayer(map: TileMap, layerId: Id, name: string): TileMap {
+    const layer = findTileLayer(map, layerId)
+
+    return layer === undefined ? map : withTileLayer(map, { ...layer, name })
+}
+
+/** Moves a layer one step toward the back (`-1`) or the front (`+1`). */
+export function moveTileLayer(map: TileMap, layerId: Id, delta: -1 | 1): TileMap {
+    const from = map.layers.findIndex(layer => layer.id === layerId)
+    const to = from + delta
+
+    if (from === -1 || to < 0 || to >= map.layers.length) {
+        return map
+    }
+
+    const layers = [...map.layers]
+    const moved = layers[from]
+
+    layers[from] = layers[to]
+    layers[to] = moved
+
+    return { ...map, layers }
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+    return typeof value === 'number' && Number.isInteger(value) && value >= 0
+}
+
+function isTileLayer(value: unknown, cells: number): value is TileLayer {
+    if (typeof value !== 'object' || value === null) {
+        return false
+    }
+
+    const layer = value as Partial<TileLayer>
+
+    return typeof layer.id === 'string'
+        && typeof layer.name === 'string'
+        && (layer.kind === 'ground' || layer.kind === 'overhead')
+        && Array.isArray(layer.tiles)
+        && layer.tiles.length === cells
+        && layer.tiles.every(isNonNegativeInteger)
+}
+
+/** A structurally sound tile map: positive size, every array as long as the grid, ids non-negative integers. */
+export function isTileMap(value: unknown): value is TileMap {
+    if (typeof value !== 'object' || value === null) {
+        return false
+    }
+
+    const map = value as Partial<TileMap>
+
+    if (!isNonNegativeInteger(map.width) || !isNonNegativeInteger(map.height) || map.width === 0 || map.height === 0) {
+        return false
+    }
+
+    const cells = map.width * map.height
+    const attributes = map.attributes
+
+    return (map.tilesetId === null || typeof map.tilesetId === 'string')
+        && Array.isArray(map.layers)
+        && map.layers.length > 0
+        && map.layers.every(layer => isTileLayer(layer, cells))
+        && typeof attributes === 'object'
+        && attributes !== null
+        && Array.isArray(attributes.collision)
+        && attributes.collision.length === cells
+        && attributes.collision.every(isNonNegativeInteger)
+        && Array.isArray(attributes.elevation)
+        && attributes.elevation.length === cells
+        && attributes.elevation.every(isNonNegativeInteger)
+}
+
 /** Every metatile stacked at `cell`, back to front, skipping empty cells. */
 function metatilesAt(map: TileMap, tileset: Tileset, cell: Cell): Metatile[] {
     const stacked: Metatile[] = []

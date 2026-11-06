@@ -1,7 +1,7 @@
 ---
 id: T-024
 title: Undo and redo map strokes
-status: backlog
+status: ready
 priority: P1
 phase: 2
 type: feat

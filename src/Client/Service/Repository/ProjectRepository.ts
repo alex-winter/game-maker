@@ -1,8 +1,8 @@
 import { Repository } from 'Client/Service/Repository/Repository'
 import { Id } from 'domain/id'
-import { GameMap, Project } from 'domain/project'
+import { TileMap } from 'domain/map'
+import { GameMap, Project, withMapTileMap, withMapTileset, withTileset } from 'domain/project'
 import { Metatile, MetatileAttributes, MetatileId, Tileset, withMetatileAttributes } from 'domain/tileset'
-import { withMapTileset, withTileset } from 'domain/project'
 
 class ProjectRepository extends Repository {
     private readonly API_PATH = '/project'
@@ -46,6 +46,15 @@ class ProjectRepository extends Repository {
 
         if (this.project && tileset) {
             this.project = withTileset(this.project, withMetatileAttributes(tileset, metatileId, attributes))
+        }
+    }
+
+    /** Replaces one map's whole grid on the server and in the cache. */
+    public async saveTileMap(mapId: Id, tileMap: TileMap): Promise<void> {
+        await this.put(`${this.API_PATH}/maps/${mapId}/tile-map`, tileMap)
+
+        if (this.project) {
+            this.project = withMapTileMap(this.project, mapId, tileMap)
         }
     }
 
