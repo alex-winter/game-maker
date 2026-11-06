@@ -38,9 +38,9 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 ## Play mode
 
-16. **Play is a camera debug view.** `keys` is never read. `keydown` subtracts `viewMoveSpeed` once per event. Key repeat is the only thing that makes holding an arrow move. There is no `keyup`, no `preventDefault`, and no resize. Ticket T-006.
+16. **Fixed (T-006).** **Play is a camera debug view.** `keys` is never read. `keydown` subtracts `viewMoveSpeed` once per event. Key repeat is the only thing that makes holding an arrow move. There is no `keyup`, no `preventDefault`, and no resize. Ticket T-006.
 
-17. **Play draws layers in the opposite order to the editor.** The editor's z-index is `500 - order` (smaller `order` in front). Play sorts `(a, b) => b.order - a.order` and draws later entries on top (larger `order` in front). Ticket T-006.
+17. **Fixed (T-006).** **Play draws layers in the opposite order to the editor.** The editor's z-index is `500 - order` (smaller `order` in front). Play sorts `(a, b) => b.order - a.order` and draws later entries on top (larger `order` in front). Ticket T-006.
 
 ## Structural
 

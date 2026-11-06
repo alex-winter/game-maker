@@ -1,7 +1,7 @@
 ---
 id: T-006
 title: Make play mode a frame loop with the editor's draw order
-status: ready
+status: done
 priority: P0
 phase: 0
 type: bug
@@ -15,6 +15,8 @@ blocks: [T-017, T-030]
 ## Outcome
 
 Holding an arrow pans the play view every frame at a steady speed. Releasing it stops. Play draws smaller `order` in front, the same rule as the editor. Resizing the window resizes the canvas.
+
+Done in commit `fix(play): run a frame loop with the editor's draw order (T-006)`. One `requestAnimationFrame` loop moves the camera by `directionFromKeys(keys) * 120 px/s * delta` (`src/Client/Service/direction-from-keys.ts`, with a node test) and draws layers sorted ascending by `drawOrder` from T-005. Keys clear on `keyup` and `blur`; arrows call `preventDefault`. `fitCanvasToWindow` runs on load and resize and turns smoothing off after each resize.
 
 ## Why
 
@@ -49,9 +51,9 @@ Out:
 
 ## Acceptance
 
-- [ ] Holding ArrowRight moves the view continuously. Releasing stops it within a frame.
-- [ ] A layer with a lower `order` draws on top of a higher `order` in both editor and play, checked with two overlapping tiles.
-- [ ] Resizing the browser does not leave a stretched buffer or a permanent uncleared border.
+- [x] Holding ArrowRight moves the view continuously. Releasing stops it within a frame.
+- [x] A layer with a lower `order` draws on top of a higher `order` in both editor and play, checked with two overlapping tiles.
+- [x] Resizing the browser does not leave a stretched buffer or a permanent uncleared border.
 
 ## Test plan
 

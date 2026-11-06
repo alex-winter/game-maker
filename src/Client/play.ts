@@ -3,8 +3,10 @@ import { Dom } from 'Client/Service/Dom'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { Coordinates } from 'Model/Coordinates'
-import { LAYERS } from 'Client/Constants/layers'
 import { layerRepository } from 'Client/Service/Repository/LayerRepository'
+import { Layer } from 'Model/Layer'
+import { drawOrder } from 'Model/draw-order'
+import { directionFromKeys, HeldKeys } from 'Client/Service/direction-from-keys'
 
 interface GamePlacement extends LoadedPlacement {
     type: string
@@ -15,16 +17,44 @@ const viewCoordinates: Coordinates = {
     y: 0,
 }
 
-const viewMoveSpeed: number = 4
+const pixelsPerSecond: number = 120
 
-const keys = {
+const keys: { -readonly [K in keyof HeldKeys]: HeldKeys[K] } = {
     up: false,
     down: false,
     left: false,
     right: false,
 }
 
-function renderLayers(
+const keyByCode: { readonly [code: string]: keyof HeldKeys | undefined } = {
+    ArrowUp: 'up',
+    ArrowDown: 'down',
+    ArrowLeft: 'left',
+    ArrowRight: 'right',
+}
+
+function releaseAllKeys(): void {
+    keys.up = false
+    keys.down = false
+    keys.left = false
+    keys.right = false
+}
+
+function fitCanvasToWindow(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): void {
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+    // resizing a canvas resets its context state
+    ctx.imageSmoothingEnabled = false
+}
+
+function moveCamera(deltaSeconds: number): void {
+    const direction = directionFromKeys(keys)
+
+    viewCoordinates.x += direction.x * pixelsPerSecond * deltaSeconds
+    viewCoordinates.y += direction.y * pixelsPerSecond * deltaSeconds
+}
+
+function drawPlacements(
     ctx: CanvasRenderingContext2D,
     loadedPlacements: GamePlacement[],
     width: number,
@@ -32,38 +62,19 @@ function renderLayers(
 ): void {
     ctx.clearRect(0, 0, width, height)
 
-    loadedPlacements.forEach(loadedPlacement => {
-        const dx: number = loadedPlacement.x - viewCoordinates.x
-        const dy: number = loadedPlacement.y - viewCoordinates.y
-        const dWidth: number = loadedPlacement.image.width
-        const dHeight: number = loadedPlacement.image.height
-
+    for (const loadedPlacement of loadedPlacements) {
         ctx.drawImage(
             loadedPlacement.image,
-            dx,
-            dy,
-            dWidth,
-            dHeight,
+            Math.floor(loadedPlacement.x - viewCoordinates.x),
+            Math.floor(loadedPlacement.y - viewCoordinates.y),
+            loadedPlacement.image.width,
+            loadedPlacement.image.height,
         )
-    })
-
-    window.requestAnimationFrame(() => renderLayers(ctx, loadedPlacements, width, height))
+    }
 }
 
-
-document.addEventListener('DOMContentLoaded', async () => {
+async function loadPlacements(layers: Layer[]): Promise<GamePlacement[]> {
     const loadedPlacements: GamePlacement[] = []
-
-    const canvas = document.querySelector('canvas')!
-    const ctx = canvas.getContext('2d')!
-
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
-
-
-    const layers = (await layerRepository.getAll()).sort((a, b) => b.order - a.order)
-
-    console.log('layers', layers)
 
     for (const layer of layers) {
         for (const placement of layer.placements) {
@@ -79,7 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const image = await Dom.image(placementImage.src)
 
             loadedPlacements.push({
-                uuid: crypto.randomUUID(),
+                uuid: placement.uuid,
                 layerUuid: layer.uuid,
                 image,
                 x: placement.coordinate.x,
@@ -91,34 +102,66 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // build map of layer order and sort placements so draw order matches layer order
-    const layerOrderMap = new Map(layers.map(l => [l.uuid, l.order]))
-    loadedPlacements.sort((a, b) => {
-        const ao = layerOrderMap.get(a.layerUuid) ?? 0
-        const bo = layerOrderMap.get(b.layerUuid) ?? 0
-        return bo - ao
-    })
+    return loadedPlacements
+}
 
-    renderLayers(ctx, loadedPlacements, canvas.width, canvas.height)
+/** Back first, so a later draw covers an earlier one: ascending drawOrder. */
+function sortBackToFront(layers: Layer[]): Layer[] {
+    return [...layers].sort((a, b) => drawOrder(a) - drawOrder(b))
+}
 
+function startLoop(
+    canvas: HTMLCanvasElement,
+    ctx: CanvasRenderingContext2D,
+    loadedPlacements: GamePlacement[],
+): void {
+    let lastTime = performance.now()
+
+    const frame = (now: number): void => {
+        const deltaSeconds = Math.min((now - lastTime) / 1000, 0.1)
+        lastTime = now
+
+        moveCamera(deltaSeconds)
+        drawPlacements(ctx, loadedPlacements, canvas.width, canvas.height)
+
+        window.requestAnimationFrame(frame)
+    }
+
+    window.requestAnimationFrame(frame)
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const canvas = document.querySelector('canvas')
+    const ctx = canvas?.getContext('2d')
+
+    if (!canvas || !ctx) {
+        return
+    }
+
+    fitCanvasToWindow(canvas, ctx)
+    window.addEventListener('resize', () => fitCanvasToWindow(canvas, ctx))
+
+    const layers = sortBackToFront(await layerRepository.getAll())
+    const loadedPlacements = await loadPlacements(layers)
+
+    startLoop(canvas, ctx, loadedPlacements)
 })
 
+window.addEventListener('keydown', (event: KeyboardEvent) => {
+    const key = keyByCode[event.code]
 
-
-window.addEventListener('keydown', (e: KeyboardEvent) => {
-    if (e.code === 'ArrowUp') {
-        viewCoordinates.y -= viewMoveSpeed
-    }
-
-    if (e.code === 'ArrowDown') {
-        viewCoordinates.y += viewMoveSpeed
-    }
-
-    if (e.code === 'ArrowLeft') {
-        viewCoordinates.x -= viewMoveSpeed
-    }
-
-    if (e.code === 'ArrowRight') {
-        viewCoordinates.x += viewMoveSpeed
+    if (key) {
+        event.preventDefault()
+        keys[key] = true
     }
 })
+
+window.addEventListener('keyup', (event: KeyboardEvent) => {
+    const key = keyByCode[event.code]
+
+    if (key) {
+        keys[key] = false
+    }
+})
+
+window.addEventListener('blur', releaseAllKeys)

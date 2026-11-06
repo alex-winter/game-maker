@@ -28,9 +28,9 @@ Play (`public/play.html` → `src/Client/play.ts`):
 
 1. Load every layer and every placement image.
 2. Draw them in one canvas from a camera offset.
-3. Arrow keys nudge that offset on `keydown` only. There is no held-key loop, no player, and no collision.
+3. Held arrow keys pan that offset every frame at 120 px/s. There is no player and no collision.
 
-The two draw paths do not share a function. Their layer order is reversed. See [problems.md](problems.md).
+The two draw paths do not share a function (T-017), but both order layers with `Model/draw-order.ts`.
 
 ## UI model
 
