@@ -27,6 +27,19 @@ export abstract class Repository {
         })
     }
 
+    protected put(
+        path: string,
+        body: Body,
+    ): Promise<Response> {
+        return fetch(path, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        })
+    }
+
     protected async get<T>(path: string): Promise<T> {
         const response = await fetch(path)
 

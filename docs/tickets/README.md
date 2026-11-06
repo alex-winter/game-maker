@@ -40,13 +40,13 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-016](T-016-atomic-json-writes.md) | 1 | P1 | done | server | Write JSON by rename |
 | [T-017](T-017-shared-render-loop.md) | 1 | P1 | done | engine | Draw a map through one engine loop |
 | [T-018](T-018-in-house-elements.md) | 1 | P2 | done | editor | Replace the third-party element base |
-| [T-019](T-019-tileset-palette.md) | 2 | P1 | backlog | editor | Import a sheet as a tileset palette |
-| [T-020](T-020-paint-metatiles.md) | 2 | P1 | backlog | editor | Paint metatiles and delete placement painting |
-| [T-021](T-021-grid-zoom-coordinates.md) | 2 | P1 | backlog | editor | Show a grid, zoom, and the cell coordinate |
+| [T-019](T-019-tileset-palette.md) | 2 | P1 | done | editor | Import a sheet as a tileset palette |
+| [T-020](T-020-paint-metatiles.md) | 2 | P1 | ready | editor | Paint metatiles and delete placement painting |
+| [T-021](T-021-grid-zoom-coordinates.md) | 2 | P1 | ready | editor | Show a grid, zoom, and the cell coordinate |
 | [T-022](T-022-collision-attributes.md) | 2 | P1 | backlog | editor | Paint collision and elevation as attributes |
 | [T-023](T-023-overhead-layer.md) | 2 | P1 | backlog | engine | Draw an overhead layer above actors |
 | [T-024](T-024-undo-redo.md) | 2 | P1 | backlog | editor | Undo and redo map strokes |
-| [T-025](T-025-map-list.md) | 2 | P1 | backlog | editor | Create, rename, resize, and delete maps |
+| [T-025](T-025-map-list.md) | 2 | P1 | ready | editor | Create, rename, resize, and delete maps |
 | [T-026](T-026-player-steps.md) | 3 | P1 | backlog | engine | Step the player from cell to cell |
 | [T-027](T-027-walk-animation.md) | 3 | P1 | backlog | engine | Animate the player in four directions |
 | [T-028](T-028-movement-collision.md) | 3 | P1 | backlog | domain | Block steps into solid cells |
@@ -82,8 +82,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 ## Counts
 
-- ready: 0
+- ready: 3
 - in_progress: 0
-- backlog: 40
-- done: 18
+- backlog: 36
+- done: 19
 - total: 57

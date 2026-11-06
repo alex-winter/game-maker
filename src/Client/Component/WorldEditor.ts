@@ -8,6 +8,7 @@ import { PlacementHistory } from 'Client/Component/PlacementHistory/PlacementHis
 import { SideMenu } from 'Client/Component/SideMenu/SideMenu'
 import { SheetImporter } from 'Client/Component/SpriteSheets/SheetImporter/SheetImporter'
 import { SheetViewer } from 'Client/Component/SpriteSheets/SheetViewer/SheetViewer'
+import { TilesetPalette } from 'Client/Component/Tileset/TilesetPalette'
 import { WindowBox } from 'Client/Component/WindowBox/WindowBox'
 import { componentId } from 'Client/Constants/components'
 import { LayerInput } from 'Client/Model/LayerInput'
@@ -42,6 +43,7 @@ export class WorldEditor extends Component {
 
     protected externalListeners: ExternalListeners = {
         'open-sheet': this.handleOpenSheet,
+        'open-tileset-palette': this.handleOpenTilesetPalette,
         'window-destroyed': this.handleWindowDestroyed,
         'mouse-down-window-box': this.handleMouseDownWindowBox,
         'open-sheet-importer': this.handleOpenSheetImporter,
@@ -169,7 +171,7 @@ export class WorldEditor extends Component {
             return
         }
 
-        const sheetViewerDataset = { imageSrc: sheet.imageSrc }
+        const sheetViewerDataset = { sheetId: sheet.id, sheetName: sheet.name, imageSrc: sheet.imageSrc }
         const component = Dom.makeComponent(SheetViewer, sheetViewerDataset)
 
         const windowBox = WindowBoxFactory.make(component, sheet.name, {
@@ -182,6 +184,41 @@ export class WorldEditor extends Component {
             // Keyed by sheet id, since two uploads may share a display name.
             this.windowBoxes[sheet.id] = windowBox
 
+            this.shadowRoot?.append(windowBox)
+        }
+    }
+
+    /** Opens the palette for `tilesetId`, or for the active map's tileset, or the project's first tileset. */
+    private async handleOpenTilesetPalette(tilesetId: Id | undefined): Promise<void> {
+        const project = await projectRepository.load()
+        const tileset = project.tilesets.find(candidate => candidate.id === tilesetId)
+            ?? project.tilesets.find(candidate => candidate.id === this.map.tileMap.tilesetId)
+            ?? project.tilesets[0]
+
+        if (tileset === undefined) {
+            return
+        }
+
+        const key = 'palette:' + tileset.id
+        const openWindow = this.windowBoxes[key]
+
+        if (openWindow && openWindow.isConnected) {
+            openWindow.flash()
+            return
+        }
+
+        const windowBox = WindowBoxFactory.make(
+            Dom.makeComponent(TilesetPalette, { tilesetId: tileset.id }),
+            'Tileset: ' + tileset.name,
+            {
+                uuid: componentId(TilesetPalette),
+                componentConfigration: { dataset: { tilesetId: tileset.id } },
+                title: 'Tileset: ' + tileset.name,
+            },
+        )
+
+        if (windowBox) {
+            this.windowBoxes[key] = windowBox
             this.shadowRoot?.append(windowBox)
         }
     }

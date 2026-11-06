@@ -93,6 +93,31 @@ export function withMapLayers(project: Project, mapId: Id, layers: Layer[]): Pro
     }
 }
 
+export function findTileset(project: Project, tilesetId: Id): Tileset | undefined {
+    return project.tilesets.find(tileset => tileset.id === tilesetId)
+}
+
+/** A new project with `tileset` appended. */
+export function addTileset(project: Project, tileset: Tileset): Project {
+    return { ...project, tilesets: [...project.tilesets, tileset] }
+}
+
+/** A new project with one tileset replaced by id, or unchanged when the id is unknown. */
+export function withTileset(project: Project, tileset: Tileset): Project {
+    return {
+        ...project,
+        tilesets: project.tilesets.map(existing => existing.id === tileset.id ? tileset : existing),
+    }
+}
+
+/** A new project with one map pointing at a tileset. */
+export function withMapTileset(project: Project, mapId: Id, tilesetId: Id | null): Project {
+    return {
+        ...project,
+        maps: project.maps.map(map => map.id === mapId ? { ...map, tileMap: { ...map.tileMap, tilesetId } } : map),
+    }
+}
+
 /** A trimmed name is valid when something is left of it. */
 export function isValidMapName(name: unknown): name is string {
     return typeof name === 'string' && name.trim().length > 0

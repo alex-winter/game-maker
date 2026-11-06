@@ -1,7 +1,7 @@
 ---
 id: T-025
 title: Create, rename, resize, and delete maps
-status: backlog
+status: ready
 priority: P1
 phase: 2
 type: feat

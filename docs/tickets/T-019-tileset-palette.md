@@ -1,7 +1,7 @@
 ---
 id: T-019
 title: Import a sheet as a tileset palette
-status: backlog
+status: done
 priority: P1
 phase: 2
 type: feat
@@ -46,10 +46,17 @@ Out:
 
 ## Acceptance
 
-- [ ] Import a sheet, generate the tileset, click a cell, and the brush id is that metatile.
-- [ ] Reload and the tileset is still there.
-- [ ] Marking a metatile solid survives reload.
+- [x] Import a sheet, generate the tileset, click a cell, and the brush id is that metatile.
+- [x] Reload and the tileset is still there.
+- [x] Marking a metatile solid survives reload.
 
 ## Test plan
 
 - Manual with a grid image generated in the browser or a user PNG. Confirm the JSON contains ids and rectangles, not base64.
+
+## Result
+
+- `domain/tileset.ts` `sliceSheet(name, sheetId, widthPx, heightPx)` slices on the 16 grid, row-major ids from 1, partial edge cells dropped; `withMetatileAttributes` updates `solid`/`elevation`/`ledge`.
+- Server: `POST /project/tilesets`, `PATCH /project/tilesets/:tilesetId/metatiles/:metatileId`, `PUT /project/maps/:mapId/tileset`. `project.json` holds ids and rectangles; no base64.
+- Client: `Client/Service/brush.ts` holds the current brush as `{ tilesetId, metatileId }`; `TilesetPalette` draws the sheet on the grid, selects on click, toggles Solid; `SheetViewer` gained "Use as tileset" (reuses an existing tileset for the same sheet); the side menu opens the palette for the active map's tileset.
+- Verified in headless Chrome: import → use as tileset → click a cell → readout "Metatile 2" → mark solid → reload → still solid.

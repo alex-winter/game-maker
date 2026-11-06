@@ -24,6 +24,7 @@ import { requestHandlerGetProject } from 'Server/RequestHandlers/get-project'
 import { requestHandlerPostMaps } from 'Server/RequestHandlers/post-maps'
 import { requestHandlerPatchMap } from 'Server/RequestHandlers/patch-map'
 import { ensureProjectFile } from 'Server/services/project-store'
+import { requestHandlerPatchMetatile, requestHandlerPostTilesets, requestHandlerPutMapTileset } from 'Server/RequestHandlers/tilesets'
 import { RequestHandler } from 'Server/types'
 
 const app = express()
@@ -88,6 +89,9 @@ app.get(ASSETS_PATH + '/:file', requestHandlerGetAsset)
 app.get('/project', requestHandlerGetProject)
 app.post('/project/maps', requestHandlerPostMaps)
 app.patch('/project/maps/:mapId', requestHandlerPatchMap)
+app.put('/project/maps/:mapId/tileset', requestHandlerPutMapTileset)
+app.post('/project/tilesets', requestHandlerPostTilesets)
+app.patch('/project/tilesets/:tilesetId/metatiles/:metatileId', requestHandlerPatchMetatile)
 
 app.get('/maps/:mapId/layers', requestHandlerGetLayers)
 app.post('/maps/:mapId/layers', requestHandlerPostLayers)

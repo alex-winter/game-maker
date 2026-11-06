@@ -17,6 +17,7 @@ import { WorldEditor } from 'Client/Component/WorldEditor'
 import { Ide } from 'Client/Component/Ide'
 import { DialogCreator } from 'Client/Component/Dialog/DialogCreator'
 import { MapSelect } from 'Client/Component/MapSelect/MapSelect'
+import { TilesetPalette } from 'Client/Component/Tileset/TilesetPalette'
 import { ComponentConstructor } from 'Client/Service/Dom'
 
 export const COMPONENTS = new Map<ComponentConstructor, string>([
@@ -39,6 +40,7 @@ export const COMPONENTS = new Map<ComponentConstructor, string>([
   [AnimationMaker, 'animation-maker'],
   [DialogCreator, 'dialog-creator'],
   [MapSelect, 'map-select'],
+  [TilesetPalette, 'tileset-palette'],
 ])
 
 /** A stable id for a component kind, used to key saved window rectangles. The tag is already unique. */

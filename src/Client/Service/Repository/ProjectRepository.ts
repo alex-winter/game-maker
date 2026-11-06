@@ -1,7 +1,8 @@
 import { Repository } from 'Client/Service/Repository/Repository'
 import { Id } from 'domain/id'
 import { GameMap, Project } from 'domain/project'
-import { Tileset } from 'domain/tileset'
+import { Metatile, MetatileAttributes, MetatileId, Tileset, withMetatileAttributes } from 'domain/tileset'
+import { withMapTileset, withTileset } from 'domain/project'
 
 class ProjectRepository extends Repository {
     private readonly API_PATH = '/project'
@@ -23,6 +24,37 @@ class ProjectRepository extends Repository {
         }
 
         return this.project?.tilesets.find(tileset => tileset.id === tilesetId)
+    }
+
+    public async createTileset(name: string, metatiles: Metatile[]): Promise<Tileset> {
+        const response = await this.post(this.API_PATH + '/tilesets', { name, metatiles })
+        const tileset: Tileset = await response.json()
+
+        this.project?.tilesets.push(tileset)
+
+        return tileset
+    }
+
+    public async setMetatileAttributes(
+        tilesetId: Id,
+        metatileId: MetatileId,
+        attributes: Partial<MetatileAttributes>,
+    ): Promise<void> {
+        await this.patch(`${this.API_PATH}/tilesets/${tilesetId}/metatiles/${metatileId}`, attributes)
+
+        const tileset = this.cachedTileset(tilesetId)
+
+        if (this.project && tileset) {
+            this.project = withTileset(this.project, withMetatileAttributes(tileset, metatileId, attributes))
+        }
+    }
+
+    public async setMapTileset(mapId: Id, tilesetId: Id | null): Promise<void> {
+        await this.put(`${this.API_PATH}/maps/${mapId}/tileset`, { tilesetId })
+
+        if (this.project) {
+            this.project = withMapTileset(this.project, mapId, tilesetId)
+        }
     }
 
     public async createMap(name: string): Promise<GameMap> {

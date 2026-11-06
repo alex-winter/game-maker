@@ -68,6 +68,10 @@ Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names a
 | `request-focus-on-placement` | `PlacementHistory` | `MapCanvas` | uuid |
 | `placement-added` | `MapCanvas` | `PlacementHistory` | none |
 | `close-modal` | `NewLayerForm` | `BasicModal` | the form element |
+| `open-tileset-palette` | `SheetViewer`, `SideMenu` | `WorldEditor` | tileset id, or none for the active map's tileset |
+| `brush-changed` | `Client/Service/brush.ts` | `TilesetPalette` | `Brush` |
+
+The current brush is `Client/Service/brush.ts`: `{ tilesetId, metatileId }` or `null`, held in editor state, never a bitmap. `TilesetPalette` (`Client/Component/Tileset/`) draws one tileset's sheet on the 16 grid, tints solid metatiles red, outlines the selected one, sets the brush on click, and toggles `solid` through `projectRepository.setMetatileAttributes`. `SheetViewer`'s "Use as tileset" button reuses the tileset already sliced from that sheet or calls `sliceSheet` and `POST /project/tilesets`, then opens the palette.
 
 `WorldEditor` subscribes to most of these and is the de facto application object. New behavior should not land there. Give it a home in the domain or in the component that owns the interaction.
 
@@ -85,7 +89,7 @@ Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names a
 
 `Project` and `GameMap` live in `domain/project.ts` with pure helpers (`addMap`, `renameMap`, `withMapLayers`, `findMap`). `Server/services/project-store.ts` reads and writes the file; handlers call a domain helper and write the result. `withProjectDefaults` fills fields an older file lacks, and boot writes the result back once.
 
-A map's grid is a `TileMap` (`domain/map.ts`): `width` and `height` in cells, a `tilesetId`, `layers: TileLayer[]` back to front (each a dense row-major `MetatileId[]` with `kind: 'ground' | 'overhead'`), and `attributes` (`collision[]`, `elevation[]` on the same index). A `Tileset` (`domain/tileset.ts`) maps ids to a `sheetId` plus a pixel rectangle and the defaults `solid`, `elevation`, `ledge`. Id 0 is the empty cell and is never solid. `isBlocked(map, tileset, to, from?)` is the movement rule: outside, painted collision, or any solid metatile blocks; with `from`, a change between two non-zero elevations blocks. Nothing paints or draws tile maps yet (T-017, T-019, T-020).
+A map's grid is a `TileMap` (`domain/map.ts`): `width` and `height` in cells, a `tilesetId`, `layers: TileLayer[]` back to front (each a dense row-major `MetatileId[]` with `kind: 'ground' | 'overhead'`), and `attributes` (`collision[]`, `elevation[]` on the same index). A `Tileset` (`domain/tileset.ts`) maps ids to a `sheetId` plus a pixel rectangle and the defaults `solid`, `elevation`, `ledge`. Id 0 is the empty cell and is never solid. `isBlocked(map, tileset, to, from?)` is the movement rule: outside, painted collision, or any solid metatile blocks; with `from`, a change between two non-zero elevations blocks. Tilesets are sliced from a sheet (`sliceSheet`, T-019) and edited through the palette; nothing paints metatiles onto a map yet (T-020).
 
 A layer is:
 
@@ -133,6 +137,9 @@ Play: `play.ts` builds a scene once and runs the same loop and `renderFrame`.
 | GET | `/project` | the project with every map and its layers |
 | POST | `/project/maps` | `{ name }` → the new map |
 | PATCH | `/project/maps/:mapId` | `{ name }` → the renamed map |
+| POST | `/project/tilesets` | `{ name, metatiles }` → the new tileset (ids and rectangles only, no pixels) |
+| PATCH | `/project/tilesets/:tilesetId/metatiles/:metatileId` | `{ solid?, elevation?, ledge? }` → the updated tileset |
+| PUT | `/project/maps/:mapId/tileset` | `{ tilesetId }` → the updated map |
 | GET/POST/PATCH | `/maps/:mapId/layers` | one map's layers |
 | DELETE | `/maps/:mapId/layers/:uuid` | remove a layer from one map |
 | GET/PATCH | `/user-data` | camera, tool, windows |

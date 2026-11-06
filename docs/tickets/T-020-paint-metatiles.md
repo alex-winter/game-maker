@@ -1,7 +1,7 @@
 ---
 id: T-020
 title: Paint metatiles and delete placement painting
-status: backlog
+status: ready
 priority: P1
 phase: 2
 type: feat

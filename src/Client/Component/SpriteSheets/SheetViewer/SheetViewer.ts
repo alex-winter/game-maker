@@ -1,13 +1,20 @@
 import { LEFT_BUTTON } from 'Client/Constants/mouse-events'
-import { Component } from 'Client/Service/Component'
+import { Component, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 import { extractImageFromCanvasArea } from 'Client/Service/extract-image-from-canvas-area'
+import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
 import { GRID_SIZE, snap } from 'domain/grid'
+import { Id } from 'domain/id'
+import { sliceSheet } from 'domain/tileset'
 
-export class SheetViewer extends Component {
+export class SheetViewer extends Component<{ sheetId: Id; sheetName: string; imageSrc: string }> {
     private image: HTMLImageElement | null = null
     private canvas!: HTMLCanvasElement
+
+    protected listeners: Listeners = {
+        '.use-as-tileset:click': this.handleUseAsTileset,
+    }
 
     protected css(): string {
         return /*css*/`
@@ -23,6 +30,21 @@ export class SheetViewer extends Component {
                 pointer-events: none;
                 display: none;
                 z-index: 10;
+            }
+
+            .toolbar {
+                display: flex;
+                justify-content: flex-end;
+                padding: 6px 0 0;
+            }
+
+            .use-as-tileset {
+                padding: 6px 10px;
+                border: none;
+                border-radius: 6px;
+                background: #2ecc71;
+                color: white;
+                cursor: pointer;
             }
         `
     }
@@ -49,9 +71,35 @@ export class SheetViewer extends Component {
             context.drawImage(this.image, 0, 0)
         }
 
-        element.append(this.canvas, selectorBox)
+        const picture = Dom.div('picture')
+        const toolbar = Dom.div('toolbar')
+
+        picture.style.position = 'relative'
+        picture.append(this.canvas, selectorBox)
+        toolbar.append(Dom.button('Use as tileset', 'use-as-tileset'))
+        element.append(picture, toolbar)
 
         return element
+    }
+
+    /** Slices this sheet once into a tileset, or reuses the one already cut from it, then opens its palette. */
+    private async handleUseAsTileset(event: Event): Promise<void> {
+        event.stopPropagation()
+
+        if (!this.image) {
+            return
+        }
+
+        const { sheetId, sheetName } = this.parsedDataset
+        const project = await projectRepository.load()
+        const existing = project.tilesets.find(tileset => tileset.metatiles[0]?.sheetId === sheetId)
+        const tileset = existing ?? await (async () => {
+            const sliced = sliceSheet(sheetName, sheetId, this.image?.width ?? 0, this.image?.height ?? 0)
+
+            return projectRepository.createTileset(sliced.name, sliced.metatiles)
+        })()
+
+        Events.emit('open-tileset-palette', tileset.id)
     }
 
     protected buildSelectorBox(): HTMLDivElement {
@@ -108,7 +156,10 @@ export class SheetViewer extends Component {
         }
 
         this.addEventListener('mousedown', (event: MouseEvent) => {
-            if (event.button === LEFT_BUTTON) {
+            // The host sees itself as the target; the real one is at the front of the composed path.
+            const pressed = event.composedPath()[0]
+
+            if (event.button === LEFT_BUTTON && !(pressed instanceof HTMLButtonElement)) {
                 const rect = this.getBoundingClientRect()
                 isDragging = true
                 startX = event.clientX - rect.left + this.scrollLeft

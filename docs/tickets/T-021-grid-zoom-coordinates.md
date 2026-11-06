@@ -1,7 +1,7 @@
 ---
 id: T-021
 title: Show a grid, zoom, and the cell coordinate
-status: backlog
+status: ready
 priority: P1
 phase: 2
 type: feat
