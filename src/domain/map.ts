@@ -1,6 +1,6 @@
 import { Cell } from './coordinates'
 import { Id, newId } from './id'
-import { EMPTY_METATILE_ID, metatileById, Metatile, MetatileId, Tileset } from './tileset'
+import { EMPTY_METATILE_ID, LedgeDirection, metatileById, Metatile, MetatileId, Tileset } from './tileset'
 
 /** A size in cells. */
 export type GridSize = {
@@ -30,7 +30,22 @@ export type AttributeLayer = {
 
     /** 0 means "use the metatile's elevation". */
     elevation: number[]
+
+    /** A one-way edge, or null. Stored since T-022; movement enforces it in T-028. */
+    ledge: (LedgeDirection | null)[]
 }
+
+/** One cell's attributes as the editor shows and paints them. */
+export type CellAttributes = {
+    readonly solid: boolean
+
+    readonly elevation: number
+
+    readonly ledge: LedgeDirection | null
+}
+
+/** The largest elevation the editor offers. Gen 3 maps use a handful of levels. */
+export const MAX_ELEVATION = 15
 
 /** The grid half of a map. Layers are listed back to front. */
 export type TileMap = GridSize & {
@@ -56,7 +71,20 @@ export function emptyAttributeLayer(size: GridSize): AttributeLayer {
     return {
         collision: new Array<number>(cells).fill(0),
         elevation: new Array<number>(cells).fill(0),
+        ledge: new Array<LedgeDirection | null>(cells).fill(null),
     }
+}
+
+/** Fills attribute arrays an older file lacks; the grid itself is untouched. */
+export function withTileMapDefaults(map: TileMap): TileMap {
+    const cells = map.width * map.height
+    const ledge = map.attributes.ledge
+
+    if (Array.isArray(ledge) && ledge.length === cells) {
+        return map
+    }
+
+    return { ...map, attributes: { ...map.attributes, ledge: new Array<LedgeDirection | null>(cells).fill(null) } }
 }
 
 /** A map with one ground layer and one overhead layer, nothing painted. */
@@ -127,49 +155,64 @@ function cellSpan(map: GridSize, a: Cell, b: Cell) {
     }
 }
 
-/** A new layer with every cell in the rectangle `a`..`b` (inclusive) set to `id`. */
-export function withRect(map: GridSize, layer: TileLayer, a: Cell, b: Cell, id: MetatileId): TileLayer {
+/** A copy of a dense cell array with one cell set, or the same array when the cell is outside. */
+export function withCell<T>(map: GridSize, cells: readonly T[], cell: Cell, value: T): T[] {
+    const index = cellIndex(map, cell)
+
+    if (index === undefined || cells[index] === value) {
+        return [...cells]
+    }
+
+    const next = [...cells]
+
+    next[index] = value
+
+    return next
+}
+
+/** A copy of a dense cell array with every cell in the rectangle `a`..`b` (inclusive) set to `value`. */
+export function withCellsRect<T>(map: GridSize, cells: readonly T[], a: Cell, b: Cell, value: T): T[] {
     const span = cellSpan(map, a, b)
-    const tiles = [...layer.tiles]
+    const next = [...cells]
 
     for (let y = span.minY; y <= span.maxY; y++) {
         for (let x = span.minX; x <= span.maxX; x++) {
-            tiles[y * map.width + x] = id
+            next[y * map.width + x] = value
         }
     }
 
-    return { ...layer, tiles }
+    return next
 }
 
 /**
- * Flood fill on ids: every cell 4-connected to `start` that shares its id
- * becomes `id`. Bounded by the map, never by a view. A fill with the id the
- * region already has, or from outside the map, returns the layer unchanged.
+ * Flood fill on a dense cell array: every cell 4-connected to `start` that
+ * shares its value becomes `value`. Bounded by the map, never by a view.
+ * Filling with the value already there, or from outside, returns a copy.
  */
-export function floodFill(map: GridSize, layer: TileLayer, start: Cell, id: MetatileId): TileLayer {
+export function floodFillCells<T>(map: GridSize, cells: readonly T[], start: Cell, value: T, empty: T): T[] {
     const startIndex = cellIndex(map, start)
+    const next = [...cells]
 
     if (startIndex === undefined) {
-        return layer
+        return next
     }
 
-    const target = layer.tiles[startIndex] ?? EMPTY_METATILE_ID
+    const target = cells[startIndex] ?? empty
 
-    if (target === id) {
-        return layer
+    if (target === value) {
+        return next
     }
 
-    const tiles = [...layer.tiles]
     const stack: number[] = [startIndex]
 
     while (stack.length > 0) {
         const index = stack.pop()
 
-        if (index === undefined || tiles[index] !== target) {
+        if (index === undefined || (next[index] ?? empty) !== target) {
             continue
         }
 
-        tiles[index] = id
+        next[index] = value
 
         const x = index % map.width
         const y = Math.floor(index / map.width)
@@ -180,7 +223,54 @@ export function floodFill(map: GridSize, layer: TileLayer, start: Cell, id: Meta
         if (y < map.height - 1) stack.push(index + map.width)
     }
 
-    return { ...layer, tiles }
+    return next
+}
+
+/** A new layer with every cell in the rectangle `a`..`b` (inclusive) set to `id`. */
+export function withRect(map: GridSize, layer: TileLayer, a: Cell, b: Cell, id: MetatileId): TileLayer {
+    return { ...layer, tiles: withCellsRect(map, layer.tiles, a, b, id) }
+}
+
+/**
+ * Flood fill on ids. A fill with the id the region already has, or from
+ * outside the map, returns the layer unchanged.
+ */
+export function floodFill(map: GridSize, layer: TileLayer, start: Cell, id: MetatileId): TileLayer {
+    const startIndex = cellIndex(map, start)
+
+    if (startIndex === undefined || (layer.tiles[startIndex] ?? EMPTY_METATILE_ID) === id) {
+        return layer
+    }
+
+    return { ...layer, tiles: floodFillCells(map, layer.tiles, start, id, EMPTY_METATILE_ID) }
+}
+
+/** The painted attributes at `cell`; outside the map everything is the default. */
+export function attributesAt(map: TileMap, cell: Cell): CellAttributes {
+    const index = cellIndex(map, cell)
+
+    if (index === undefined) {
+        return { solid: false, elevation: 0, ledge: null }
+    }
+
+    return {
+        solid: (map.attributes.collision[index] ?? 0) !== 0,
+        elevation: map.attributes.elevation[index] ?? 0,
+        ledge: map.attributes.ledge[index] ?? null,
+    }
+}
+
+/** A new map with the painted collision replaced. The picture layers are untouched. */
+export function withCollision(map: TileMap, collision: number[]): TileMap {
+    return { ...map, attributes: { ...map.attributes, collision } }
+}
+
+export function withElevation(map: TileMap, elevation: number[]): TileMap {
+    return { ...map, attributes: { ...map.attributes, elevation } }
+}
+
+export function withLedge(map: TileMap, ledge: (LedgeDirection | null)[]): TileMap {
+    return { ...map, attributes: { ...map.attributes, ledge } }
 }
 
 export function findTileLayer(map: TileMap, layerId: Id): TileLayer | undefined {
@@ -234,6 +324,10 @@ function isNonNegativeInteger(value: unknown): value is number {
     return typeof value === 'number' && Number.isInteger(value) && value >= 0
 }
 
+function isLedgeValue(value: unknown): value is LedgeDirection | null {
+    return value === null || value === 'up' || value === 'down' || value === 'left' || value === 'right'
+}
+
 function isTileLayer(value: unknown, cells: number): value is TileLayer {
     if (typeof value !== 'object' || value === null) {
         return false
@@ -276,6 +370,9 @@ export function isTileMap(value: unknown): value is TileMap {
         && Array.isArray(attributes.elevation)
         && attributes.elevation.length === cells
         && attributes.elevation.every(isNonNegativeInteger)
+        && Array.isArray(attributes.ledge)
+        && attributes.ledge.length === cells
+        && attributes.ledge.every(isLedgeValue)
 }
 
 /** Every metatile stacked at `cell`, back to front, skipping empty cells. */

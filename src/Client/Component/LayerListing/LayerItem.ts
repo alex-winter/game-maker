@@ -96,7 +96,7 @@ export class LayerItem extends Component<{ layer: TileLayer; isActive: boolean; 
     }
 
     private handleContainerClick(): void {
-        mapSession.setActiveLayer(this.layer.id)
+        mapSession.setTarget({ kind: 'layer', layerId: this.layer.id })
     }
 
     private handleVisibleButtonClick(event: Event): void {

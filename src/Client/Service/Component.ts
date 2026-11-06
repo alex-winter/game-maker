@@ -47,6 +47,8 @@ export abstract class Component<TDataset = {}> extends HTMLElement {
     protected readonly externalListeners: ExternalListeners = {}
 
     private built = false
+    private patching = false
+    private patchAgain = false
     private attachedListeners: AttachedListener[] = []
     private attachedExternal: AttachedExternal[] = []
 
@@ -105,16 +107,37 @@ export abstract class Component<TDataset = {}> extends HTMLElement {
         this.unbindExternalListeners()
     }
 
-    /** Replaces the built tree with a fresh `build()` and rebinds local listeners. */
+    /**
+     * Replaces the built tree with a fresh `build()` and rebinds local
+     * listeners. Removing the old tree can blur a focused input, whose
+     * `change` handler may patch again; that nested call is deferred so the
+     * first replace finishes on a tree that is still attached.
+     */
     protected patch(): void {
+        if (this.patching) {
+            this.patchAgain = true
+            return
+        }
+
         const root = this.rootElement()
 
         if (root === undefined) {
             return
         }
 
-        root.replaceWith(this.build())
-        this.bindListeners()
+        this.patching = true
+
+        try {
+            root.replaceWith(this.build())
+            this.bindListeners()
+        } finally {
+            this.patching = false
+        }
+
+        if (this.patchAgain) {
+            this.patchAgain = false
+            this.patch()
+        }
     }
 
     public findOne<T extends HTMLElement = HTMLElement>(query: string): T | null {

@@ -1,6 +1,6 @@
 import type { Layer } from 'Model/Layer'
 import { Id, newId } from './id'
-import { emptyTileMap, GridSize, TileMap } from './map'
+import { emptyTileMap, GridSize, TileMap, withTileMapDefaults } from './map'
 import { Tileset } from './tileset'
 
 /** Cells in a new map. A gen 3 town is about this size. */
@@ -52,7 +52,7 @@ export function withProjectDefaults(stored: Partial<Project> & Pick<Project, 'id
         tilesets: stored.tilesets ?? [],
         maps: stored.maps.map(map => ({
             ...map,
-            tileMap: map.tileMap ?? emptyTileMap(DEFAULT_MAP_SIZE),
+            tileMap: withTileMapDefaults(map.tileMap ?? emptyTileMap(DEFAULT_MAP_SIZE)),
             layers: map.layers ?? [],
         })),
     }

@@ -2,17 +2,25 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
     addTileLayer,
+    attributesAt,
     emptyTileMap,
     floodFill,
+    floodFillCells,
+    isBlocked,
     isTileMap,
     metatileIdAt,
     moveTileLayer,
     removeTileLayer,
     renameTileLayer,
     TileLayer,
+    withCell,
+    withCellsRect,
+    withCollision,
+    withElevation,
     withRect,
     withTile,
     withTileLayer,
+    withTileMapDefaults,
 } from './map'
 
 const size = { width: 4, height: 3 }
@@ -120,6 +128,46 @@ test('isTileMap accepts a fresh map and rejects a broken one', () => {
     assert.equal(isTileMap({ ...map, width: 0 }), false)
     assert.equal(isTileMap({ ...map, layers: [{ ...map.layers[0], tiles: [1, 2] }] }), false)
     assert.equal(isTileMap({ ...map, layers: [{ ...map.layers[0], tiles: map.layers[0].tiles.map(() => -1) }] }), false)
-    assert.equal(isTileMap({ ...map, attributes: { collision: [], elevation: [] } }), false)
+    assert.equal(isTileMap({ ...map, attributes: { collision: [], elevation: [], ledge: [] } }), false)
     assert.equal(isTileMap(null), false)
+})
+
+test('attribute painting: collision and elevation are separate from the picture', () => {
+    const map = emptyTileMap(size)
+    const walled = withCollision(map, withCellsRect(map, map.attributes.collision, { x: 1, y: 0 }, { x: 1, y: 2 }, 1))
+
+    assert.deepEqual(walled.attributes.collision, [0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0])
+    assert.equal(walled.layers[0].tiles.every(id => id === 0), true, 'no picture changed')
+    assert.deepEqual(attributesAt(walled, { x: 1, y: 1 }), { solid: true, elevation: 0, ledge: null })
+    assert.deepEqual(attributesAt(walled, { x: 0, y: 1 }), { solid: false, elevation: 0, ledge: null })
+
+    const raised = withElevation(walled, withCell(walled, walled.attributes.elevation, { x: 3, y: 2 }, 4))
+
+    assert.equal(attributesAt(raised, { x: 3, y: 2 }).elevation, 4)
+
+    const flooded = withCollision(map, floodFillCells(map, walled.attributes.collision, { x: 0, y: 0 }, 1, 0))
+
+    assert.deepEqual(flooded.attributes.collision, [1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0], 'the wall stops the fill')
+})
+
+test('a wall of solid cells blocks those cells only', () => {
+    const tileset = { id: 'ts', name: 'T', metatiles: [] }
+    const map = withCollision(emptyTileMap(size), withCellsRect(emptyTileMap(size), emptyTileMap(size).attributes.collision, { x: 2, y: 0 }, { x: 2, y: 2 }, 1))
+
+    for (let y = 0; y < size.height; y++) {
+        for (let x = 0; x < size.width; x++) {
+            assert.equal(isBlocked(map, tileset, { x, y }), x === 2, `cell ${x},${y}`)
+        }
+    }
+})
+
+test('withTileMapDefaults adds the ledge array an older file lacks', () => {
+    const map = emptyTileMap(size)
+    const old = { ...map, attributes: { collision: map.attributes.collision, elevation: map.attributes.elevation } } as unknown as Parameters<typeof withTileMapDefaults>[0]
+    const fixed = withTileMapDefaults(old)
+
+    assert.equal(fixed.attributes.ledge.length, 12)
+    assert.equal(isTileMap(old), false)
+    assert.equal(isTileMap(fixed), true)
+    assert.equal(withTileMapDefaults(fixed), fixed)
 })

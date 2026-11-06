@@ -1,7 +1,7 @@
 ---
 id: T-022
 title: Paint collision and elevation as attributes
-status: ready
+status: done
 priority: P1
 phase: 2
 type: feat
@@ -46,10 +46,18 @@ Out:
 
 ## Acceptance
 
-- [ ] A test map with a wall of solid cells returns blocked for those cells only.
-- [ ] The overlay can be hidden without changing data.
-- [ ] Reload keeps the attributes.
+- [x] A test map with a wall of solid cells returns blocked for those cells only.
+- [x] The overlay can be hidden without changing data.
+- [x] Reload keeps the attributes.
 
 ## Test plan
 
 - Domain tests plus a manual paint of a wall.
+
+## Result
+
+- Domain: `AttributeLayer` gains `ledge: (LedgeDirection | null)[]` (stored, not yet enforced — T-028); `CellAttributes`, `attributesAt`, `withCollision`, `withElevation`, `withLedge`, `MAX_ELEVATION`; grid-generic `withCell`, `withCellsRect`, `floodFillCells` (the tile-layer `withRect`/`floodFill` now wrap them); `withTileMapDefaults` for older files; `isTileMap` checks `ledge`. Tests: a wall of solid cells blocks those cells only; painting attributes leaves pictures untouched.
+- Editor: the layer listing has two attribute rows, Collision and Elevation, that are paint targets with their own overlay eye toggles; the elevation row carries the level the pencil writes. Pencil, rubber, fill, and rectangle all work on attribute grids. `Client/Service/draw-attributes.ts` draws the overlay (red painted collision, orange metatile-solid, blue numbered elevation).
+- `Component.patch` defers a nested patch triggered by a blur-time `change` so the first replace finishes on an attached tree.
+- The old collision/player layer types were already removed in T-020.
+- Verified in headless Chrome: a 3-cell wall and an elevation 4 cell persist and survive reload; hiding the collision overlay leaves the data in place.

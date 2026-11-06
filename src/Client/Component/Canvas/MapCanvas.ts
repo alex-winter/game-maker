@@ -6,6 +6,7 @@ import { Brush, BRUSH_CHANGED, brush } from 'Client/Service/brush'
 import { buildScene } from 'Client/Service/build-scene'
 import { camera } from 'Client/Service/camera'
 import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
+import { drawAttributes } from 'Client/Service/draw-attributes'
 import { drawGrid } from 'Client/Service/draw-grid'
 import { loadLegacyPlacements } from 'Client/Service/load-legacy-placements'
 import { MAP_SESSION_CHANGED, mapSession } from 'Client/Service/map-session'
@@ -17,7 +18,7 @@ import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { Cell, Coordinates } from 'domain/coordinates'
 import { GRID_SIZE, pixelToCell } from 'domain/grid'
 import { Id } from 'domain/id'
-import { floodFill, TileLayer, TileMap, withRect, withTile } from 'domain/map'
+import { floodFill, floodFillCells, TileLayer, TileMap, withCell, withCellsRect, withCollision, withElevation, withRect, withTile, withTileLayer } from 'domain/map'
 import { GameMap } from 'domain/project'
 import { EMPTY_METATILE_ID, metatileById, MetatileId } from 'domain/tileset'
 import { DrawPort } from 'engine/draw-port'
@@ -27,9 +28,21 @@ import { Scene } from 'engine/scene'
 import { clampZoom, MAX_ZOOM, MIN_ZOOM, View, worldToScreen } from 'engine/view'
 
 /**
+ * A stroke's edits as pure functions on the grid, chosen by the paint target:
+ * metatile ids on a tile layer, or 0/1 and levels on the attribute grids.
+ */
+type CellWriter = {
+    readonly one: (tileMap: TileMap, cell: Cell) => TileMap
+
+    readonly rect: (tileMap: TileMap, a: Cell, b: Cell) => TileMap
+
+    readonly fill: (tileMap: TileMap, start: Cell) => TileMap
+}
+
+/**
  * The one canvas the editor draws the active map into, through the engine's
  * `renderFrame`. It owns the pointer: pencil, fill, rectangle, and rubber
- * write metatile ids onto the session's active layer; the middle button pans.
+ * write onto the session's paint target; the middle button pans.
  */
 export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
     private sheetById = new Map<Id, CanvasImageSource>()
@@ -276,12 +289,18 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         }
 
         const view = camera.get()
+        const tileMap = mapSession.tileMap
 
         renderFrame(this.port, this.currentScene(), view)
 
         if (this.showGrid) {
-            drawGrid(ctx, view, mapSession.tileMap)
+            drawGrid(ctx, view, tileMap)
         }
+
+        drawAttributes(ctx, view, tileMap, projectRepository.cachedTileset(tileMap.tilesetId), {
+            collision: !mapSession.isHidden('collision'),
+            elevation: !mapSession.isHidden('elevation'),
+        })
     }
 
     private getCanvas(): HTMLCanvasElement | null {
@@ -322,8 +341,8 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
     }
 
     /**
-     * The id the current tool writes, or undefined when it cannot paint: no
-     * brush, or a brush from a different tileset than the map already uses.
+     * The metatile id the current tool writes, or undefined when it cannot
+     * paint: no brush, or a brush from a different tileset than the map uses.
      * A map without a tileset adopts the brush's tileset on the first stroke.
      */
     private paintIdFor(tool: Tool, current: Brush | undefined): MetatileId | undefined {
@@ -345,6 +364,54 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         }
 
         return current.metatileId
+    }
+
+    /** The edits the current tool makes on the current target, or undefined when nothing can be painted. */
+    private writerFor(tool: Tool): CellWriter | undefined {
+        const target = mapSession.target
+
+        if (target === undefined) {
+            return undefined
+        }
+
+        if (target.kind === 'collision') {
+            const value = tool === 'rubber' ? 0 : 1
+
+            return {
+                one: (m, cell) => withCollision(m, withCell(m, m.attributes.collision, cell, value)),
+                rect: (m, a, b) => withCollision(m, withCellsRect(m, m.attributes.collision, a, b, value)),
+                fill: (m, start) => withCollision(m, floodFillCells(m, m.attributes.collision, start, value, 0)),
+            }
+        }
+
+        if (target.kind === 'elevation') {
+            const value = tool === 'rubber' ? 0 : mapSession.elevationBrush
+
+            return {
+                one: (m, cell) => withElevation(m, withCell(m, m.attributes.elevation, cell, value)),
+                rect: (m, a, b) => withElevation(m, withCellsRect(m, m.attributes.elevation, a, b, value)),
+                fill: (m, start) => withElevation(m, floodFillCells(m, m.attributes.elevation, start, value, 0)),
+            }
+        }
+
+        const id = this.paintIdFor(tool, brush.get())
+
+        if (id === undefined) {
+            return undefined
+        }
+
+        const layerId = target.layerId
+        const onLayer = (m: TileMap, edit: (layer: TileLayer) => TileLayer): TileMap => {
+            const layer = m.layers.find(candidate => candidate.id === layerId)
+
+            return layer === undefined ? m : withTileLayer(m, edit(layer))
+        }
+
+        return {
+            one: (m, cell) => onLayer(m, layer => withTile(m, layer, cell, id)),
+            rect: (m, a, b) => onLayer(m, layer => withRect(m, layer, a, b, id)),
+            fill: (m, start) => onLayer(m, layer => floodFill(m, layer, start, id)),
+        }
     }
 
     /** Redraws the one-cell ghost preview from the brush's rectangle on its sheet. */
@@ -387,7 +454,7 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
             return
         }
 
-        if (this.tool === 'rubber' || brush.get() === undefined || mapSession.activeLayer === undefined) {
+        if (this.tool === 'rubber' || brush.get() === undefined || mapSession.target?.kind !== 'layer') {
             ghost.classList.add('hide')
             return
         }
@@ -430,28 +497,10 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         this.lastMousePosition.y = clientY
     }
 
-    /** The active layer as it is right now; strokes re-read it because each step replaces it. */
-    private withActiveLayer(edit: (tileMap: TileMap, layer: TileLayer) => TileLayer): void {
-        const tileMap = mapSession.tileMap
-        const layer = mapSession.activeLayer
-
-        if (layer === undefined) {
-            return
-        }
-
-        const next = edit(tileMap, layer)
-
-        if (next !== layer) {
-            mapSession.update({ ...tileMap, layers: tileMap.layers.map(existing => existing.id === layer.id ? next : existing) })
-        }
-    }
-
     /** Pencil and rubber: one cell per pointer sample until mouseup, then one save. */
-    private startStroke(firstEvent: MouseEvent, id: MetatileId): void {
+    private startStroke(firstEvent: MouseEvent, writer: CellWriter): void {
         const paint = (event: MouseEvent) => {
-            const cell = this.cellAt(event)
-
-            this.withActiveLayer((tileMap, layer) => withTile(tileMap, layer, cell, id))
+            mapSession.update(writer.one(mapSession.tileMap, this.cellAt(event)))
         }
 
         const mouseMove = (event: MouseEvent) => paint(event)
@@ -470,7 +519,7 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
     }
 
     /** Rectangle: drag two corners, preview the span, fill it on mouseup. */
-    private startRect(firstEvent: MouseEvent, id: MetatileId): void {
+    private startRect(firstEvent: MouseEvent, writer: CellWriter): void {
         const start = this.cellAt(firstEvent)
 
         this.showSelection(start, start)
@@ -482,7 +531,7 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
             document.removeEventListener('mousemove', mouseMove)
 
             this.hideSelection()
-            this.withActiveLayer((tileMap, layer) => withRect(tileMap, layer, start, this.cellAt(event), id))
+            mapSession.update(writer.rect(mapSession.tileMap, start, this.cellAt(event)))
 
             void mapSession.save()
         }
@@ -491,10 +540,8 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         document.addEventListener('mousemove', mouseMove)
     }
 
-    private fillAt(event: MouseEvent, id: MetatileId): void {
-        const cell = this.cellAt(event)
-
-        this.withActiveLayer((tileMap, layer) => floodFill(tileMap, layer, cell, id))
+    private fillAt(event: MouseEvent, writer: CellWriter): void {
+        mapSession.update(writer.fill(mapSession.tileMap, this.cellAt(event)))
 
         void mapSession.save()
     }
@@ -509,23 +556,31 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
             return
         }
 
-        if (event.button !== LEFT_BUTTON || mapSession.activeLayer === undefined) {
+        if (event.button !== LEFT_BUTTON || this.hudContains(event)) {
             return
         }
 
-        const id = this.paintIdFor(this.tool, brush.get())
+        const writer = this.writerFor(this.tool)
 
-        if (id === undefined) {
+        if (writer === undefined) {
             return
         }
 
         if (this.tool === 'fill') {
-            this.fillAt(event, id)
+            this.fillAt(event, writer)
         } else if (this.tool === 'rect') {
-            this.startRect(event, id)
+            this.startRect(event, writer)
         } else {
-            this.startStroke(event, id)
+            this.startStroke(event, writer)
         }
+    }
+
+    /** Clicks on the HUD are for its buttons, not the map. */
+    private hudContains(event: MouseEvent): boolean {
+        const hud = this.findOne('.hud')
+        const pressed = event.composedPath()[0]
+
+        return hud !== null && pressed instanceof Node && hud.contains(pressed)
     }
 
     private handleMouseMove(event: MouseEvent): void {
