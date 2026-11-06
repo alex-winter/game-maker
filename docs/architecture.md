@@ -5,7 +5,7 @@ The program is a local editor plus a play page. Both are webpack bundles. An Exp
 ```
 src/
   Client/     browser UI and the play page
-  domain/     pure types and rules: coordinates, grid, rect, ids, project, tileset, map (metatile grids, collision, elevation). No DOM, no Express.
+  domain/     pure types and rules: coordinates, grid, rect, ids, project, tileset, map (metatile grids, collision, elevation), history (undo stack). No DOM, no Express.
   engine/     renderFrame over a DrawPort, Scene, and the frame loop. No DOM; the browser adapts a canvas context.
   Model/      shared types: the read-only legacy placement model, user data, sprite sketches
   Server/     Express routes and JSON files
@@ -60,7 +60,7 @@ Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names a
 
 The current brush is `Client/Service/brush.ts`: `{ tilesetId, metatileId }` or `null`, held in editor state, never a bitmap. `TilesetPalette` (`Client/Component/Tileset/`) draws one tileset's sheet on the 16 grid, tints solid metatiles red, outlines the selected one, sets the brush on click, and toggles `solid` through `projectRepository.setMetatileAttributes`. `SheetViewer`'s "Use as tileset" button reuses the tileset already sliced from that sheet or calls `sliceSheet` and `POST /project/tilesets`, then opens the palette.
 
-`WorldEditor` opens windows and persists view state; map edits do not go through it. `Client/Service/map-session.ts` is the open map plus editor-only state: the paint target (a tile layer, the collision grid, or the elevation grid), the elevation the pencil writes, and which layers and overlays are hidden. Tools and the layer listing compute the next grid with a pure `domain/map.ts` function (`withTile`, `withRect`, `floodFill`, `addTileLayer`, `removeTileLayer`, `renameTileLayer`, `moveTileLayer`), call `mapSession.update` (live, during a drag) and `mapSession.save` (once, at the end) or `commit` (both), and every listener re-reads the session on `map-session-changed`.
+`WorldEditor` opens windows and persists view state; map edits do not go through it. `Client/Service/map-session.ts` is the open map plus editor-only state: the paint target (a tile layer, the collision grid, or the elevation grid), the elevation the pencil writes, which layers and overlays are hidden, and the undo history (`domain/history.ts`, a pure capped stack of `TileMap` snapshots). The first `update` after a `save` remembers the grid it replaced; `save` records that snapshot as one undo step, so a whole drag is one step. `undo`/`redo` restore a snapshot and save it; `MapCanvas` binds Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z (or Y) outside text fields. Tools and the layer listing compute the next grid with a pure `domain/map.ts` function (`withTile`, `withRect`, `floodFill`, `addTileLayer`, `removeTileLayer`, `renameTileLayer`, `moveTileLayer`), call `mapSession.update` (live, during a drag) and `mapSession.save` (once, at the end) or `commit` (both), and every listener re-reads the session on `map-session-changed`.
 
 ## Data on disk
 

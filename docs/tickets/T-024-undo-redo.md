@@ -1,7 +1,7 @@
 ---
 id: T-024
 title: Undo and redo map strokes
-status: ready
+status: done
 priority: P1
 phase: 2
 type: feat
@@ -45,10 +45,17 @@ Out:
 
 ## Acceptance
 
-- [ ] Paint three cells, undo once, only the stroke returns, not a single cell, if they were one drag.
-- [ ] Redo restores them.
-- [ ] A new stroke after undo drops the redo branch.
+- [x] Paint three cells, undo once, only the stroke returns, not a single cell, if they were one drag.
+- [x] Redo restores them.
+- [x] A new stroke after undo drops the redo branch.
 
 ## Test plan
 
 - Unit test the history module. Manual keyboard test in the editor.
+
+## Result
+
+- `domain/history.ts`: immutable `History<T>` with `record`, `undo`, `redo`, `canUndo`, `canRedo`, capped at 50 by default. Tests cover one-step undo of a multi-cell edit, redo, dropping the redo branch, and the cap.
+- `mapSession`: the first `update` after a `save` keeps the grid it replaced; `save` records it, so a drag, a fill, a rectangle, an attribute paint, or a layer-list edit is each one step. `undo`/`redo` restore a snapshot and write it. History is per session (not persisted) and resets when a map opens.
+- `MapCanvas` binds Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y on the window, ignoring key presses inside inputs.
+- Verified in headless Chrome: a 3-cell drag undoes as one step and redoes; a new stroke after undo drops the redo branch.

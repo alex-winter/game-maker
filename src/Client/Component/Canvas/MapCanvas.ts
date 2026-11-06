@@ -230,12 +230,35 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         this.updateHud()
 
         this.stopLoop = startLoop(() => this.frame(), callback => window.requestAnimationFrame(callback))
+
+        window.addEventListener('keydown', this.onKeyDown)
     }
 
     protected disconnectedCallback(): void {
         this.stopLoop?.()
         this.resizeObserver?.disconnect()
+        window.removeEventListener('keydown', this.onKeyDown)
         super.disconnectedCallback()
+    }
+
+    /** Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y redoes, unless the user is typing in a field. */
+    private readonly onKeyDown = (event: KeyboardEvent): void => {
+        const typing = event.composedPath().some(node =>
+            node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement || node instanceof HTMLSelectElement)
+
+        if (typing || !(event.ctrlKey || event.metaKey)) {
+            return
+        }
+
+        const key = event.key.toLowerCase()
+
+        if (key === 'z' && !event.shiftKey) {
+            event.preventDefault()
+            void mapSession.undo()
+        } else if ((key === 'z' && event.shiftKey) || key === 'y') {
+            event.preventDefault()
+            void mapSession.redo()
+        }
     }
 
     /** Every sheet the project may cut metatiles from, decoded once. */

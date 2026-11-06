@@ -1,5 +1,6 @@
 import { Events } from 'Client/Service/Events'
 import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
+import { canRedo, canUndo, emptyHistory, History, record, redo, undo } from 'domain/history'
 import { Id } from 'domain/id'
 import { findTileLayer, MAX_ELEVATION, TileLayer, TileMap } from 'domain/map'
 import { GameMap } from 'domain/project'
@@ -18,21 +19,27 @@ export type OverlayKey = Id | 'collision' | 'elevation'
 
 /**
  * The map the editor has open, plus the editor-only state around it: what
- * the tools write to and which layers and overlays are hidden. Tools compute
- * the next grid with a pure domain function, `update` it live during a drag,
- * and `save` once at the end.
+ * the tools write to, which layers and overlays are hidden, and the undo
+ * history. Tools compute the next grid with a pure domain function, `update`
+ * it live during a drag, and `save` once at the end; the grid as it was
+ * before the first `update` is what one undo step restores.
  */
 class MapSession {
     private map: GameMap | undefined
     private paintTarget: PaintTarget | undefined
     private readonly hidden = new Set<OverlayKey>()
     private elevation: number = 1
+    private history: History<TileMap> = emptyHistory()
+    /** The grid before the edit in progress; recorded on `save`. */
+    private beforeEdit: TileMap | undefined
 
     public open(map: GameMap): void {
         const first = map.tileMap.layers[0]
 
         this.map = map
         this.paintTarget = first === undefined ? undefined : { kind: 'layer', layerId: first.id }
+        this.history = emptyHistory()
+        this.beforeEdit = undefined
         this.hidden.clear()
         // Attribute overlays start hidden; picking one as the target shows it.
         this.hidden.add('collision')
@@ -125,7 +132,17 @@ class MapSession {
             return
         }
 
-        this.map = { ...map, tileMap }
+        if (this.beforeEdit === undefined) {
+            this.beforeEdit = map.tileMap
+        }
+
+        this.replace({ ...map, tileMap })
+    }
+
+    private replace(map: GameMap): void {
+        const tileMap = map.tileMap
+
+        this.map = map
 
         if (this.paintTarget?.kind === 'layer' && this.activeLayer === undefined) {
             const first = tileMap.layers[0]
@@ -136,10 +153,47 @@ class MapSession {
         Events.emit(MAP_SESSION_CHANGED, undefined)
     }
 
+    /** Writes the grid and closes the edit in progress as one undo step. */
     public save(): Promise<void> {
         const map = this.current
 
+        if (this.beforeEdit !== undefined && this.beforeEdit !== map.tileMap) {
+            this.history = record(this.history, this.beforeEdit)
+        }
+
+        this.beforeEdit = undefined
+
         return projectRepository.saveTileMap(map.id, map.tileMap)
+    }
+
+    public get canUndo(): boolean {
+        return canUndo(this.history)
+    }
+
+    public get canRedo(): boolean {
+        return canRedo(this.history)
+    }
+
+    public undo(): Promise<void> {
+        const stepped = undo(this.history, this.tileMap)
+
+        return stepped === undefined ? Promise.resolve() : this.restore(stepped.history, stepped.state)
+    }
+
+    public redo(): Promise<void> {
+        const stepped = redo(this.history, this.tileMap)
+
+        return stepped === undefined ? Promise.resolve() : this.restore(stepped.history, stepped.state)
+    }
+
+    private restore(history: History<TileMap>, tileMap: TileMap): Promise<void> {
+        const map = this.current
+
+        this.history = history
+        this.beforeEdit = undefined
+        this.replace({ ...map, tileMap })
+
+        return projectRepository.saveTileMap(map.id, tileMap)
     }
 
     /** `update` then `save`, for edits that are not part of a drag. */
