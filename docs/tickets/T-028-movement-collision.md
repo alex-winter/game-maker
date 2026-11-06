@@ -1,7 +1,7 @@
 ---
 id: T-028
 title: Block steps into solid cells
-status: backlog
+status: ready
 priority: P1
 phase: 3
 type: feat

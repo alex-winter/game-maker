@@ -6,13 +6,15 @@ import { sheetRepository } from 'Client/Service/Repository/SheetRepository'
 import { activeMapId } from 'Client/Service/active-map'
 import { buildScene } from 'Client/Service/build-scene'
 import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
-import { directionFromKeys, HeldKeys } from 'Client/Service/direction-from-keys'
+import { HeldDirections } from 'Client/Service/held-directions'
 import { findMap } from 'domain/project'
 import { GRID_SIZE } from 'domain/grid'
 import { Id } from 'domain/id'
+import { Direction, insideMap, newPlayer, Player, playerPixel, stepPlayer } from 'domain/movement'
 import { PortSize } from 'engine/draw-port'
 import { startLoop } from 'engine/loop'
 import { renderFrame } from 'engine/render'
+import { Actor } from 'engine/scene'
 
 const view: { x: number; y: number; zoom: number } = {
     x: 0,
@@ -20,36 +22,30 @@ const view: { x: number; y: number; zoom: number } = {
     zoom: 2,
 }
 
-/** The stand-in actor until T-026: one cell, moved by the arrow keys, drawn between the ground and overhead passes. */
-const actor: { x: number; y: number; readonly width: number; readonly height: number; readonly color: string } = {
-    x: 0,
-    y: 0,
-    width: GRID_SIZE,
-    height: GRID_SIZE,
-    color: '#ff5252',
-}
+/** The player until T-027 gives them a sprite: one red cell, drawn between the ground and overhead passes. */
+const PLAYER_COLOR = '#ff5252'
 
-const pixelsPerSecond: number = 120
+const held = new HeldDirections()
 
-const keys: { -readonly [K in keyof HeldKeys]: HeldKeys[K] } = {
-    up: false,
-    down: false,
-    left: false,
-    right: false,
-}
+/** Held while a direction is held, like B on the GBA, to run instead of walk. */
+let running = false
 
-const keyByCode: { readonly [code: string]: keyof HeldKeys | undefined } = {
+const directionByCode: { readonly [code: string]: Direction | undefined } = {
     ArrowUp: 'up',
     ArrowDown: 'down',
     ArrowLeft: 'left',
     ArrowRight: 'right',
+    KeyW: 'up',
+    KeyS: 'down',
+    KeyA: 'left',
+    KeyD: 'right',
 }
 
+const RUN_CODES: readonly string[] = ['ShiftLeft', 'ShiftRight', 'KeyX']
+
 function releaseAllKeys(): void {
-    keys.up = false
-    keys.down = false
-    keys.left = false
-    keys.right = false
+    held.clear()
+    running = false
 }
 
 function fitCanvasToWindow(canvas: HTMLCanvasElement): void {
@@ -57,15 +53,12 @@ function fitCanvasToWindow(canvas: HTMLCanvasElement): void {
     canvas.height = window.innerHeight
 }
 
-function moveActor(deltaSeconds: number): void {
-    const direction = directionFromKeys(keys)
-
-    actor.x += direction.x * pixelsPerSecond * deltaSeconds
-    actor.y += direction.y * pixelsPerSecond * deltaSeconds
+function playerActor(player: Player): Actor<CanvasImageSource> {
+    return { ...playerPixel(player), width: GRID_SIZE, height: GRID_SIZE, color: PLAYER_COLOR }
 }
 
-/** The camera keeps the actor in the middle of the window. */
-function followActor(port: PortSize): void {
+/** The camera keeps the player in the middle of the window. */
+function followActor(port: PortSize, actor: Actor<CanvasImageSource>): void {
     view.x = Math.round(actor.x + actor.width / 2 - port.width / (2 * view.zoom))
     view.y = Math.round(actor.y + actor.height / 2 - port.height / (2 * view.zoom))
 }
@@ -104,31 +97,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadedPlacements: await loadLegacyPlacements(map.layers),
     })
     const port = canvasDrawPort(ctx)
-
-    actor.x = Math.floor(map.tileMap.width / 2) * GRID_SIZE
-    actor.y = Math.floor(map.tileMap.height / 2) * GRID_SIZE
+    const canEnter = insideMap(map.tileMap)
+    let player = newPlayer(map.spawn)
 
     startLoop(deltaSeconds => {
-        moveActor(deltaSeconds)
-        followActor(port)
+        player = stepPlayer(player, { direction: held.latest(), running }, deltaSeconds * 1000, canEnter)
+
+        const actor = playerActor(player)
+
+        followActor(port, actor)
         renderFrame(port, scene, view, [actor])
     }, callback => window.requestAnimationFrame(callback))
 })
 
 window.addEventListener('keydown', (event: KeyboardEvent) => {
-    const key = keyByCode[event.code]
+    const direction = directionByCode[event.code]
 
-    if (key) {
+    if (direction) {
         event.preventDefault()
-        keys[key] = true
+        held.press(direction)
+    }
+
+    if (RUN_CODES.includes(event.code)) {
+        running = true
     }
 })
 
 window.addEventListener('keyup', (event: KeyboardEvent) => {
-    const key = keyByCode[event.code]
+    const direction = directionByCode[event.code]
 
-    if (key) {
-        keys[key] = false
+    if (direction) {
+        held.release(direction)
+    }
+
+    if (RUN_CODES.includes(event.code)) {
+        running = false
     }
 })
 

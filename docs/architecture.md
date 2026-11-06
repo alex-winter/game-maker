@@ -5,7 +5,7 @@ The program is a local editor plus a play page. Both are webpack bundles. An Exp
 ```
 src/
   Client/     browser UI and the play page
-  domain/     pure types and rules: coordinates, grid, rect, ids, project, tileset, map (metatile grids, collision, elevation), history (undo stack). No DOM, no Express.
+  domain/     pure types and rules: coordinates, grid, rect, ids, project, tileset, map (metatile grids, collision, elevation), movement (the player's cell-to-cell step), history (undo stack). No DOM, no Express.
   engine/     renderFrame over a DrawPort, Scene, and the frame loop. No DOM; the browser adapts a canvas context.
   Model/      shared types: the read-only legacy placement model, user data, sprite sketches
   Server/     Express routes and JSON files
@@ -30,7 +30,7 @@ Play (`public/play.html` → `src/Client/play.ts`):
 
 1. Load the project, pick the active map the same way the editor does, and decode every sheet and that map's legacy placements (`Client/Service/load-legacy-placements.ts`).
 2. `buildScene` and `renderFrame` on one canvas from a camera offset, inside `engine/loop.ts`.
-3. Held arrow keys move a stand-in actor at 120 px/s; the camera follows it. There is no player and no collision yet (T-026).
+3. The player starts on the map's `spawn` cell. Held arrow or WASD keys step them cell to cell (`domain/movement.ts`); Shift or X runs. The camera follows. Only the map edge blocks a step until T-028.
 
 ## UI model
 
@@ -76,7 +76,7 @@ The current brush is `Client/Service/brush.ts`: `{ tilesetId, metatileId }` or `
 | `uploads/<uuid><ext>` | `multer` | the sheet bytes |
 | `uploads/index.json` | upload route | `{ id, originalName, file }[]` |
 
-`Project` and `GameMap` live in `domain/project.ts` with pure helpers (`addMap`, `renameMap`, `withMapLayers`, `findMap`). `Server/services/project-store.ts` reads and writes the file; handlers call a domain helper and write the result. `withProjectDefaults` fills fields an older file lacks, and boot writes the result back once.
+`Project` and `GameMap` live in `domain/project.ts` with pure helpers (`addMap`, `renameMap`, `withMapLayers`, `withMapSpawn`, `findMap`). A `GameMap` carries a `spawn` cell (T-026) that defaults to the grid centre and snaps back there when a resize leaves it outside. `Server/services/project-store.ts` reads and writes the file; handlers call a domain helper and write the result. `withProjectDefaults` fills fields an older file lacks, and boot writes the result back once.
 
 A map's grid is a `TileMap` (`domain/map.ts`): `width` and `height` in cells, a `tilesetId`, `layers: TileLayer[]` back to front (each a dense row-major `MetatileId[]` with `kind: 'ground' | 'overhead'`), and `attributes` (`collision[]`, `elevation[]`, `ledge[]` on the same index; `ledge` is stored since T-022 and enforced in T-028). A `Tileset` (`domain/tileset.ts`) maps ids to a `sheetId` plus a pixel rectangle and the defaults `solid`, `elevation`, `ledge`. Id 0 is the empty cell and is never solid. `isBlocked(map, tileset, to, from?)` is the movement rule: outside, painted collision, or any solid metatile blocks; with `from`, a change between two non-zero elevations blocks. Tilesets are sliced from a sheet (`sliceSheet`, T-019) and edited through the palette. The editor's tools write metatile ids into the active `TileLayer` (T-020); a map without a tileset adopts the brush's tileset on the first stroke, and a brush from a different tileset is refused. `isTileMap` is the server's structural check on a saved grid; `withTileMapDefaults` adds arrays an older file lacks; `resizeGrid`/`resizeTileMap` re-lay every layer and attribute grid for a new size, anchored top-left. Attribute painting (T-022) goes through `withCollision`/`withElevation` with the generic `withCell`, `withCellsRect`, and `floodFillCells`; `attributesAt` reads one cell. Painting an attribute never touches a picture layer.
 
@@ -98,7 +98,7 @@ These field names are on disk and in the types that read them. New fields are ca
 | File | Field | Should be | Retired by |
 | --- | --- | --- | --- |
 | `data/project.json` (`maps[].layers`) | `created_at`, `is_visible`, `is_active` | `createdAt`, `isVisible`, `isActive` | the legacy list is read-only since T-020; drop it when no map still carries placements |
-| `data/project.json` (`maps[].layers`) | `type: 'player_controlled'` | an object event, not a layer | T-026 |
+| `data/project.json` (`maps[].layers`) | `type: 'player_controlled'` | nothing; `maps[].spawn` replaced it in T-026 | drop with the legacy list |
 | `data/user-data.json` | `componentConfigration` | `componentConfiguration` | T-036 (the window config is only read for the dialog stub) |
 
 ## Draw path
@@ -107,7 +107,7 @@ These field names are on disk and in the types that read them. New fields are ca
 
 Editor: `MapCanvas` is one element with one `<canvas>` and one `engine/loop.ts` loop. It builds the scene with `Client/Service/build-scene.ts` from `mapSession.visibleTileMap()` and marks it stale on `map-session-changed`. The pointer always lands on it: pencil and rubber call `withTile` per pointer sample and save on mouseup, rectangle previews a span and calls `withRect` on mouseup, fill calls `floodFill` (bounded by the map, not the view) and saves at once. On an attribute target the same tools write 0/1 collision or the chosen elevation (rubber writes 0). `Client/Service/draw-attributes.ts` draws painted collision in red, cells a solid metatile blocks in orange, and non-zero elevation as a tinted, numbered cell; each overlay hides without changing data. The brush is a metatile id; a one-cell ghost canvas previews it. The middle button pans the shared `camera` (`Client/Service/camera.ts`, which holds the `View`); the wheel and the HUD's −/+ buttons zoom toward the cursor or the centre. The HUD (bottom-left) also toggles the grid (`Client/Service/draw-grid.ts` strokes cell borders and the map outline over the frame) and reads out the cell under the cursor. Zoom and the grid flag persist in `user-data.json` (`zoom`, `showGrid`). `Client/Service/pointer-to-world.ts` is the one pointer → world formula and takes the `View`.
 
-Play: `play.ts` builds a scene once and runs the same loop and `renderFrame` at zoom 2 with one stand-in actor (a red cell the arrow keys move at 120 px/s, no collision yet); the camera keeps it centred. T-026 replaces it with the player.
+Play: `play.ts` builds a scene once and runs the same loop and `renderFrame` at zoom 2. The player is a `domain/movement.ts` `Player`: a cell, a facing, and an optional `Step` (`from`, `to`, `durationMs`, `elapsedMs`). Each frame the host passes `{ direction, running }` — `Client/Service/held-directions.ts` keeps held keys in press order so the newest press wins — and `stepPlayer` advances the step by the frame's milliseconds, then begins the next one if a direction is still held and `CanEnter` allows the target cell. Facing changes at once even when the step cannot start; a press during a step only turns the player. Walk is `WALK_MS_PER_CELL` (267), run `RUN_MS_PER_CELL` (133), matching the GBA's 16 and 8 frames per cell. `playerPixel` interpolates `from → to` for drawing; until T-027 the player is a red cell `Actor`, and the camera keeps it centred.
 
 `Canvas2D` remains only because the unregistered `SpriteModelMaker` sketch references it; nothing on a page uses it.
 

@@ -1,6 +1,7 @@
 import type { Layer } from 'Model/Layer'
+import { Cell } from './coordinates'
 import { Id, newId } from './id'
-import { emptyTileMap, GridSize, TileMap, withTileMapDefaults } from './map'
+import { emptyTileMap, GridSize, isInside, TileMap, withTileMapDefaults } from './map'
 import { Tileset } from './tileset'
 
 /** Cells in a new map. A gen 3 town is about this size. */
@@ -19,6 +20,9 @@ export type GameMap = {
 
     tileMap: TileMap
 
+    /** Where play mode puts the player when it starts on this map. */
+    spawn: Cell
+
     layers: Layer[]
 }
 
@@ -33,8 +37,13 @@ export type Project = {
     maps: GameMap[]
 }
 
+/** The middle of the grid: where a map starts the player until someone moves the spawn. */
+export function centreCell(size: GridSize): Cell {
+    return { x: Math.floor(size.width / 2), y: Math.floor(size.height / 2) }
+}
+
 export function newMap(name: string, layers: Layer[] = [], size: GridSize = DEFAULT_MAP_SIZE): GameMap {
-    return { id: newId(), name, tileMap: emptyTileMap(size), layers }
+    return { id: newId(), name, tileMap: emptyTileMap(size), spawn: centreCell(size), layers }
 }
 
 export function newProject(name: string, maps: GameMap[] = []): Project {
@@ -50,11 +59,16 @@ export function withProjectDefaults(stored: Partial<Project> & Pick<Project, 'id
         id: stored.id,
         name: stored.name,
         tilesets: stored.tilesets ?? [],
-        maps: stored.maps.map(map => ({
-            ...map,
-            tileMap: withTileMapDefaults(map.tileMap ?? emptyTileMap(DEFAULT_MAP_SIZE)),
-            layers: map.layers ?? [],
-        })),
+        maps: stored.maps.map(map => {
+            const tileMap = withTileMapDefaults(map.tileMap ?? emptyTileMap(DEFAULT_MAP_SIZE))
+
+            return {
+                ...map,
+                tileMap,
+                spawn: isCell(map.spawn) && isInside(tileMap, map.spawn) ? map.spawn : centreCell(tileMap),
+                layers: map.layers ?? [],
+            }
+        }),
     }
 }
 
@@ -115,12 +129,32 @@ export function removeMap(project: Project, mapId: Id): Project {
     return { ...project, maps: project.maps.filter(map => map.id !== mapId) }
 }
 
-/** A new project with one map's grid replaced. */
+/** A new project with one map's grid replaced. A spawn the new grid no longer contains moves to the centre. */
 export function withMapTileMap(project: Project, mapId: Id, tileMap: TileMap): Project {
     return {
         ...project,
-        maps: project.maps.map(map => map.id === mapId ? { ...map, tileMap } : map),
+        maps: project.maps.map(map => map.id === mapId
+            ? { ...map, tileMap, spawn: isInside(tileMap, map.spawn) ? map.spawn : centreCell(tileMap) }
+            : map),
     }
+}
+
+/** A new project with one map's spawn moved, or unchanged when the cell is off the grid. */
+export function withMapSpawn(project: Project, mapId: Id, spawn: Cell): Project {
+    return {
+        ...project,
+        maps: project.maps.map(map => map.id === mapId && isInside(map.tileMap, spawn) ? { ...map, spawn } : map),
+    }
+}
+
+export function isCell(value: unknown): value is Cell {
+    if (typeof value !== 'object' || value === null) {
+        return false
+    }
+
+    const cell = value as { x?: unknown; y?: unknown }
+
+    return Number.isInteger(cell.x) && Number.isInteger(cell.y)
 }
 
 /** A new project with one map pointing at a tileset. */

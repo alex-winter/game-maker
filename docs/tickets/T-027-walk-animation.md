@@ -1,7 +1,7 @@
 ---
 id: T-027
 title: Animate the player in four directions
-status: backlog
+status: ready
 priority: P1
 phase: 3
 type: feat

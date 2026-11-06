@@ -11,6 +11,7 @@ import {
     renameMap,
     withMapLayers,
     withProjectDefaults,
+    withMapTileMap,
     DEFAULT_MAP_SIZE,
 } from './project'
 
@@ -97,4 +98,20 @@ test('a map name must have visible characters', () => {
     assert.equal(isValidMapName('   '), false)
     assert.equal(isValidMapName(3), false)
     assert.equal(isValidMapName(undefined), false)
+})
+
+test('a map spawns in its centre, and an old file without a spawn gets one', () => {
+    const map = newMap('Town', [], { width: 10, height: 6 })
+    const stored = { id: 'p', name: 'P', maps: [{ id: map.id, name: map.name, tileMap: map.tileMap, layers: [] }] }
+
+    assert.deepEqual(map.spawn, { x: 5, y: 3 })
+    assert.deepEqual(withProjectDefaults(stored as never).maps[0].spawn, { x: 5, y: 3 })
+})
+
+test('a spawn left outside a resized grid moves back to the centre', () => {
+    const map = { ...newMap('Town', [], { width: 10, height: 10 }), spawn: { x: 9, y: 9 } }
+    const project = addMap(defaultProject(), map)
+    const smaller = { ...map.tileMap, width: 4, height: 4 }
+
+    assert.deepEqual(findMap(withMapTileMap(project, map.id, smaller), map.id)?.spawn, { x: 2, y: 2 })
 })

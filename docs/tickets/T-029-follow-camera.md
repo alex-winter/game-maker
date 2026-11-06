@@ -1,7 +1,7 @@
 ---
 id: T-029
 title: Follow the player in a 240×160 view
-status: backlog
+status: ready
 priority: P1
 phase: 3
 type: feat

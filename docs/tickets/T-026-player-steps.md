@@ -1,7 +1,7 @@
 ---
 id: T-026
 title: Step the player from cell to cell
-status: ready
+status: done
 priority: P1
 phase: 3
 type: feat
@@ -48,9 +48,16 @@ Out:
 
 ## Acceptance
 
-- [ ] Tests: a step takes the authored duration; a second press during a step does not teleport; the player stops on the last in-bounds cell.
-- [ ] In play, holding a key walks cell to cell, and holding the run modifier crosses a cell faster.
+- [x] Tests: a step takes the authored duration; a second press during a step does not teleport; the player stops on the last in-bounds cell.
+- [x] In play, holding a key walks cell to cell, and holding the run modifier crosses a cell faster.
 
 ## Test plan
 
 - Domain tests with a fake clock. Manual play on a painted map.
+
+## Result
+
+- `domain/movement.ts`: `Player`, `Step`, `Direction`, `MovementInput`, `CanEnter`; `beginStep`, `advanceStep`, `stepPlayer`, `playerPixel`, `insideMap`. Durations are 267 ms walk / 133 ms run per cell. Leftover time at the end of a step is dropped so a slow frame never overshoots.
+- `GameMap.spawn` (defaults to the centre; `withProjectDefaults` fills old files; a resize that leaves it outside recentres it; `withMapSpawn` for a future editor control).
+- `play.ts` feeds `{ direction, running }` from `Client/Service/held-directions.ts` (newest press wins, Shift/X runs, WASD or arrows) into `stepPlayer`; the old 120 px/s free movement and `direction-from-keys.ts` are gone.
+- Tests cover the authored duration, the no-teleport second press, facing without a step, stopping on the last in-bounds cell, run being half the walk, and overshoot. Verified in headless Chrome by holding keys on a painted map.
