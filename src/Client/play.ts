@@ -10,18 +10,13 @@ import { HeldDirections } from 'Client/Service/held-directions'
 import { findMap, playerSprite } from 'domain/project'
 import { Id } from 'domain/id'
 import { stepRule } from 'domain/collision'
-import { Direction, insideMap, newPlayer, stepPlayer } from 'domain/movement'
-import { PortSize } from 'engine/draw-port'
+import { GRID_SIZE } from 'domain/grid'
+import { Direction, insideMap, newPlayer, Player, playerPixel, stepPlayer } from 'domain/movement'
+import { cameraFor, GBA_VIEW, integerScale } from 'engine/camera'
 import { startLoop } from 'engine/loop'
 import { playerActor } from 'engine/player-actor'
 import { renderFrame } from 'engine/render'
-import { Actor } from 'engine/scene'
-
-const view: { x: number; y: number; zoom: number } = {
-    x: 0,
-    y: 0,
-    zoom: 2,
-}
+import { View } from 'engine/view'
 
 const held = new HeldDirections()
 
@@ -46,15 +41,25 @@ function releaseAllKeys(): void {
     running = false
 }
 
-function fitCanvasToWindow(canvas: HTMLCanvasElement): void {
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
+/**
+ * The canvas is the 240×160 view at the largest whole scale that fits the
+ * window; the page's black body is the letterbox around it. Returns the scale.
+ */
+function fitCanvasToWindow(canvas: HTMLCanvasElement): number {
+    const scale = integerScale({ width: window.innerWidth, height: window.innerHeight })
+
+    canvas.width = GBA_VIEW.width * scale
+    canvas.height = GBA_VIEW.height * scale
+
+    return scale
 }
 
-/** The camera keeps the player in the middle of the window. */
-function followActor(port: PortSize, actor: Actor<CanvasImageSource>): void {
-    view.x = Math.round(actor.x + actor.width / 2 - port.width / (2 * view.zoom))
-    view.y = Math.round(actor.y + actor.height / 2 - port.height / (2 * view.zoom))
+/** The view that keeps the player's cell centred until the map edge stops it. */
+function followPlayer(player: Player, mapPixels: { width: number; height: number }, zoom: number): View {
+    const pixel = playerPixel(player)
+    const camera = cameraFor({ x: pixel.x + GRID_SIZE / 2, y: pixel.y + GRID_SIZE / 2 }, GBA_VIEW, mapPixels)
+
+    return { ...camera, zoom }
 }
 
 async function loadSheets(): Promise<Map<Id, CanvasImageSource>> {
@@ -72,8 +77,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         return
     }
 
-    fitCanvasToWindow(canvas)
-    window.addEventListener('resize', () => fitCanvasToWindow(canvas))
+    let zoom = fitCanvasToWindow(canvas)
+
+    window.addEventListener('resize', () => {
+        zoom = fitCanvasToWindow(canvas)
+    })
 
     const project = await projectRepository.load()
     const mapId = activeMapId(window.location.search, project)
@@ -97,15 +105,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const port = canvasDrawPort(ctx)
     // Without a tileset there are no metatile attributes to consult; only the edge blocks.
     const canEnter = tileset === undefined ? insideMap(map.tileMap) : stepRule(map.tileMap, tileset)
+    const mapPixels = { width: map.tileMap.width * GRID_SIZE, height: map.tileMap.height * GRID_SIZE }
     let player = newPlayer(map.spawn)
 
     startLoop(deltaSeconds => {
         player = stepPlayer(player, { direction: held.latest(), running }, deltaSeconds * 1000, canEnter)
 
-        const actor = playerActor(player, sprite, spriteSheet)
-
-        followActor(port, actor)
-        renderFrame(port, scene, view, [actor])
+        renderFrame(port, scene, followPlayer(player, mapPixels, zoom), [playerActor(player, sprite, spriteSheet)])
     }, callback => window.requestAnimationFrame(callback))
 })
 

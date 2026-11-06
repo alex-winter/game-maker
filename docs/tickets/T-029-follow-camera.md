@@ -1,7 +1,7 @@
 ---
 id: T-029
 title: Follow the player in a 240×160 view
-status: ready
+status: done
 priority: P1
 phase: 3
 type: feat
@@ -44,9 +44,15 @@ Out:
 
 ## Acceptance
 
-- [ ] Tests for clamping at each edge and for a map smaller than the view.
-- [ ] In play, the player stays centered in an open area and the camera stops at a map edge while the player keeps walking.
+- [x] Tests for clamping at each edge and for a map smaller than the view.
+- [x] In play, the player stays centered in an open area and the camera stops at a map edge while the player keeps walking.
 
 ## Test plan
 
 - Unit tests. Manual resize of the play window.
+
+## Result
+
+- `engine/camera.ts`: `GBA_VIEW` (240×160), `integerScale(window, view)` (largest whole scale ≥ 1), `cameraFor(focus, view, mapPixels)` (centre, clamp per axis, centre a smaller map). Tests cover each edge, both clamp boundaries, a small map, a tall map, and the scale.
+- `play.ts` sizes the canvas to `GBA_VIEW × scale` on load and resize and lets the black body letterbox it (`play.css` centres the canvas, `image-rendering: pixelated`); the view each frame is `cameraFor` on the player's cell centre with `zoom = scale`.
+- Verified in headless Chrome: 1000×600 → 720×480 canvas at (140, 60); 500×480 → 480×320. The player sits at the canvas centre in the open; walking to the top-left corner stops the camera at (0, 0) while the player reaches the corner cell.

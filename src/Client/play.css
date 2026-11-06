@@ -9,3 +9,15 @@ body {
     overflow: hidden;
     background-color: black;
 }
+
+/* The canvas is the 240×160 view at a whole scale; the body is the letterbox. */
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+canvas {
+    display: block;
+    image-rendering: pixelated;
+}

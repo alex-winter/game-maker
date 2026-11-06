@@ -1,7 +1,7 @@
 ---
 id: T-030
 title: Start play mode from a chosen map
-status: backlog
+status: ready
 priority: P1
 phase: 3
 type: feat

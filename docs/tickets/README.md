@@ -50,8 +50,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-026](T-026-player-steps.md) | 3 | P1 | done | engine | Step the player from cell to cell |
 | [T-027](T-027-walk-animation.md) | 3 | P1 | done | engine | Animate the player in four directions |
 | [T-028](T-028-movement-collision.md) | 3 | P1 | done | domain | Block steps into solid cells |
-| [T-029](T-029-follow-camera.md) | 3 | P1 | ready | engine | Follow the player in a 240×160 view |
-| [T-030](T-030-play-starts-a-session.md) | 3 | P1 | backlog | play | Start play mode from a chosen map |
+| [T-029](T-029-follow-camera.md) | 3 | P1 | done | engine | Follow the player in a 240×160 view |
+| [T-030](T-030-play-starts-a-session.md) | 3 | P1 | ready | play | Start play mode from a chosen map |
 | [T-031](T-031-map-connections.md) | 4 | P1 | backlog | domain | Connect maps along an edge |
 | [T-032](T-032-warps.md) | 4 | P1 | backlog | domain | Warp through doors and stairs |
 | [T-033](T-033-map-fade.md) | 4 | P2 | backlog | engine | Fade between maps |
@@ -84,6 +84,6 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 - ready: 1
 - in_progress: 0
-- backlog: 29
-- done: 28
+- backlog: 28
+- done: 29
 - total: 57
