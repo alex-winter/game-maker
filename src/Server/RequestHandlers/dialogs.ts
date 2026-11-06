@@ -10,7 +10,11 @@ function cleaned(body: Omit<Dialog, 'id'>, id: string): Dialog {
     return {
         id,
         name: body.name.trim(),
-        pages: body.pages.map(page => ({ text: page.text.trim(), choices: page.choices.map(choice => ({ label: choice.label.trim(), nextDialogId: choice.nextDialogId })) })),
+        pages: body.pages.map(page => ({
+            text: page.text.trim(),
+            choices: page.choices.map(choice => ({ label: choice.label.trim(), nextDialogId: choice.nextDialogId })),
+            ...(page.setsFlagId === undefined ? {} : { setsFlagId: page.setsFlagId }),
+        })),
     }
 }
 

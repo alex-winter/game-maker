@@ -12,6 +12,9 @@ export type DialogPage = {
     text: string
 
     choices: Choice[]
+
+    /** A story flag set the moment this page is shown (T-050): how a conversation opens a gate. */
+    setsFlagId?: Id
 }
 
 /**
@@ -53,10 +56,11 @@ export function isDialogPage(value: unknown): value is DialogPage {
         return false
     }
 
-    const page = value as { text?: unknown; choices?: unknown }
+    const page = value as { text?: unknown; choices?: unknown; setsFlagId?: unknown }
 
     return typeof page.text === 'string'
         && Array.isArray(page.choices) && page.choices.length <= MAX_CHOICES && page.choices.every(isChoice)
+        && (page.setsFlagId === undefined || typeof page.setsFlagId === 'string')
 }
 
 /** A trimmed name and at least one page. */
@@ -73,7 +77,7 @@ export function isDialogInput(value: unknown): value is Omit<Dialog, 'id'> {
 
 /** A page stored by T-035 was a bare string; it reads as a page without choices. */
 export function withPageDefaults(stored: DialogPage | string): DialogPage {
-    return typeof stored === 'string' ? newPage(stored) : { text: stored.text, choices: stored.choices ?? [] }
+    return typeof stored === 'string' ? newPage(stored) : { text: stored.text, choices: stored.choices ?? [], ...(stored.setsFlagId === undefined ? {} : { setsFlagId: stored.setsFlagId }) }
 }
 
 export function withDialogDefaults(stored: Omit<Dialog, 'pages'> & { pages: (DialogPage | string)[] }): Dialog {

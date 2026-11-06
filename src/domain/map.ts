@@ -36,6 +36,20 @@ export type AttributeLayer = {
 
     /** 1 marks tall grass (T-048): a step onto it may start an encounter from the map's table. */
     grass: number[]
+
+    /** A cell that needs a flag to enter (T-050): a cut tree, a boulder. Null for an ordinary cell. */
+    gate: (Gate | null)[]
+}
+
+/**
+ * A field gate (T-050): the flag that opens the cell and, when set, the
+ * metatile drawn in place of the front-most picture — the stump where the
+ * tree was. Null keeps the picture as painted.
+ */
+export type Gate = {
+    readonly flagId: Id
+
+    readonly openMetatileId: MetatileId | null
 }
 
 /** One cell's attributes as the editor shows and paints them. */
@@ -47,6 +61,8 @@ export type CellAttributes = {
     readonly ledge: LedgeDirection | null
 
     readonly grass: boolean
+
+    readonly gate: Gate | null
 }
 
 /** The largest elevation the editor offers. Gen 3 maps use a handful of levels. */
@@ -78,6 +94,7 @@ export function emptyAttributeLayer(size: GridSize): AttributeLayer {
         elevation: new Array<number>(cells).fill(0),
         ledge: new Array<LedgeDirection | null>(cells).fill(null),
         grass: new Array<number>(cells).fill(0),
+        gate: new Array<Gate | null>(cells).fill(null),
     }
 }
 
@@ -87,12 +104,13 @@ export function withTileMapDefaults(map: TileMap): TileMap {
     const stored: Partial<AttributeLayer> = map.attributes
     const ledge = Array.isArray(stored.ledge) && stored.ledge.length === cells ? stored.ledge : new Array<LedgeDirection | null>(cells).fill(null)
     const grass = Array.isArray(stored.grass) && stored.grass.length === cells ? stored.grass : new Array<number>(cells).fill(0)
+    const gate = Array.isArray(stored.gate) && stored.gate.length === cells ? stored.gate : new Array<Gate | null>(cells).fill(null)
 
-    if (ledge === stored.ledge && grass === stored.grass) {
+    if (ledge === stored.ledge && grass === stored.grass && gate === stored.gate) {
         return map
     }
 
-    return { ...map, attributes: { ...map.attributes, ledge, grass } }
+    return { ...map, attributes: { ...map.attributes, ledge, grass, gate } }
 }
 
 /** A map with one ground layer and one overhead layer, nothing painted. */
@@ -288,6 +306,7 @@ export function resizeTileMap(map: TileMap, to: GridSize): TileMap {
             elevation: resizeGrid(map, map.attributes.elevation, to, 0),
             ledge: resizeGrid<LedgeDirection | null>(map, map.attributes.ledge, to, null),
             grass: resizeGrid(map, map.attributes.grass, to, 0),
+            gate: resizeGrid<Gate | null>(map, map.attributes.gate, to, null),
         },
     }
 }
@@ -313,7 +332,7 @@ export function attributesAt(map: TileMap, cell: Cell): CellAttributes {
     const index = cellIndex(map, cell)
 
     if (index === undefined) {
-        return { solid: false, elevation: 0, ledge: null, grass: false }
+        return { solid: false, elevation: 0, ledge: null, grass: false, gate: null }
     }
 
     return {
@@ -321,7 +340,60 @@ export function attributesAt(map: TileMap, cell: Cell): CellAttributes {
         elevation: map.attributes.elevation[index] ?? 0,
         ledge: map.attributes.ledge[index] ?? null,
         grass: (map.attributes.grass[index] ?? 0) !== 0,
+        gate: map.attributes.gate[index] ?? null,
     }
+}
+
+/** The gate on `cell`, or null. */
+export function gateAt(map: TileMap, cell: Cell): Gate | null {
+    return attributesAt(map, cell).gate
+}
+
+/** A new map with `cell`'s gate set or (null) removed. Outside the map nothing changes. */
+export function withGate(map: TileMap, cell: Cell, gate: Gate | null): TileMap {
+    const index = cellIndex(map, cell)
+
+    if (index === undefined) {
+        return map
+    }
+
+    const gates = [...map.attributes.gate]
+
+    gates[index] = gate
+
+    return { ...map, attributes: { ...map.attributes, gate: gates } }
+}
+
+/**
+ * The map as the player sees it: every gate whose flag `isOpen` and that
+ * names an open metatile has its front-most painted picture swapped for it
+ * (a cell with nothing painted gets it on the first layer). The stored map
+ * is untouched; movement reads the gates, drawing reads this.
+ */
+export function withOpenGates(map: TileMap, isOpen: (flagId: Id) => boolean): TileMap {
+    const swaps = new Map<number, MetatileId>()
+
+    map.attributes.gate.forEach((gate, index) => {
+        if (gate !== null && gate.openMetatileId !== null && isOpen(gate.flagId)) {
+            swaps.set(index, gate.openMetatileId)
+        }
+    })
+
+    if (swaps.size === 0) {
+        return map
+    }
+
+    const layers = map.layers.map(layer => ({ ...layer, tiles: [...layer.tiles] }))
+
+    for (const [index, metatileId] of swaps) {
+        const front = [...layers].reverse().find(layer => (layer.tiles[index] ?? EMPTY_METATILE_ID) !== EMPTY_METATILE_ID) ?? layers[0]
+
+        if (front !== undefined) {
+            front.tiles[index] = metatileId
+        }
+    }
+
+    return { ...map, layers }
 }
 
 /** Whether a step onto `cell` lands in tall grass. */
@@ -449,6 +521,23 @@ export function isTileMap(value: unknown): value is TileMap {
         && Array.isArray(attributes.grass)
         && attributes.grass.length === cells
         && attributes.grass.every(isNonNegativeInteger)
+        && Array.isArray(attributes.gate)
+        && attributes.gate.length === cells
+        && attributes.gate.every(isGateValue)
+}
+
+export function isGate(value: unknown): value is Gate {
+    if (typeof value !== 'object' || value === null) {
+        return false
+    }
+
+    const gate = value as { flagId?: unknown; openMetatileId?: unknown }
+
+    return typeof gate.flagId === 'string' && (gate.openMetatileId === null || isNonNegativeInteger(gate.openMetatileId))
+}
+
+function isGateValue(value: unknown): value is Gate | null {
+    return value === null || isGate(value)
 }
 
 /** Every metatile stacked at `cell`, back to front, skipping empty cells. */

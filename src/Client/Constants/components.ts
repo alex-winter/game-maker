@@ -19,6 +19,7 @@ import { ItemsEditor } from 'Client/Component/Items/ItemsEditor'
 import { SpeciesEditor } from 'Client/Component/Creatures/SpeciesEditor'
 import { ItemForm } from 'Client/Component/Events/ItemForm'
 import { NpcForm } from 'Client/Component/Events/NpcForm'
+import { GateForm } from 'Client/Component/Events/GateForm'
 import { SignForm } from 'Client/Component/Events/SignForm'
 import { EventKindPicker } from 'Client/Component/Events/EventKindPicker'
 import { MapSelect } from 'Client/Component/MapSelect/MapSelect'
@@ -52,6 +53,7 @@ export const COMPONENTS = new Map<ComponentConstructor, string>([
   [SpeciesEditor, 'species-editor'],
   [ItemForm, 'item-form'],
   [NpcForm, 'npc-form'],
+  [GateForm, 'gate-form'],
   [SignForm, 'sign-form'],
   [EventKindPicker, 'event-kind-picker'],
   [MapSelect, 'map-select'],

@@ -9,6 +9,8 @@ export type AttributeOverlays = {
     readonly elevation: boolean
 
     readonly grass: boolean
+
+    readonly gate: boolean
 }
 
 const PAINTED_SOLID = 'rgba(231, 76, 60, 0.45)'
@@ -16,11 +18,13 @@ const METATILE_SOLID = 'rgba(230, 126, 34, 0.3)'
 const ELEVATION_TINT = 'rgba(52, 152, 219, 0.25)'
 const ELEVATION_TEXT = 'rgba(255, 255, 255, 0.95)'
 const GRASS_TINT = 'rgba(39, 174, 96, 0.4)'
+const GATE_TINT = 'rgba(211, 84, 0, 0.45)'
+const GATE_TEXT = 'rgba(255, 255, 255, 0.95)'
 
 /**
  * Draws the attribute grids over the frame: painted collision in red, cells a
  * solid metatile blocks in orange, and non-zero elevation as a tinted cell
- * with its number, tall grass in green. Reads the data only; hiding an overlay changes nothing.
+ * with its number, tall grass in green, a gate (T-050) in orange with a G. Reads the data only; hiding an overlay changes nothing.
  */
 export function drawAttributes(
     ctx: CanvasRenderingContext2D,
@@ -29,7 +33,7 @@ export function drawAttributes(
     tileset: Tileset | undefined,
     overlays: AttributeOverlays,
 ): void {
-    if (!overlays.collision && !overlays.elevation && !overlays.grass) {
+    if (!overlays.collision && !overlays.elevation && !overlays.grass && !overlays.gate) {
         return
     }
 
@@ -65,6 +69,13 @@ export function drawAttributes(
             if (overlays.grass && attributes.grass) {
                 ctx.fillStyle = GRASS_TINT
                 ctx.fillRect(screen.x, screen.y, cellSize, cellSize)
+            }
+
+            if (overlays.gate && attributes.gate !== null) {
+                ctx.fillStyle = GATE_TINT
+                ctx.fillRect(screen.x, screen.y, cellSize, cellSize)
+                ctx.fillStyle = GATE_TEXT
+                ctx.fillText('G', screen.x + cellSize / 2, screen.y + cellSize / 2)
             }
 
             if (overlays.elevation && attributes.elevation !== 0) {

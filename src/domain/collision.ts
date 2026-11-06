@@ -1,5 +1,6 @@
 import { Cell } from './coordinates'
-import { cellIndex, elevationAt, elevationsAgree, isSolid, metatilesAt, TileMap } from './map'
+import { cellIndex, elevationAt, elevationsAgree, gateAt, isSolid, metatilesAt, TileMap } from './map'
+import { Id } from './id'
 import { CanEnter, Direction, DIRECTION_DELTAS } from './movement'
 import { LedgeDirection, Tileset } from './tileset'
 
@@ -45,20 +46,32 @@ export function ledgeAt(map: TileMap, tileset: Tileset, cell: Cell): LedgeDirect
     return stacked.length === 0 ? null : stacked[stacked.length - 1].ledge
 }
 
+/** Whether a gate's flag is set this session. The default knows no flags, so every gate is shut. */
+export type IsOpen = (flagId: Id) => boolean
+
+const NOTHING_OPEN: IsOpen = () => false
+
 /**
  * Whether the player may step from `from` onto the neighbouring `to`.
  *
  * - Outside the map or a solid cell: never.
+ * - A gate cell (T-050) only once its flag is set (`isOpen`).
  * - A ledge is one-way. Its direction is the way you hop it: you may enter
  *   a ledge cell only while moving in that direction, and you may not leave
  *   it against that direction. Any other approach is a wall.
  * - Two non-zero elevations that differ block, except across a ledge taken
  *   the right way, which is how you get down a level.
  */
-export function canStep(map: TileMap, tileset: Tileset, from: Cell, to: Cell): boolean {
+export function canStep(map: TileMap, tileset: Tileset, from: Cell, to: Cell, isOpen: IsOpen = NOTHING_OPEN): boolean {
     const direction = directionBetween(from, to)
 
     if (direction === undefined || isSolid(map, tileset, to)) {
+        return false
+    }
+
+    const gate = gateAt(map, to)
+
+    if (gate !== null && !isOpen(gate.flagId)) {
         return false
     }
 
@@ -79,4 +92,4 @@ export function canStep(map: TileMap, tileset: Tileset, from: Cell, to: Cell): b
 }
 
 /** `canStep` bound to one map, in the shape `stepPlayer` takes. */
-export const stepRule = (map: TileMap, tileset: Tileset): CanEnter => (from, to) => canStep(map, tileset, from, to)
+export const stepRule = (map: TileMap, tileset: Tileset, isOpen: IsOpen = NOTHING_OPEN): CanEnter => (from, to) => canStep(map, tileset, from, to, isOpen)

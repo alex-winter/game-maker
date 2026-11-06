@@ -30,7 +30,8 @@ import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { Cell, Coordinates } from 'domain/coordinates'
 import { GRID_SIZE, pixelToCell } from 'domain/grid'
 import { Id } from 'domain/id'
-import { TileLayer, TileMap, floodFill, floodFillCells, withCell, withCellsRect, withCollision, withElevation, withGrass, withRect, withTile, withTileLayer } from 'domain/map'
+import { TileLayer, TileMap, floodFill, floodFillCells, gateAt, withCell, withCellsRect, withCollision, withElevation, withGate, withGrass, withRect, withTile, withTileLayer } from 'domain/map'
+import { GATE_REMOVE, GATE_SUBMIT, GateForm, GateSubmission } from 'Client/Component/Events/GateForm'
 import { GameMap } from 'domain/project'
 import { EMPTY_METATILE_ID, metatileById, MetatileId } from 'domain/tileset'
 import { DrawPort } from 'engine/draw-port'
@@ -83,6 +84,8 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         [ITEM_DELETE]: this.handleItemDelete,
         [NPC_SUBMIT]: this.handleNpcSubmit,
         [NPC_DELETE]: this.handleNpcDelete,
+        [GATE_SUBMIT]: this.handleGateSubmit,
+        [GATE_REMOVE]: this.handleGateRemove,
         [EVENT_KIND_PICK]: this.handleEventKindPick,
     }
 
@@ -347,6 +350,7 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
             collision: !mapSession.isHidden('collision'),
             elevation: !mapSession.isHidden('elevation'),
             grass: !mapSession.isHidden('grass'),
+            gate: !mapSession.isHidden('gate'),
         })
 
         if (!mapSession.isHidden('events')) {
@@ -457,8 +461,8 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
             }
         }
 
-        if (target.kind === 'events') {
-            // Events are placed one at a time through a form, not painted; see handleMouseDown.
+        if (target.kind === 'events' || target.kind === 'gate') {
+            // Events and gates are placed one at a time through a form, not painted; see handleMouseDown.
             return undefined
         }
 
@@ -643,6 +647,11 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
             return
         }
 
+        if (mapSession.target?.kind === 'gate') {
+            this.handleGateClick(this.cellAt(event))
+            return
+        }
+
         const writer = this.writerFor(this.tool)
 
         if (writer === undefined) {
@@ -693,6 +702,45 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         } else if (first.kind === 'npc') {
             await this.openNpcForm(cell, first)
         }
+    }
+
+    /** On the gates target a click opens the gate on the cell (or a new one) in its form; the rubber removes it. */
+    private async handleGateClick(cell: Cell): Promise<void> {
+        const map = mapSession.current
+
+        if (cell.x < 0 || cell.y < 0 || cell.x >= map.tileMap.width || cell.y >= map.tileMap.height) {
+            return
+        }
+
+        const gate = gateAt(map.tileMap, cell)
+
+        if (this.tool === 'rubber') {
+            if (gate !== null) {
+                await mapSession.commit(withGate(map.tileMap, cell, null))
+            }
+
+            return
+        }
+
+        const project = await projectRepository.load()
+        const sheets = await sheetRepository.getAll()
+        const tileset = projectRepository.cachedTileset(map.tileMap.tilesetId)
+
+        this.openModal(Dom.makeComponent(GateForm, {
+            gate,
+            cell,
+            flags: project.flags.map(each => ({ id: each.id, name: each.name })),
+            metatiles: tileset?.metatiles ?? [],
+            sheetSources: Object.fromEntries(sheets.map(sheet => [sheet.id, sheet.imageSrc])),
+        }))
+    }
+
+    private async handleGateSubmit(submission: GateSubmission): Promise<void> {
+        await mapSession.commit(withGate(mapSession.tileMap, submission.cell, submission.gate))
+    }
+
+    private async handleGateRemove(cell: Cell): Promise<void> {
+        await mapSession.commit(withGate(mapSession.tileMap, cell, null))
     }
 
     private async openNpcForm(cell: Cell, npc: NpcEvent | null): Promise<void> {

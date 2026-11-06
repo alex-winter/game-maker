@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { canStep, directionBetween, ledgeAt, stepRule } from './collision'
-import { cellIndex, emptyTileMap, TileMap } from './map'
+import { cellIndex, emptyTileMap, gateAt, TileMap, withGate, withOpenGates, withTile } from './map'
 import { newPlayer, stepPlayer } from './movement'
 import { LedgeDirection, Metatile, Tileset } from './tileset'
 
@@ -129,4 +129,36 @@ test('a refused step still turns the player, and sliding along a wall works', ()
 
     player = stepPlayer(player, { direction: 'up', running: false }, 16, rule)
     assert.deepEqual(player.step?.to, { x: 2, y: 1 })
+})
+
+test('a gate cell is a wall until its flag is set, and then shows its open metatile (T-050)', () => {
+    const STUMP = 7
+    const map = withGate(mapWith(), { x: 2, y: 2 }, { flagId: 'cut-tree', openMetatileId: STUMP })
+    const shut = () => false
+    const open = (flagId: string) => flagId === 'cut-tree'
+
+    assert.equal(canStep(map, tileset, { x: 1, y: 2 }, { x: 2, y: 2 }), false, 'with no flags known, shut')
+    assert.equal(canStep(map, tileset, { x: 1, y: 2 }, { x: 2, y: 2 }, shut), false, 'flag clear, shut')
+    assert.equal(canStep(map, tileset, { x: 1, y: 2 }, { x: 2, y: 2 }, open), true, 'flag set, open')
+    assert.equal(canStep(map, tileset, { x: 1, y: 2 }, { x: 1, y: 3 }, shut), true, 'neighbouring cells are unaffected')
+    assert.equal(stepRule(map, tileset, open)({ x: 2, y: 1 }, { x: 2, y: 2 }), true)
+
+    assert.equal(withOpenGates(map, shut), map, 'nothing to show while shut: the same map')
+    assert.equal(withOpenGates(map, shut).layers[0].tiles[at(map, 2, 2)], 0)
+
+    const shown = withOpenGates(map, open)
+
+    assert.equal(shown.layers[0].tiles[at(map, 2, 2)], STUMP, 'an unpainted cell gets the stump on the first layer')
+    assert.equal(map.layers[0].tiles[at(map, 2, 2)], 0, 'the stored map is untouched')
+
+    const painted: TileMap = { ...map, layers: map.layers.map(layer => withTile(map, layer, { x: 2, y: 2 }, 1)) }
+    const shownPainted = withOpenGates(painted, open)
+
+    assert.equal(shownPainted.layers[1].tiles[at(map, 2, 2)], STUMP, 'the front-most painted picture is the one swapped')
+    assert.equal(shownPainted.layers[0].tiles[at(map, 2, 2)], 1, 'the layer behind keeps its picture')
+
+    const noPicture = withGate(mapWith(), { x: 2, y: 2 }, { flagId: 'cut-tree', openMetatileId: null })
+
+    assert.equal(withOpenGates(noPicture, open), noPicture, 'a gate with no open picture draws as painted')
+    assert.equal(gateAt(withGate(map, { x: 2, y: 2 }, null), { x: 2, y: 2 }), null, 'null removes the gate')
 })

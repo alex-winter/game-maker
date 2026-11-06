@@ -15,10 +15,11 @@ export type PaintTarget =
     | { readonly kind: 'collision' }
     | { readonly kind: 'elevation' }
     | { readonly kind: 'grass' }
+    | { readonly kind: 'gate' }
     | { readonly kind: 'events' }
 
 /** The keys `isHidden`/`toggleHidden` accept: a tile layer id, an attribute overlay, or the events overlay. */
-export type OverlayKey = Id | 'collision' | 'elevation' | 'grass' | 'events'
+export type OverlayKey = Id | 'collision' | 'elevation' | 'grass' | 'gate' | 'events'
 
 /**
  * The map the editor has open, plus the editor-only state around it: what
@@ -48,6 +49,7 @@ class MapSession {
         this.hidden.add('collision')
         this.hidden.add('elevation')
         this.hidden.add('grass')
+        this.hidden.add('gate')
 
         Events.emit(MAP_SESSION_CHANGED, undefined)
     }

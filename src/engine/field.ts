@@ -14,7 +14,7 @@ import { faceToward as turnToward } from '../domain/interact'
 import { Bag, isTaken, newBag, pickUp } from '../domain/item'
 import { Party } from '../domain/creature'
 import { BattleRequest, BattleResult, EncounterTable, rollEncounter, wildAppearedText } from '../domain/encounter'
-import { advanceMessage, MessageState, missingDialogPages, moveHighlight, openMessage } from './message'
+import { advanceMessage, currentPage, MessageState, missingDialogPages, moveHighlight, openMessage } from './message'
 import { MenuEntry, MenuState, moveMenu, openMenu, selectedEntry } from './menu'
 import { SavedSession } from '../domain/save'
 import { BagScreenState, moveBagCursor, openBagScreen } from './bag-screen'
@@ -97,8 +97,8 @@ export type FieldInput = MovementInput & {
 export type FieldWorld = {
     sizeOf(mapId: Id): GridSize | undefined
 
-    /** The within-map rule for `mapId`: collision, elevation, ledges. */
-    canEnter(mapId: Id): CanEnter
+    /** The within-map rule for `mapId`: collision, elevation, ledges, and (T-050) gates shut unless `memory` holds their flag. */
+    canEnter(mapId: Id, memory: Memory): CanEnter
 
     /** Whether a landing cell on another map can be stood on. */
     isSolidAt(mapId: Id, cell: Cell): boolean
@@ -181,7 +181,7 @@ export function afterBattle(state: FieldState, result: BattleResult, speciesName
 
 /** The trainers on the map who have not been beaten yet and could spot the player from where they stand now. */
 function spotter(state: FieldState, events: readonly MapEvent[], size: GridSize, world: FieldWorld): NpcEvent | undefined {
-    const inside = world.canEnter(state.mapId)
+    const inside = world.canEnter(state.mapId, state.memory)
     const items = itemsOnMap(events, state.memory).map(item => item.cell)
     const target = state.player.cell
 
@@ -326,6 +326,17 @@ export function isTransitioning(state: FieldState): boolean {
  * seam reached by that step starts a fade with the destination pending.
  */
 export function advanceField(state: FieldState, input: FieldInput, deltaMs: number, world: FieldWorld): FieldState {
+    return rememberingPage(advanceFrame(state, input, deltaMs, world))
+}
+
+/** A page that names a flag (T-050) sets it the frame it is shown; that is how a dialog opens a gate. */
+function rememberingPage(state: FieldState): FieldState {
+    const flagId = state.message === null ? undefined : currentPage(state.message).setsFlagId
+
+    return flagId === undefined || hasFlag(state.memory, flagId) ? state : { ...state, memory: setFlag(state.memory, flagId) }
+}
+
+function advanceFrame(state: FieldState, input: FieldInput, deltaMs: number, world: FieldWorld): FieldState {
     if (state.fade !== null) {
         const { fade, swap } = advanceFade(state.fade, deltaMs)
 
@@ -467,7 +478,7 @@ function grassRoll(before: FieldState, after: Player, world: FieldWorld): Battle
 
 /** One frame of every person's behavior. Nobody steps onto an item, another person's cells, or the player's; the map edge is a wall to them. */
 function movePeople(state: FieldState, events: readonly MapEvent[], size: GridSize, deltaMs: number, world: FieldWorld): readonly NpcMotion[] {
-    const inside = world.canEnter(state.mapId)
+    const inside = world.canEnter(state.mapId, state.memory)
     const items = itemsOnMap(events, state.memory).map(item => item.cell)
     const npcs = npcsOn(events)
 
@@ -483,7 +494,7 @@ function movePeople(state: FieldState, events: readonly MapEvent[], size: GridSi
 
 /** Inside the map the collision rule decides and an item still lying there or a person standing (or stepping) there blocks; beyond an edge a seam may let the step through onto open ground. */
 function seamAwareRule(mapId: Id, size: GridSize, memory: Memory, people: readonly NpcMotion[], world: FieldWorld): CanEnter {
-    const inside = world.canEnter(mapId)
+    const inside = world.canEnter(mapId, memory)
     const events = world.eventsOf(mapId)
     const occupied: readonly Cell[] = [...itemsOnMap(events, memory).map(event => event.cell), ...people.flatMap(motion => footprint(motion.mover))]
 

@@ -3,6 +3,7 @@ import { Dom } from 'Client/Service/Dom'
 import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
 import { Choice, Dialog, DialogPage, MAX_CHOICES, newPage } from 'domain/dialog'
 import { Id } from 'domain/id'
+import { Flag } from 'domain/flags'
 import { MESSAGE_COLUMNS, MESSAGE_LINES, wrapText } from 'engine/message'
 
 /**
@@ -14,6 +15,8 @@ import { MESSAGE_COLUMNS, MESSAGE_LINES, wrapText } from 'engine/message'
  */
 export class DialogEditor extends Component<{ dialogId: Id | null }> {
     private dialogs: Dialog[] = []
+
+    private flags: Flag[] = []
     private dialog: Dialog | undefined
 
     protected listeners: Listeners = {
@@ -29,6 +32,7 @@ export class DialogEditor extends Component<{ dialogId: Id | null }> {
         '.remove-choice:click': this.handleRemoveChoice,
         '.choice-label:change': this.handleChoiceChange,
         '.choice-target:change': this.handleChoiceChange,
+        '.page-flag:change': this.handlePageFlagChange,
     }
 
     protected css(): string {
@@ -122,6 +126,14 @@ export class DialogEditor extends Component<{ dialogId: Id | null }> {
                 padding: 4px 8px;
             }
 
+            .page-flag-row {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-top: 4px;
+                color: #666;
+            }
+
             .choices {
                 display: flex;
                 flex-direction: column;
@@ -170,7 +182,10 @@ export class DialogEditor extends Component<{ dialogId: Id | null }> {
     }
 
     protected async setup(): Promise<void> {
-        this.dialogs = (await projectRepository.load()).dialogs
+        const project = await projectRepository.load()
+
+        this.dialogs = project.dialogs
+        this.flags = project.flags
 
         const requested = this.parsedDataset.dialogId
 
@@ -250,7 +265,7 @@ export class DialogEditor extends Component<{ dialogId: Id | null }> {
         area.dataset.index = String(index)
         area.placeholder = 'What the sign says on this page…'
         this.showFit(area, fit)
-        body.append(area, fit, this.buildChoices(page, index))
+        body.append(area, fit, this.buildFlagRow(page, index), this.buildChoices(page, index))
 
         const remove = Dom.button('×', 'remove-page')
 
@@ -259,6 +274,28 @@ export class DialogEditor extends Component<{ dialogId: Id | null }> {
         remove.disabled = count <= 1
 
         row.append(Dom.span(String(index + 1) + '.', 'page-number'), body, remove)
+
+        return row
+    }
+
+    /** Which story flag the page sets when shown (T-050): how a conversation opens a gate. */
+    private buildFlagRow(page: DialogPage, index: number): HTMLElement {
+        const row = Dom.div('page-flag-row')
+        const select = document.createElement('select')
+        const none = document.createElement('option')
+
+        select.className = 'page-flag'
+        select.dataset.index = String(index)
+        none.value = ''
+        none.textContent = 'sets no flag'
+        none.selected = page.setsFlagId === undefined
+        select.append(none)
+
+        for (const flag of this.flags) {
+            select.append(new Option('sets ' + flag.name, flag.id, false, flag.id === page.setsFlagId))
+        }
+
+        row.append(Dom.span('When shown:'), select)
 
         return row
     }
@@ -469,6 +506,25 @@ export class DialogEditor extends Component<{ dialogId: Id | null }> {
     }
 
     /** Reads the whole row the changed control sits in, so label and target save together. */
+    private async handlePageFlagChange(event: Event): Promise<void> {
+        const control = event.target
+        const index = this.indexOf(control)
+
+        if (index === undefined || !(control instanceof HTMLSelectElement)) {
+            return
+        }
+
+        const changed = this.withPage(index, page => {
+            const { setsFlagId: _dropped, ...rest } = page
+
+            return control.value === '' ? rest : { ...rest, setsFlagId: control.value }
+        })
+
+        if (changed !== undefined) {
+            await this.save(changed)
+        }
+    }
+
     private async handleChoiceChange(event: Event): Promise<void> {
         const control = event.target
         const index = this.indexOf(control)

@@ -607,3 +607,39 @@ test('a trainer already beaten, or still thinking of the fight lost, obeys the f
     }
     assert.equal(away.challengedBy, null, 'a finished step forgets the last challenger')
 })
+
+test('a dialog page that names a flag sets it when shown, and a gate reading that flag opens (T-050)', () => {
+    const woodsman = newNpcEvent('woodsman', { x: 5, y: 4 }, 'Woodsman', null, 'down', 'cut')
+    const gated: FieldWorld = {
+        ...world,
+        eventsOf: () => [woodsman],
+        pagesOf: id => (id === 'cut' ? [newPage('Let me cut that tree.'), { ...newPage('There. Off you go.'), setsFlagId: 'tree-cut' }] : undefined),
+        canEnter: (_mapId, memory) => (from, to) => insideMap(town)(from, to) && !(to.x === 6 && to.y === 5 && !hasFlag(memory, 'tree-cut')),
+    }
+    let state = newField('town', { x: 5, y: 5 }, 'right')
+    const play = (input: FieldInput, ms: number) => {
+        for (let t = 0; t < ms; t += 16) {
+            state = advanceField(state, input, 16, gated)
+        }
+    }
+
+    play(right, WALK_MS_PER_CELL + 32)
+    assert.deepEqual(state.player.cell, { x: 5, y: 5 }, 'the gate is a wall while the flag is clear')
+    assert.equal(state.player.step, null)
+
+    play(up, 16)
+    assert.equal(state.player.facing, 'up', 'turned toward the woodsman, who blocks the cell')
+    play(none, 32)
+    state = advanceField(state, { ...none, interact: true }, 16, gated)
+    assert.equal(state.message?.pages[0]?.text, 'Let me cut that tree.')
+    assert.equal(hasFlag(state.memory, 'tree-cut'), false, 'the first page sets nothing')
+
+    state = advanceField(state, { ...none, interact: true }, 16, gated)
+    assert.equal(hasFlag(state.memory, 'tree-cut'), true, 'the second page set the flag the frame it appeared')
+
+    state = advanceField(state, { ...none, interact: true }, 16, gated)
+    assert.equal(state.message, null)
+
+    play(right, WALK_MS_PER_CELL + 32)
+    assert.deepEqual(state.player.cell, { x: 6, y: 5 }, 'and the gate lets the player through')
+})

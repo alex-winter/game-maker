@@ -8,7 +8,8 @@ import { buildScene } from 'Client/Service/build-scene'
 import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
 import { HeldDirections } from 'Client/Service/held-directions'
 import { GameMap, Project, findDialog, findItem, findMap, findSpecies, findSprite, playerSprite, startMap } from 'domain/project'
-import { isGrassAt, isSolid } from 'domain/map'
+import { isGrassAt, isSolid, withOpenGates } from 'domain/map'
+import { hasFlag, Memory } from 'domain/flags'
 import { Scene } from 'engine/scene'
 import { DrawPort, PortSize } from 'engine/draw-port'
 import { CanEnter } from 'domain/movement'
@@ -122,30 +123,31 @@ type OpenMap = {
     readonly pixels: PortSize
 }
 
-/** The within-map rule: collision, elevation, and ledges, or only the edge for a map without a tileset. */
-function ruleFor(map: GameMap): CanEnter {
+/** The within-map rule: collision, elevation, ledges, and gates the session's flags open (T-050), or only the edge for a map without a tileset. */
+function ruleFor(map: GameMap, memory: Memory): CanEnter {
     const tileset = projectRepository.cachedTileset(map.tileMap.tilesetId)
 
-    return tileset === undefined ? insideMap(map.tileMap) : stepRule(map.tileMap, tileset)
+    return tileset === undefined ? insideMap(map.tileMap) : stepRule(map.tileMap, tileset, flagId => hasFlag(memory, flagId))
 }
 
 /** Answers the field session's questions from the loaded project. */
 function worldOf(project: Project): FieldWorld {
-    const rules = new Map<Id, CanEnter>()
+    // The rule is rebuilt only when the flags change: a gate opening is the one thing that moves it.
+    const rules = new Map<Id, { flags: Memory['flags']; rule: CanEnter }>()
 
     return {
         sizeOf: mapId => findMap(project, mapId)?.tileMap,
-        canEnter: mapId => {
+        canEnter: (mapId, memory) => {
             const cached = rules.get(mapId)
 
-            if (cached !== undefined) {
-                return cached
+            if (cached !== undefined && cached.flags === memory.flags) {
+                return cached.rule
             }
 
             const map = findMap(project, mapId)
-            const rule: CanEnter = map === undefined ? () => false : ruleFor(map)
+            const rule: CanEnter = map === undefined ? () => false : ruleFor(map, memory)
 
-            rules.set(mapId, rule)
+            rules.set(mapId, { flags: memory.flags, rule })
 
             return rule
         },
@@ -174,9 +176,11 @@ function openMap(
     map: GameMap,
     sheetById: ReadonlyMap<Id, CanvasImageSource>,
     legacyPlacements: ReadonlyMap<Id, readonly LoadedPlacement[]>,
+    memory: Memory,
 ): OpenMap {
     const scene = buildScene({
-        tileMap: map.tileMap,
+        // Gates the session has opened show their open picture (T-050).
+        tileMap: withOpenGates(map.tileMap, flagId => hasFlag(memory, flagId)),
         tileset: projectRepository.cachedTileset(map.tileMap.tilesetId),
         sheetById,
         layers: map.layers,
@@ -291,9 +295,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const savedMap = resume === undefined ? undefined : findMap(project, resume.mapId)
     const map = savedMap ?? startAt
-    let open = openMap(map, sheetById, legacyPlacements)
     // A new game carries the authored starter (T-047); a resumed one carries whatever was saved.
     let field: FieldState = resume !== undefined && savedMap !== undefined ? restoreField(resume) : newField(map.id, map.spawn, 'down', undefined, undefined, starterParty(project.starter, project.species))
+    let open = openMap(map, sheetById, legacyPlacements, field.memory)
+    let shownFlags = field.memory.flags
 
     // The session clock animated tiles follow: it runs on through fades and menus so water never stutters.
     let clockMs = 0
@@ -315,11 +320,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // The session changed map at the black point of a fade: draw the new one from now on.
-        if (field.mapId !== open.map.id) {
+        if (field.mapId !== open.map.id || field.memory.flags !== shownFlags) {
             const next = findMap(project, field.mapId)
 
             if (next !== undefined) {
-                open = openMap(next, sheetById, legacyPlacements)
+                open = openMap(next, sheetById, legacyPlacements, field.memory)
+                shownFlags = field.memory.flags
             }
         }
 

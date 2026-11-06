@@ -6,7 +6,7 @@ import { Events } from 'Client/Service/Events'
 import { MAP_SESSION_CHANGED, mapSession, PaintTarget } from 'Client/Service/map-session'
 import { addTileLayer, MAX_ELEVATION, TileLayer } from 'domain/map'
 
-type AttributeKind = 'collision' | 'elevation' | 'grass' | 'events'
+type AttributeKind = 'collision' | 'elevation' | 'grass' | 'gate' | 'events'
 
 /**
  * The open map's tile layers, front-most first, then the two attribute grids
@@ -41,6 +41,7 @@ export class LayerListing extends Component {
             this.buildAttribute('collision', 'Collision', 'fa-road-barrier'),
             this.buildAttribute('elevation', 'Elevation', 'fa-stairs'),
             this.buildAttribute('grass', 'Grass', 'fa-seedling'),
+            this.buildAttribute('gate', 'Gates', 'fa-lock'),
             this.buildAttribute('events', 'Events', 'fa-door-open'),
         )
 
@@ -95,7 +96,7 @@ export class LayerListing extends Component {
             : null
         const kind = row?.dataset.kind
 
-        return kind === 'collision' || kind === 'elevation' || kind === 'grass' || kind === 'events' ? { kind } : undefined
+        return kind === 'collision' || kind === 'elevation' || kind === 'grass' || kind === 'gate' || kind === 'events' ? { kind } : undefined
     }
 
     private handleAttributeClick(event: Event): void {
@@ -194,6 +195,10 @@ export class LayerListing extends Component {
 
             .attribute.grass {
                 border-left: 4px solid #27ae60;
+            }
+
+            .attribute.gate {
+                border-left: 4px solid #d35400;
             }
 
             .attribute.events {
