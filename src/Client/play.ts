@@ -19,7 +19,7 @@ import { Direction, insideMap, Player, playerPixel } from 'domain/movement'
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { cameraFor, GBA_VIEW, integerScale } from 'engine/camera'
 import { fadeOpacity } from 'engine/fade'
-import { advanceField, afterSave, FieldState, FieldWorld, itemsOnMap, newField, restoreField, snapshotField } from 'engine/field'
+import { advanceField, afterSave, FieldState, FieldWorld, itemsOnMap, newField, npcFacing, restoreField, snapshotField } from 'engine/field'
 import { startLoop } from 'engine/loop'
 import { playerActor } from 'engine/player-actor'
 import { renderFrame } from 'engine/render'
@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const player = field.player
 
         const items = itemsOnMap(open.map.events, field.memory).map(item => itemActor(item, open.scene.tileset, sheetById))
-        const people = npcsOn(open.map.events).map(npc => npcActor(npc, npc.facing, spriteLookup))
+        const people = npcsOn(open.map.events).map(npc => npcActor(npc, npcFacing(field, npc), spriteLookup))
 
         renderFrame(port, open.scene, followPlayer(player, open.pixels, zoom), [...items, ...people, playerActor(player, sprite, spriteSheet)])
 

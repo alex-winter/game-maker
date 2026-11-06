@@ -1,7 +1,7 @@
 ---
 id: T-043
 title: Talk to an NPC
-status: ready
+status: done
 priority: P1
 phase: 7
 type: feat
@@ -43,9 +43,16 @@ Out:
 
 ## Acceptance
 
-- [ ] A test of the facing helper for all four sides.
-- [ ] Manual: talk, pick a choice, watch the NPC turn back.
+- [x] A test of the facing helper for all four sides.
+- [x] Manual: talk, pick a choice, watch the NPC turn back.
 
 ## Test plan
 
 - Unit test facing. Manual conversation.
+
+## Result
+
+- `faceToward(from, to)` (`domain/interact.ts`) — the direction a person on `from` turns to face `to`; undefined unless they are neighbours. Tested on all four sides, a diagonal, two cells away, and the same cell.
+- Field session: an `npc` interaction opens the dialog's pages through `world.pagesOf` (`missingDialogPages` when the id is gone, `silentPages(name)` when the person has no dialog yet) and records `talkingTo: { eventId, facing }`; it clears when the message closes, including through a choice with no target. `npcFacing(state, npc)` gives the facing to draw; play uses it for the NPC actors.
+- Tests: the conversation opens with choices, Mom faces the player, "No" closes and she turns back, "Yes" branches while still talking; a silent person says so.
+- Verified in headless Chrome: Mom placed above the spawn facing left; after walking up and pressing Z the welcome dialog with Yes/No opens and Mom's sprite turns down toward the player; after choosing No the box closes and her region of the canvas is pixel-identical to before the talk. A sprite-less Kid shows the placeholder line.

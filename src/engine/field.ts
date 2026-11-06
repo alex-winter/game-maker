@@ -3,8 +3,8 @@ import { Cell } from '../domain/coordinates'
 import { Id } from '../domain/id'
 import { GridSize, isInside } from '../domain/map'
 import { CanEnter, Direction, MovementInput, newPlayer, Player, stepPlayer } from '../domain/movement'
-import { Interaction, resolveInteraction } from '../domain/interact'
-import { ItemEvent, MapEvent, npcsOn, stepFinished, warpTaken } from '../domain/warp'
+import { faceToward, Interaction, resolveInteraction } from '../domain/interact'
+import { ItemEvent, MapEvent, NpcEvent, npcsOn, stepFinished, warpTaken } from '../domain/warp'
 import { advanceFade, Fade, startFade } from './fade'
 import { DialogPage, newPage } from '../domain/dialog'
 import { Memory, newMemory } from '../domain/flags'
@@ -56,6 +56,9 @@ export type FieldState = {
 
     /** The bag screen, while it is open over the menu (T-039). */
     readonly bagScreen: BagScreenState | null
+
+    /** The person being talked to and the way they turned to face the player (T-043), while the message is open. */
+    readonly talkingTo: { readonly eventId: Id; readonly facing: Direction } | null
 }
 
 /** Movement plus whether the interact and menu keys were pressed this frame (edges, not levels). */
@@ -88,7 +91,7 @@ export type FieldWorld = {
 }
 
 export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down', memory: Memory = newMemory(), bag: Bag = newBag()): FieldState {
-    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined, bagScreen: null }
+    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined, bagScreen: null, talkingTo: null }
 }
 
 /** What a save keeps of the session (T-041): the standing cell, never a half-finished step. */
@@ -106,6 +109,16 @@ export function restoreField(session: SavedSession): FieldState {
 /** After the host has written the save: the menu closes and the box says so. */
 export function afterSave(state: FieldState): FieldState {
     return { ...state, menu: null, menuChoice: undefined, message: openMessage([newPage('Saved the game.')]) }
+}
+
+/** The way an NPC faces this frame: toward the player while they talk, else their own. */
+export function npcFacing(state: FieldState, npc: NpcEvent): Direction {
+    return state.talkingTo !== null && state.talkingTo.eventId === npc.id ? state.talkingTo.facing : npc.facing
+}
+
+/** What a person with no dialog says, so the author sees who to write for. */
+export function silentPages(name: string): DialogPage[] {
+    return [newPage(`(${name} has nothing to say yet.)`)]
 }
 
 /** The map's events as the session sees them now: an item already taken is not there. */
@@ -157,7 +170,8 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
         const moved = pressed === 'up' ? moveHighlight(state.message, -1) : pressed === 'down' ? moveHighlight(state.message, 1) : state.message
         const message = input.interact ? advanceMessage(moved, id => world.pagesOf(id)) : moved
 
-        return { ...state, interaction: undefined, message, lastDirection: input.direction, menuChoice: undefined }
+        // Once the conversation ends the person turns back the way they were.
+        return { ...state, interaction: undefined, message, lastDirection: input.direction, menuChoice: undefined, talkingTo: message === null ? null : state.talkingTo }
     }
 
     if (state.bagScreen !== null) {
@@ -202,6 +216,17 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
             const message = openMessage(world.pagesOf(interaction.dialogId) ?? missingDialogPages(interaction.dialogId))
 
             return { ...state, interaction, message, lastDirection: input.direction, menuChoice: undefined }
+        }
+
+        if (interaction?.kind === 'npc') {
+            const npc = events.find((candidate): candidate is NpcEvent => candidate.kind === 'npc' && candidate.id === interaction.eventId)
+
+            if (npc !== undefined) {
+                const pages = interaction.dialogId === null ? silentPages(npc.name) : world.pagesOf(interaction.dialogId) ?? missingDialogPages(interaction.dialogId)
+                const facing = faceToward(npc.cell, state.player.cell) ?? npc.facing
+
+                return { ...state, interaction, message: openMessage(pages), talkingTo: { eventId: npc.id, facing }, lastDirection: input.direction, menuChoice: undefined }
+            }
         }
 
         if (interaction?.kind === 'item') {

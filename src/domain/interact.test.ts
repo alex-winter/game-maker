@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { cellInFront, interactionAt, resolveInteraction } from './interact'
+import { cellInFront, faceToward, interactionAt, resolveInteraction } from './interact'
 import { beginStep, newPlayer } from './movement'
 import { MapEvent, newSign, newWarp } from './warp'
 
@@ -31,4 +31,16 @@ test('two events on one cell: the NPC answers before the item, and the item befo
     assert.equal(interactionAt([sign, item, npc], front)?.kind, 'npc')
     assert.equal(interactionAt([sign, item], front)?.kind, 'item')
     assert.deepEqual(interactionAt([item, sign], front), { kind: 'item', itemEventId: 'item' })
+})
+
+test('faceToward turns a person to a neighbour on each side, and is undefined for anyone further away', () => {
+    const me = { x: 4, y: 4 }
+
+    assert.equal(faceToward(me, { x: 4, y: 3 }), 'up')
+    assert.equal(faceToward(me, { x: 4, y: 5 }), 'down')
+    assert.equal(faceToward(me, { x: 3, y: 4 }), 'left')
+    assert.equal(faceToward(me, { x: 5, y: 4 }), 'right')
+    assert.equal(faceToward(me, { x: 5, y: 5 }), undefined, 'diagonal is not a conversation')
+    assert.equal(faceToward(me, { x: 4, y: 6 }), undefined)
+    assert.equal(faceToward(me, me), undefined)
 })

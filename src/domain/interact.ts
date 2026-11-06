@@ -1,5 +1,7 @@
 import { Cell } from './coordinates'
 import { Id } from './id'
+import { Direction } from './movement'
+import { directionBetween } from './collision'
 import { neighbour, Player } from './movement'
 import { eventsAt, MapEvent } from './warp'
 
@@ -8,6 +10,14 @@ export type Interaction =
     | { readonly kind: 'sign'; readonly eventId: Id; readonly dialogId: Id }
     | { readonly kind: 'item'; readonly itemEventId: Id }
     | { readonly kind: 'npc'; readonly eventId: Id; readonly dialogId: Id | null }
+
+/**
+ * The way someone on `from` turns to face someone on `to`: a conversation
+ * happens across one cell, so anything but a neighbour is undefined.
+ */
+export function faceToward(from: Cell, to: Cell): Direction | undefined {
+    return directionBetween(from, to)
+}
 
 /** The cell the player faces. While stepping it is the cell beyond the step's target. */
 export function cellInFront(player: Player): Cell {

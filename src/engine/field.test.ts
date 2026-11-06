@@ -6,7 +6,7 @@ import { newItemEvent, newNpcEvent, newSign, newWarp } from '../domain/warp'
 import { bagCount } from '../domain/item'
 import { hasFlag } from '../domain/flags'
 import { FADE_MS, fadeOpacity } from './fade'
-import { advanceField, afterSave, FieldInput, FieldState, FieldWorld, isTransitioning, newField, restoreField, snapshotField } from './field'
+import { advanceField, afterSave, FieldInput, FieldState, FieldWorld, isTransitioning, newField, npcFacing, restoreField, snapshotField } from './field'
 
 const town = { width: 10, height: 10 }
 const house = { width: 6, height: 6 }
@@ -329,4 +329,33 @@ test('a person standing on a cell blocks the step like a wall', () => {
 
     assert.equal(tried.player.step, null)
     assert.equal(tried.player.facing, 'right')
+})
+
+test('talking to a person opens their dialog with choices, turns them to face the player, and turns them back when it ends', () => {
+    const mom = newNpcEvent('mom', { x: 6, y: 5 }, 'Mom', null, 'down', 'ask')
+    const peopled: FieldWorld = { ...world, eventsOf: () => [mom] }
+    const talking = advanceField(newField('town', { x: 5, y: 5 }, 'right'), { ...none, interact: true }, 16, peopled)
+
+    assert.equal(talking.message?.pages[0]?.text, 'Take the boat?')
+    assert.deepEqual(talking.talkingTo, { eventId: 'mom', facing: 'left' })
+    assert.equal(npcFacing(talking, mom), 'left')
+
+    const chose = advanceField(advanceField(talking, down, 16, peopled), { ...none, interact: true }, 16, peopled)
+
+    assert.equal(chose.message, null, '"No" ends it')
+    assert.equal(chose.talkingTo, null)
+    assert.equal(npcFacing(chose, mom), 'down', 'back to her own facing')
+
+    const yes = advanceField(talking, { ...none, interact: true }, 16, peopled)
+
+    assert.equal(yes.message?.pages[0]?.text, 'Off you go.', 'the branch opens while still talking')
+    assert.equal(npcFacing(yes, mom), 'left')
+})
+
+test('a person with nothing to say says so, so the author knows who to write for', () => {
+    const quiet = newNpcEvent('kid', { x: 6, y: 5 }, 'Kid', null, 'up', null)
+    const peopled: FieldWorld = { ...world, eventsOf: () => [quiet] }
+    const talking = advanceField(newField('town', { x: 5, y: 5 }, 'right'), { ...none, interact: true }, 16, peopled)
+
+    assert.equal(talking.message?.pages[0]?.text, '(Kid has nothing to say yet.)')
 })
