@@ -12,7 +12,7 @@ data/         created at runtime: layers, placement images, user data, sprite mo
 uploads/      sprite sheet files, stored as <uuid><ext>, plus index.json with the original names
 ```
 
-`npm` scripts only watch-compile. Nothing starts Express, typechecks, or tests. See ticket T-011.
+`npm run build` compiles both bundles, `npm start` runs Express, `npm run typecheck` runs `tsc --noEmit`, and `npm test` runs `node --test` over `src/**/*.test.ts`. See the root README.
 
 ## Boot
 

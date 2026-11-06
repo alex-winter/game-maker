@@ -54,7 +54,7 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 22. **The component base is a runtime dependency of every view.** `event-driven-web-components` owns the lifecycle. `uuid` exists to make stable ids for those tags. Neither is a game concept. Ticket T-018.
 
-23. **Nothing checks the types.** `typescript`, `typescript-eslint`, and a deprecated `tslint` are installed. `package.json` has no `typecheck` or `lint` script, and no tests. Ticket T-011.
+23. **Fixed (T-011).** **Nothing checks the types.** `typescript`, `typescript-eslint`, and a deprecated `tslint` are installed. `package.json` has no `typecheck` or `lint` script, and no tests. Ticket T-011.
 
 ## Not bugs, and not to be "fixed" early
 
