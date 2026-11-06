@@ -63,7 +63,7 @@ Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names a
 | `placement-removed` | `WorldEditor` | none | uuid |
 | `layer-order-up` / `layer-order-down` | `LayerItem` | `WorldEditor` | uuid |
 | `layers-created` | `LayerRepository` | `LayerListing` | `Layer[]` |
-| `layers-update` | `LayerRepository` | `CanvasLayer`, `LayerItem` | none |
+| `layer-changed` | `LayerRepository` | `CanvasLayer`, `LayerItem` | `{ uuid, changed }` |
 | `sheet-selection-made` | `SheetViewer` | every `CanvasLayer` | `HTMLImageElement` |
 | `tool-selection` | `CanvasTools` | every `CanvasLayer` | tool name |
 | `request-focus-on-placement` | `PlacementHistory` | every `CanvasLayer` | uuid |

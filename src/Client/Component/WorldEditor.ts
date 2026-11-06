@@ -202,15 +202,16 @@ export class WorldEditor extends Component {
         )
     }
 
-    private handleNewLayerSubmit(input: LayerInput): void {
+    private async handleNewLayerSubmit(input: LayerInput): Promise<void> {
         const layer = Object.assign(
             LayerFactory.make(),
             input
         )
 
-        Events.emit('new-layer-mapped', [layer])
+        // create assigns the order the canvas needs for its z-index
+        await layerRepository.create(layer)
 
-        layerRepository.create(layer)
+        Events.emit('new-layer-mapped', [layer])
     }
 
     private handleNewLayerMapped(layers: Layer[]): void {
@@ -231,9 +232,9 @@ export class WorldEditor extends Component {
             }
         ) as Layer
 
-        Events.emit('new-layer-mapped', [layer])
-
         await layerRepository.create(layer)
+
+        Events.emit('new-layer-mapped', [layer])
 
         // small delay to ensure the CanvasLayer is mounted
         setTimeout(async () => {
@@ -258,7 +259,7 @@ export class WorldEditor extends Component {
     }
 
     private handleLayerPlacementMade(layer: Layer): void {
-        layerRepository.update(layer)
+        layerRepository.update(layer, 'placements')
     }
 
     private handleLayerActive(layer: Layer): void {
@@ -317,7 +318,7 @@ export class WorldEditor extends Component {
             const index = layer.placements.findIndex(p => p.uuid === placementUuid)
             if (index !== -1) {
                 layer.placements.splice(index, 1)
-                layerRepository.update(layer)
+                layerRepository.update(layer, 'placements')
                 Events.emit('placement-removed', placementUuid)
                 break
             }
@@ -325,46 +326,37 @@ export class WorldEditor extends Component {
     }
 
     private async handleLayerOrderUp(layerUuid: string): Promise<void> {
-        const layer = await layerRepository.getByUuid(layerUuid)
         const layers: Layer[] = await layerRepository.getAll()
 
         layers.sort((a, b) => a.order - b.order)
 
-        const index = layers.findIndex(l => l.uuid === layer.uuid)
+        const index = layers.findIndex(l => l.uuid === layerUuid)
 
         if (index <= 0) return
 
-        const above = layers[index - 1]
-
-        const tempOrder = layer.order
-        layer.order = above.order
-        above.order = tempOrder
-
-        await Promise.all([
-            layerRepository.update(layer),
-            layerRepository.update(above),
-        ])
+        await this.swapOrder(layers[index], layers[index - 1])
     }
 
     private async handleLayerOrderDown(layerUuid: string): Promise<void> {
-        const layer = await layerRepository.getByUuid(layerUuid)
         const layers: Layer[] = await layerRepository.getAll()
 
         layers.sort((a, b) => a.order - b.order)
 
-        const index = layers.findIndex(l => l.uuid === layer.uuid)
+        const index = layers.findIndex(l => l.uuid === layerUuid)
 
-        if (index === -1 || index >= layers.length - 1) return // Already at the bottom or not found
+        if (index === -1 || index >= layers.length - 1) return
 
-        const below = layers[index + 1]
+        await this.swapOrder(layers[index], layers[index + 1])
+    }
 
-        const tempOrder = layer.order
-        layer.order = below.order
-        below.order = tempOrder
+    private async swapOrder(a: Layer, b: Layer): Promise<void> {
+        const tempOrder = a.order
+        a.order = b.order
+        b.order = tempOrder
 
         await Promise.all([
-            layerRepository.update(layer),
-            layerRepository.update(below),
+            layerRepository.update(a, 'order'),
+            layerRepository.update(b, 'order'),
         ])
     }
 

@@ -11,13 +11,15 @@ import { Layer } from 'Model/Layer'
 import { Canvas2D } from 'Client/Component/Canvas/Canvas'
 import { camera } from 'Client/Service/camera'
 import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
-import { layerRepository } from 'Client/Service/Repository/LayerRepository'
+import { LayerChange, layerRepository } from 'Client/Service/Repository/LayerRepository'
 import { loadPlacement } from 'Client/Service/load-placement'
 import { pointerToWorld } from 'Client/Service/pointer-to-world'
 import { snap } from 'Client/Service/snap'
+import { drawOrder } from 'Model/draw-order'
 
 export class CanvasLayer extends Component {
     private static readonly TILE_SIZE: number = 16
+    private static readonly BASE_Z_INDEX: number = 500
     private static readonly COLLISION_IMAGE: string = generateImageDataURL(
         CanvasLayer.TILE_SIZE,
         CanvasLayer.TILE_SIZE,
@@ -38,7 +40,7 @@ export class CanvasLayer extends Component {
 
     protected readonly externalListeners: ExternalListeners = {
         'layer-deleted': this.handleDelete,
-        'layers-update': this.handleLayersUpdate,
+        'layer-changed': this.handleLayerChanged,
         'sheet-selection-made': this.handleCurrentImageChange,
         'tool-selection': this.handleToolSelection,
         'request-focus-on-placement': this.handleRequestFocusOnPlacement,
@@ -100,22 +102,14 @@ export class CanvasLayer extends Component {
         const container = Dom.div('container')
         const canvas = Dom.makeComponent(Canvas2D, { fps: 60 }) as Canvas2D
 
-        this.classList.toggle('active', this.layer.is_active)
-
         this.currentImage.classList.add('current-image')
-
-        canvas.classList.toggle('hide', !this.layer.is_visible)
 
         container.append(
             canvas,
             this.currentImage,
         )
 
-        const baseZIndex = 500
-        const orderIndex = this.layer.order ?? 0
-        const calculatedZIndex = baseZIndex - orderIndex
-
-        this.style.zIndex = calculatedZIndex.toString()
+        this.applyLayerState(canvas)
 
         return container
     }
@@ -124,8 +118,11 @@ export class CanvasLayer extends Component {
         this.getCanvas().startAnimation(this.frameFn.bind(this))
     }
 
-    protected afterPatch(): void {
-        this.getCanvas().startAnimation(this.frameFn.bind(this))
+    /** Visibility, stacking, and the active pointer target, applied without rebuilding the canvas. */
+    private applyLayerState(canvas: Canvas2D): void {
+        this.classList.toggle('active', this.layer.is_active)
+        canvas.classList.toggle('hide', !this.layer.is_visible)
+        this.style.zIndex = (CanvasLayer.BASE_Z_INDEX + drawOrder(this.layer)).toString()
     }
 
     private getCanvas(): Canvas2D {
@@ -249,13 +246,19 @@ export class CanvasLayer extends Component {
         }
     }
 
-    private handleLayersUpdate(): void {
-        this.layer = layerRepository.getByUuid(this.layer.uuid)
+    private handleLayerChanged(change: LayerChange): void {
+        if (change.uuid !== this.layer.uuid) {
+            return
+        }
 
-        const canvas = this.getCanvas()
-        canvas.stopAnimation()
+        const layer = layerRepository.getByUuid(change.uuid)
 
-        this.patch()
+        if (layer === undefined) {
+            return
+        }
+
+        this.layer = layer
+        this.applyLayerState(this.getCanvas())
     }
 
     private handleMouseMove(event: MouseEvent): void {

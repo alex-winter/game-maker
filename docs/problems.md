@@ -10,7 +10,7 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 3. **Sheet GET is a synchronous base64 dump.** `get-sheets.ts` reads every upload inside the `readdir` callback with `readFileSync`, and builds `data:image/<ext>` so JPEG is `image/jpg`. The client keeps that whole payload in memory. Ticket T-007 for the round-trip; T-015 replaces the storage.
 
-4. **JSON writes can tear.** `writeJson` truncates the destination in place. A crash or an overlapping request leaves `layers.json` half-written. `LayerRepository.update` fires a PATCH per call and does not order them. `setActive` and `toggleVisible` PATCH every layer, not the one that changed. Ticket T-005 for the fan-out; T-016 for atomic writes.
+4. **Fan-out fixed (T-005); atomic writes still open (T-016).** **JSON writes can tear.** `writeJson` truncates the destination in place. A crash or an overlapping request leaves `layers.json` half-written. `LayerRepository.update` fires a PATCH per call and does not order them. `setActive` and `toggleVisible` PATCH every layer, not the one that changed. Ticket T-005 for the fan-out; T-016 for atomic writes.
 
 ## Editor geometry and tools
 
@@ -24,7 +24,7 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 9. **Fixed (T-003).** **Placements are decoded twice.** `WorldEditor.setup` pushes a loaded placement, then `loadPlacement` in `CanvasLayer.setup` pushes another with the same uuid. The history lists both. The canvas draws both. Ticket T-003.
 
-10. **Layer visibility and selection restart every canvas.** `layers-update` calls `patch()`, which rebuilds the layer DOM and starts another animation loop. `setActive` emits that once per layer. Ticket T-005.
+10. **Fixed (T-005).** **Layer visibility and selection restart every canvas.** `layers-update` calls `patch()`, which rebuilds the layer DOM and starts another animation loop. `setActive` emits that once per layer. Ticket T-005.
 
 11. **Frame delay is a bitwise accident.** `Canvas2D` does `1000 / fps | 30`. `|` is bitwise OR, and it binds looser than `/`, so 60 fps becomes `16 | 30 === 30` milliseconds. Ticket T-010.
 
