@@ -6,6 +6,7 @@ import { Brush, BRUSH_CHANGED, brush } from 'Client/Service/brush'
 import { buildScene } from 'Client/Service/build-scene'
 import { camera } from 'Client/Service/camera'
 import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
+import { drawGrid } from 'Client/Service/draw-grid'
 import { loadLegacyPlacements } from 'Client/Service/load-legacy-placements'
 import { MAP_SESSION_CHANGED, mapSession } from 'Client/Service/map-session'
 import { pointerToWorld } from 'Client/Service/pointer-to-world'
@@ -23,13 +24,14 @@ import { DrawPort } from 'engine/draw-port'
 import { startLoop } from 'engine/loop'
 import { renderFrame } from 'engine/render'
 import { Scene } from 'engine/scene'
+import { clampZoom, MAX_ZOOM, MIN_ZOOM, View, worldToScreen } from 'engine/view'
 
 /**
  * The one canvas the editor draws the active map into, through the engine's
  * `renderFrame`. It owns the pointer: pencil, fill, rectangle, and rubber
  * write metatile ids onto the session's active layer; the middle button pans.
  */
-export class MapCanvas extends Component<{ map: GameMap }> {
+export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
     private sheetById = new Map<Id, CanvasImageSource>()
     private background: LoadedPlacement[] = []
     private scene: Scene<CanvasImageSource> | undefined
@@ -40,6 +42,8 @@ export class MapCanvas extends Component<{ map: GameMap }> {
     private tool: Tool = 'pencil'
     private isPanning: boolean = false
     private lastMousePosition: Coordinates = { x: 0, y: 0 }
+    private showGrid: boolean = true
+    private hoveredCell: Cell | undefined
 
     protected readonly externalListeners: ExternalListeners = {
         [MAP_SESSION_CHANGED]: this.invalidate,
@@ -53,6 +57,10 @@ export class MapCanvas extends Component<{ map: GameMap }> {
         '.container:mousemove': this.handleMouseMove,
         '.container:mouseup': this.handleMouseUp,
         '.container:contextmenu': this.handleContextMenu,
+        '.container:wheel': this.handleWheel,
+        '.zoom-in:click': this.handleZoomIn,
+        '.zoom-out:click': this.handleZoomOut,
+        '.grid-toggle:change': this.handleGridToggle,
     }
 
     protected css(): string {
@@ -79,10 +87,50 @@ export class MapCanvas extends Component<{ map: GameMap }> {
             .ghost {
                 position: absolute;
                 pointer-events: none;
-                width: ${GRID_SIZE}px;
-                height: ${GRID_SIZE}px;
+                image-rendering: pixelated;
                 opacity: 0.7;
                 outline: 1px solid rgba(255, 255, 255, 0.8);
+            }
+
+            .hud {
+                position: absolute;
+                left: 12px;
+                bottom: 12px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 6px 10px;
+                border-radius: 6px;
+                background: rgba(0, 0, 0, 0.6);
+                color: #eee;
+                font: 13px/1 monospace;
+                user-select: none;
+            }
+
+            .hud button {
+                width: 24px;
+                height: 24px;
+                border: none;
+                border-radius: 4px;
+                background: #444;
+                color: #eee;
+                cursor: pointer;
+            }
+
+            .hud button:disabled {
+                opacity: 0.4;
+                cursor: default;
+            }
+
+            .hud label {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                cursor: pointer;
+            }
+
+            .readout {
+                min-width: 9ch;
             }
 
             .ghost.hide, .selection.hide {
@@ -99,6 +147,8 @@ export class MapCanvas extends Component<{ map: GameMap }> {
     }
 
     protected async setup(): Promise<void> {
+        this.showGrid = this.parsedDataset.showGrid
+
         await Promise.all([this.loadSheets(), this.loadBackground()])
     }
 
@@ -110,9 +160,44 @@ export class MapCanvas extends Component<{ map: GameMap }> {
 
         ghost.classList.add('ghost', 'hide')
 
-        container.append(canvas, ghost, selection)
+        container.append(canvas, ghost, selection, this.buildHud())
 
         return container
+    }
+
+    /** Zoom buttons, the grid toggle, and the cell under the cursor. */
+    private buildHud(): HTMLElement {
+        const hud = Dom.div('hud')
+        const zoomOut = Dom.button('−', 'zoom-out')
+        const zoomIn = Dom.button('+', 'zoom-in')
+        const zoomLabel = Dom.span(camera.get().zoom + '×', 'zoom-label')
+        const gridToggle = document.createElement('input')
+        const gridLabel = document.createElement('label')
+        const readout = Dom.span('—', 'readout')
+
+        zoomOut.title = 'Zoom out'
+        zoomIn.title = 'Zoom in'
+        gridToggle.type = 'checkbox'
+        gridToggle.className = 'grid-toggle'
+        gridToggle.checked = this.showGrid
+        gridLabel.append(gridToggle, 'Grid')
+
+        hud.append(zoomOut, zoomLabel, zoomIn, gridLabel, readout)
+
+        return hud
+    }
+
+    private updateHud(): void {
+        const zoom = camera.get().zoom
+        const label = this.findOne('.zoom-label')
+        const zoomIn = this.findOne('.zoom-in')
+        const zoomOut = this.findOne('.zoom-out')
+        const readout = this.findOne('.readout')
+
+        if (label) label.textContent = zoom + '×'
+        if (zoomIn instanceof HTMLButtonElement) zoomIn.disabled = zoom >= MAX_ZOOM
+        if (zoomOut instanceof HTMLButtonElement) zoomOut.disabled = zoom <= MIN_ZOOM
+        if (readout) readout.textContent = this.hoveredCell === undefined ? '—' : `${this.hoveredCell.x}, ${this.hoveredCell.y}`
     }
 
     protected afterBuild(): void {
@@ -129,6 +214,7 @@ export class MapCanvas extends Component<{ map: GameMap }> {
         this.resizeObserver.observe(this)
         this.fitCanvas()
         this.redrawGhost()
+        this.updateHud()
 
         this.stopLoop = startLoop(() => this.frame(), callback => window.requestAnimationFrame(callback))
     }
@@ -183,11 +269,19 @@ export class MapCanvas extends Component<{ map: GameMap }> {
     }
 
     private frame(): void {
-        if (this.port === undefined) {
+        const ctx = this.getCanvas()?.getContext('2d')
+
+        if (this.port === undefined || !ctx) {
             return
         }
 
-        renderFrame(this.port, this.currentScene(), camera.get())
+        const view = camera.get()
+
+        renderFrame(this.port, this.currentScene(), view)
+
+        if (this.showGrid) {
+            drawGrid(ctx, view, mapSession.tileMap)
+        }
     }
 
     private getCanvas(): HTMLCanvasElement | null {
@@ -206,12 +300,25 @@ export class MapCanvas extends Component<{ map: GameMap }> {
         return this.findOne('.container')
     }
 
-    private cellAt(event: MouseEvent): Cell {
+    private containerRect(): { left: number; top: number } {
         const container = this.getContainer()
-        const rect = container ? container.getBoundingClientRect() : { left: 0, top: 0 }
-        const world = pointerToWorld(event, rect, camera.get())
 
-        return pixelToCell(world)
+        return container ? container.getBoundingClientRect() : { left: 0, top: 0 }
+    }
+
+    private cellAt(event: MouseEvent): Cell {
+        return pixelToCell(pointerToWorld(event, this.containerRect(), camera.get()))
+    }
+
+    /** Places an absolutely positioned overlay on a world rectangle given in cells. */
+    private placeOverlay(element: HTMLElement, view: View, cell: Cell, widthCells: number, heightCells: number): void {
+        const screen = worldToScreen(view, { x: cell.x * GRID_SIZE, y: cell.y * GRID_SIZE })
+        const cellSize = GRID_SIZE * view.zoom
+
+        element.style.left = screen.x + 'px'
+        element.style.top = screen.y + 'px'
+        element.style.width = (widthCells * cellSize) + 'px'
+        element.style.height = (heightCells * cellSize) + 'px'
     }
 
     /**
@@ -268,9 +375,13 @@ export class MapCanvas extends Component<{ map: GameMap }> {
         ctx.drawImage(sheet, metatile.x, metatile.y, metatile.w, metatile.h, 0, 0, GRID_SIZE, GRID_SIZE)
     }
 
-    /** Moves the ghost preview to the cell under the pointer. */
+    /** Moves the ghost preview to the cell under the pointer and updates the readout. */
     private trackPointer(event: MouseEvent): void {
         const ghost = this.getGhost()
+        const cell = this.cellAt(event)
+
+        this.hoveredCell = cell
+        this.updateHud()
 
         if (!ghost) {
             return
@@ -281,12 +392,8 @@ export class MapCanvas extends Component<{ map: GameMap }> {
             return
         }
 
-        const cell = this.cellAt(event)
-        const view = camera.get()
-
         ghost.classList.remove('hide')
-        ghost.style.left = (cell.x * GRID_SIZE - view.x) + 'px'
-        ghost.style.top = (cell.y * GRID_SIZE - view.y) + 'px'
+        this.placeOverlay(ghost, camera.get(), cell, 1, 1)
     }
 
     private showSelection(a: Cell, b: Cell): void {
@@ -296,27 +403,27 @@ export class MapCanvas extends Component<{ map: GameMap }> {
             return
         }
 
-        const view = camera.get()
-        const left = Math.min(a.x, b.x) * GRID_SIZE
-        const top = Math.min(a.y, b.y) * GRID_SIZE
-        const width = (Math.abs(a.x - b.x) + 1) * GRID_SIZE
-        const height = (Math.abs(a.y - b.y) + 1) * GRID_SIZE
-
         selection.classList.remove('hide')
-        selection.style.left = (left - view.x) + 'px'
-        selection.style.top = (top - view.y) + 'px'
-        selection.style.width = width + 'px'
-        selection.style.height = height + 'px'
+        this.placeOverlay(
+            selection,
+            camera.get(),
+            { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y) },
+            Math.abs(a.x - b.x) + 1,
+            Math.abs(a.y - b.y) + 1,
+        )
     }
 
     private hideSelection(): void {
         this.getSelection()?.classList.add('hide')
     }
 
+    /** Screen-pixel drag → world-pixel pan: a drag moves fewer world pixels the further in you are. */
     private panTo(clientX: number, clientY: number): void {
+        const zoom = camera.get().zoom
+
         camera.panBy(
-            this.lastMousePosition.x - clientX,
-            this.lastMousePosition.y - clientY,
+            (this.lastMousePosition.x - clientX) / zoom,
+            (this.lastMousePosition.y - clientY) / zoom,
         )
 
         this.lastMousePosition.x = clientX
@@ -438,6 +545,47 @@ export class MapCanvas extends Component<{ map: GameMap }> {
 
     private handleMouseLeave(): void {
         this.getGhost()?.classList.add('hide')
+        this.hoveredCell = undefined
+        this.updateHud()
+    }
+
+    /** Zooms one step toward the cursor; the camera position is saved like a pan. */
+    private zoomBy(step: number, anchor: Coordinates): void {
+        const before = camera.get()
+        const next = clampZoom(before.zoom + step)
+
+        if (next === before.zoom) {
+            return
+        }
+
+        camera.zoomTo(next, anchor)
+        this.updateHud()
+        Events.emit('updated-view-coordinates', camera.get())
+    }
+
+    private canvasCentre(): Coordinates {
+        return { x: (this.port?.width ?? 0) / 2, y: (this.port?.height ?? 0) / 2 }
+    }
+
+    private handleWheel(event: WheelEvent): void {
+        event.preventDefault()
+
+        const rect = this.containerRect()
+
+        this.zoomBy(event.deltaY < 0 ? 1 : -1, { x: event.clientX - rect.left, y: event.clientY - rect.top })
+    }
+
+    private handleZoomIn(): void {
+        this.zoomBy(1, this.canvasCentre())
+    }
+
+    private handleZoomOut(): void {
+        this.zoomBy(-1, this.canvasCentre())
+    }
+
+    private handleGridToggle(event: Event): void {
+        this.showGrid = event.target instanceof HTMLInputElement && event.target.checked
+        Events.emit('grid-toggled', this.showGrid)
     }
 
     private handleContextMenu(event: Event): void {

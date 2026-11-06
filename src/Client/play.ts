@@ -1,6 +1,5 @@
 import './play.css'
 import { Dom } from 'Client/Service/Dom'
-import { Coordinates } from 'domain/coordinates'
 import { loadLegacyPlacements } from 'Client/Service/load-legacy-placements'
 import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
 import { sheetRepository } from 'Client/Service/Repository/SheetRepository'
@@ -13,9 +12,10 @@ import { Id } from 'domain/id'
 import { startLoop } from 'engine/loop'
 import { renderFrame } from 'engine/render'
 
-const viewCoordinates: Coordinates = {
+const view: { x: number; y: number; zoom: number } = {
     x: 0,
     y: 0,
+    zoom: 1,
 }
 
 const pixelsPerSecond: number = 120
@@ -49,8 +49,8 @@ function fitCanvasToWindow(canvas: HTMLCanvasElement): void {
 function moveCamera(deltaSeconds: number): void {
     const direction = directionFromKeys(keys)
 
-    viewCoordinates.x += direction.x * pixelsPerSecond * deltaSeconds
-    viewCoordinates.y += direction.y * pixelsPerSecond * deltaSeconds
+    view.x += direction.x * pixelsPerSecond * deltaSeconds
+    view.y += direction.y * pixelsPerSecond * deltaSeconds
 }
 
 async function loadSheets(): Promise<Map<Id, CanvasImageSource>> {
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     startLoop(deltaSeconds => {
         moveCamera(deltaSeconds)
-        renderFrame(port, scene, viewCoordinates)
+        renderFrame(port, scene, view)
     }, callback => window.requestAnimationFrame(callback))
 })
 

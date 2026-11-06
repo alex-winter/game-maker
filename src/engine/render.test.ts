@@ -6,7 +6,7 @@ import { DrawPort } from './draw-port'
 import { renderFrame } from './render'
 import { Scene } from './scene'
 
-type Call = { image: string; sx: number; sy: number; dx: number; dy: number }
+type Call = { image: string; sx: number; sy: number; dx: number; dy: number; dw: number }
 
 function recordingPort(width = 64, height = 64): DrawPort<string> & { calls: Call[]; clears: number } {
     const port = {
@@ -17,8 +17,8 @@ function recordingPort(width = 64, height = 64): DrawPort<string> & { calls: Cal
         clear(): void {
             port.clears++
         },
-        drawImage(image: string, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number): void {
-            port.calls.push({ image, sx, sy, dx, dy })
+        drawImage(image: string, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number, dw: number): void {
+            port.calls.push({ image, sx, sy, dx, dy, dw })
         },
     }
 
@@ -48,7 +48,7 @@ function scene(overrides: Partial<Scene<string>> = {}): Scene<string> {
 test('each frame clears before drawing', () => {
     const port = recordingPort()
 
-    renderFrame(port, scene(), { x: 0, y: 0 })
+    renderFrame(port, scene(), { x: 0, y: 0, zoom: 1 })
 
     assert.equal(port.clears, 1)
     assert.equal(port.calls.length, 0)
@@ -59,7 +59,7 @@ test('the back placement layer is drawn before the front one', () => {
     const back = { placements: [{ image: 'back', x: 0, y: 0, width: 16, height: 16 }] }
     const front = { placements: [{ image: 'front', x: 0, y: 0, width: 16, height: 16 }] }
 
-    renderFrame(port, scene({ placementLayers: [back, front] }), { x: 0, y: 0 })
+    renderFrame(port, scene({ placementLayers: [back, front] }), { x: 0, y: 0, zoom: 1 })
 
     assert.deepEqual(port.calls.map(call => call.image), ['back', 'front'])
 })
@@ -73,9 +73,9 @@ test('placements outside the view are skipped and the camera offsets the rest', 
         ],
     }
 
-    renderFrame(port, scene({ placementLayers: [layer] }), { x: 64, y: 0 })
+    renderFrame(port, scene({ placementLayers: [layer] }), { x: 64, y: 0, zoom: 1 })
 
-    assert.deepEqual(port.calls, [{ image: 'seen', sx: 0, sy: 0, dx: 16, dy: 16 }])
+    assert.deepEqual(port.calls, [{ image: 'seen', sx: 0, sy: 0, dx: 16, dy: 16, dw: 16 }])
 })
 
 test('tile layers draw back to front and cut the metatile from its sheet', () => {
@@ -85,11 +85,11 @@ test('tile layers draw back to front and cut the metatile from its sheet', () =>
     map.layers[0] = withTile(map, map.layers[0], { x: 1, y: 1 }, 1)
     map.layers[1] = withTile(map, map.layers[1], { x: 1, y: 1 }, 2)
 
-    renderFrame(port, scene({ tileMap: map }), { x: 0, y: 0 })
+    renderFrame(port, scene({ tileMap: map }), { x: 0, y: 0, zoom: 1 })
 
     assert.deepEqual(port.calls, [
-        { image: 'sheet-image', sx: 0, sy: 0, dx: 16, dy: 16 },
-        { image: 'sheet-image', sx: 16, sy: 0, dx: 16, dy: 16 },
+        { image: 'sheet-image', sx: 0, sy: 0, dx: 16, dy: 16, dw: 16 },
+        { image: 'sheet-image', sx: 16, sy: 0, dx: 16, dy: 16, dw: 16 },
     ])
 })
 
@@ -101,7 +101,7 @@ test('legacy placement layers are a frozen background: they draw before tile lay
 
     const placements = [{ placements: [{ image: 'placed', x: 0, y: 0, width: 16, height: 16 }] }]
 
-    renderFrame(port, scene({ tileMap: map, placementLayers: placements }), { x: 0, y: 0 })
+    renderFrame(port, scene({ tileMap: map, placementLayers: placements }), { x: 0, y: 0, zoom: 1 })
 
     assert.deepEqual(port.calls.map(call => call.image), ['placed', 'sheet-image'])
 })
@@ -114,9 +114,9 @@ test('cells outside the view are culled and a missing sheet is skipped', () => {
     map.layers[0] = withTile(map, map.layers[0], { x: 0, y: 0 }, 3)
     map.layers[0] = withTile(map, map.layers[0], { x: 1, y: 0 }, 1)
 
-    renderFrame(port, scene({ tileMap: map }), { x: 0, y: 0 })
+    renderFrame(port, scene({ tileMap: map }), { x: 0, y: 0, zoom: 1 })
 
-    assert.deepEqual(port.calls, [{ image: 'sheet-image', sx: 0, sy: 0, dx: 16, dy: 0 }])
+    assert.deepEqual(port.calls, [{ image: 'sheet-image', sx: 0, sy: 0, dx: 16, dy: 0, dw: 16 }])
 })
 
 test('without a tileset only placements draw', () => {
@@ -125,7 +125,22 @@ test('without a tileset only placements draw', () => {
 
     map.layers[0] = withTile(map, map.layers[0], { x: 0, y: 0 }, 1)
 
-    renderFrame(port, scene({ tileMap: map, tileset: undefined }), { x: 0, y: 0 })
+    renderFrame(port, scene({ tileMap: map, tileset: undefined }), { x: 0, y: 0, zoom: 1 })
 
     assert.equal(port.calls.length, 0)
+})
+
+test('zoom multiplies the draw size and the screen offset, and shrinks the visible world', () => {
+    const port = recordingPort(64, 64)
+    const map = emptyTileMap({ width: 4, height: 4 })
+
+    map.layers[0] = withTile(map, map.layers[0], { x: 1, y: 1 }, 1)
+    map.layers[0] = withTile(map, map.layers[0], { x: 3, y: 3 }, 2)
+
+    renderFrame(port, scene({ tileMap: map }), { x: 0, y: 0, zoom: 2 })
+
+    // 64 screen px at zoom 2 is 32 world px: cells 0..1 only, so (3,3) is culled.
+    assert.deepEqual(port.calls, [
+        { image: 'sheet-image', sx: 0, sy: 0, dx: 32, dy: 32, dw: 32 },
+    ])
 })

@@ -46,10 +46,10 @@ export class LayerListing extends Component {
     }
 
     private buildLayer(layer: TileLayer): HTMLElement {
-        // Grouped in one object: the dataset round-trip keeps objects, but a bare boolean would come back as text.
         return Dom.makeComponent(LayerItem, {
             layer,
-            view: { isActive: mapSession.isActive(layer.id), isHidden: mapSession.isHidden(layer.id) },
+            isActive: mapSession.isActive(layer.id),
+            isHidden: mapSession.isHidden(layer.id),
         })
     }
 

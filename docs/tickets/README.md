@@ -42,7 +42,7 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-018](T-018-in-house-elements.md) | 1 | P2 | done | editor | Replace the third-party element base |
 | [T-019](T-019-tileset-palette.md) | 2 | P1 | done | editor | Import a sheet as a tileset palette |
 | [T-020](T-020-paint-metatiles.md) | 2 | P1 | done | editor | Paint metatiles and delete placement painting |
-| [T-021](T-021-grid-zoom-coordinates.md) | 2 | P1 | ready | editor | Show a grid, zoom, and the cell coordinate |
+| [T-021](T-021-grid-zoom-coordinates.md) | 2 | P1 | done | editor | Show a grid, zoom, and the cell coordinate |
 | [T-022](T-022-collision-attributes.md) | 2 | P1 | ready | editor | Paint collision and elevation as attributes |
 | [T-023](T-023-overhead-layer.md) | 2 | P1 | ready | engine | Draw an overhead layer above actors |
 | [T-024](T-024-undo-redo.md) | 2 | P1 | ready | editor | Undo and redo map strokes |
@@ -82,8 +82,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 ## Counts
 
-- ready: 5
+- ready: 4
 - in_progress: 0
 - backlog: 33
-- done: 20
+- done: 21
 - total: 57

@@ -21,7 +21,7 @@ import { findMap, GameMap } from 'domain/project'
 import { sheetRepository } from 'Client/Service/Repository/SheetRepository'
 import { userDataRepository } from 'Client/Service/Repository/UserDataRepository'
 import { WindowBoxFactory } from 'Client/Service/WindowBoxFactory'
-import { Coordinates } from 'domain/coordinates'
+import { View } from 'engine/view'
 import { UserData, WindowConfiguration } from 'Model/UserData'
 import { DialogCreator } from './Dialog/DialogCreator'
 
@@ -45,6 +45,7 @@ export class WorldEditor extends Component {
         'open-add-new-layer': this.handleOpenAddNewLayer,
         'click-open-new-model': this.handleOpenNewModel,
         'updated-view-coordinates': this.handleUpdateViewCoordinates,
+        'grid-toggled': this.handleGridToggled,
         'window-update': this.handleWindowUpdate,
     }
 
@@ -82,7 +83,7 @@ export class WorldEditor extends Component {
 
         this.userData = await userDataRepository.getAll()
 
-        camera.set(this.userData.lastViewPosition)
+        camera.set({ ...this.userData.lastViewPosition, zoom: this.userData.zoom ?? 1 })
 
         await sheetRepository.getAll()
     }
@@ -111,7 +112,7 @@ export class WorldEditor extends Component {
 
         const tools = Dom.makeComponent(CanvasTools, { currentTool: this.userData.currentTool })
 
-        canvasContainer.append(Dom.makeComponent(MapCanvas, { map: this.map }))
+        canvasContainer.append(Dom.makeComponent(MapCanvas, { map: this.map, showGrid: this.userData.showGrid ?? true }))
 
         container.append(
             sideMenu,
@@ -240,11 +241,20 @@ export class WorldEditor extends Component {
         )
     }
 
-    private async handleUpdateViewCoordinates(coordinates: Coordinates): Promise<void> {
+    private async handleUpdateViewCoordinates(view: View): Promise<void> {
         const userData = await userDataRepository.getAll()
 
-        userData.lastViewPosition.x = coordinates.x
-        userData.lastViewPosition.y = coordinates.y
+        userData.lastViewPosition.x = view.x
+        userData.lastViewPosition.y = view.y
+        userData.zoom = view.zoom
+
+        userDataRepository.persist(userData)
+    }
+
+    private async handleGridToggled(showGrid: boolean): Promise<void> {
+        const userData = await userDataRepository.getAll()
+
+        userData.showGrid = showGrid
 
         userDataRepository.persist(userData)
     }

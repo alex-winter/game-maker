@@ -10,7 +10,11 @@ export class UserDataFactory {
 
             windows: {},
 
-            currentTool: 'pencil'
+            currentTool: 'pencil',
+
+            zoom: 1,
+
+            showGrid: true,
         }
     }
 }

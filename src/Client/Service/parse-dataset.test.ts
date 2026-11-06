@@ -25,3 +25,9 @@ test('a string that only looks like JSON is kept as text', () => {
 test('undefined entries are skipped', () => {
     assert.deepEqual(parseDataset({ a: undefined, b: 'x' }), { b: 'x' })
 })
+
+test('booleans and null come back typed, numbers stay text', () => {
+    const parsed = parseDataset({ on: 'true', off: 'false', nothing: 'null', count: '42' })
+
+    assert.deepEqual(parsed, { on: true, off: false, nothing: null, count: '42' })
+})

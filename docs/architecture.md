@@ -49,7 +49,8 @@ Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names a
 | `open-add-new-layer` | `LayerListing` | `WorldEditor` | none |
 | `click-open-new-model` | `SideMenu` | `WorldEditor` | none (handler empty) |
 | `new-layer-submit` | `NewLayerForm` | `LayerListing` | `{ name, kind }` |
-| `updated-view-coordinates` | `MapCanvas` | `WorldEditor` | `Coordinates` |
+| `updated-view-coordinates` | `MapCanvas` | `WorldEditor` | `View` (after a pan or zoom) |
+| `grid-toggled` | `MapCanvas` | `WorldEditor` | boolean |
 | `window-update` | `WindowBox` | `WorldEditor` | `WindowConfiguration` |
 | `tool-selection` | `CanvasTools` | `MapCanvas` | `Tool` (`Client/Service/tool.ts`: pencil, fill, rect, rubber) |
 | `map-session-changed` | `Client/Service/map-session.ts` | `MapCanvas`, `LayerListing` | none |
@@ -100,9 +101,9 @@ These field names are on disk and in the types that read them. New fields are ca
 
 ## Draw path
 
-`engine/render.ts` `renderFrame(port, scene, camera)` is the only code that draws a map. A `Scene` (`engine/scene.ts`) is the tile map (hidden layers already left out), its tileset, decoded sheets by id, and the legacy placement layers sorted back to front. A `DrawPort` (`engine/draw-port.ts`) is clear plus draw-image-region; `Client/Service/canvas-draw-port.ts` adapts a `CanvasRenderingContext2D` with smoothing off. Legacy placements draw first as a frozen background (back to front; a **lower** `order` paints **in front**, via `Model/draw-order.ts`), then tile layers back to front. Cells and placements outside the view are culled.
+`engine/render.ts` `renderFrame(port, scene, view)` is the only code that draws a map. A `View` (`engine/view.ts`) is the camera position in world pixels plus an integer `zoom` (1–4); `worldToScreen`/`screenToWorld` are the only two conversion formulas, and `zoomedAt` changes zoom while keeping the world point under a screen anchor still. A `Scene` (`engine/scene.ts`) is the tile map (hidden layers already left out), its tileset, decoded sheets by id, and the legacy placement layers sorted back to front. A `DrawPort` (`engine/draw-port.ts`) is clear plus draw-image-region; `Client/Service/canvas-draw-port.ts` adapts a `CanvasRenderingContext2D` with smoothing off. Legacy placements draw first as a frozen background (back to front; a **lower** `order` paints **in front**, via `Model/draw-order.ts`), then tile layers back to front. Cells and placements outside the view are culled. Zoom multiplies draw sizes; smoothing stays off so pixels stay square.
 
-Editor: `MapCanvas` is one element with one `<canvas>` and one `engine/loop.ts` loop. It builds the scene with `Client/Service/build-scene.ts` from `mapSession.visibleTileMap()` and marks it stale on `map-session-changed`. The pointer always lands on it: pencil and rubber call `withTile` per pointer sample and save on mouseup, rectangle previews a span and calls `withRect` on mouseup, fill calls `floodFill` (bounded by the map, not the view) and saves at once. The brush is a metatile id; a one-cell ghost canvas previews it. The middle button pans the shared `camera`.
+Editor: `MapCanvas` is one element with one `<canvas>` and one `engine/loop.ts` loop. It builds the scene with `Client/Service/build-scene.ts` from `mapSession.visibleTileMap()` and marks it stale on `map-session-changed`. The pointer always lands on it: pencil and rubber call `withTile` per pointer sample and save on mouseup, rectangle previews a span and calls `withRect` on mouseup, fill calls `floodFill` (bounded by the map, not the view) and saves at once. The brush is a metatile id; a one-cell ghost canvas previews it. The middle button pans the shared `camera` (`Client/Service/camera.ts`, which holds the `View`); the wheel and the HUD's −/+ buttons zoom toward the cursor or the centre. The HUD (bottom-left) also toggles the grid (`Client/Service/draw-grid.ts` strokes cell borders and the map outline over the frame) and reads out the cell under the cursor. Zoom and the grid flag persist in `user-data.json` (`zoom`, `showGrid`). `Client/Service/pointer-to-world.ts` is the one pointer → world formula and takes the `View`.
 
 Play: `play.ts` builds a scene once and runs the same loop and `renderFrame`.
 

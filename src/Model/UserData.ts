@@ -29,4 +29,8 @@ export type UserData = {
 
     currentTool: string
 
+    /** Integer 1..4; missing in files written before T-021. */
+    zoom?: number
+
+    showGrid?: boolean
 }

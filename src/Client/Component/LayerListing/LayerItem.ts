@@ -4,9 +4,7 @@ import { mapSession } from 'Client/Service/map-session'
 import { moveTileLayer, removeTileLayer, renameTileLayer, TileLayer } from 'domain/map'
 
 /** One row of the layer listing. Each action computes the next grid with a domain function and commits it. */
-type LayerView = { isActive: boolean; isHidden: boolean }
-
-export class LayerItem extends Component<{ layer: TileLayer; view: LayerView }> {
+export class LayerItem extends Component<{ layer: TileLayer; isActive: boolean; isHidden: boolean }> {
     private layer!: TileLayer
 
     protected listeners: Listeners = {
@@ -23,7 +21,7 @@ export class LayerItem extends Component<{ layer: TileLayer; view: LayerView }> 
     }
 
     protected build(): HTMLElement {
-        const { isActive, isHidden } = this.parsedDataset.view
+        const { isActive, isHidden } = this.parsedDataset
         const container = Dom.div('container')
         const name = Dom.div('name')
         const nameText = Dom.span(this.layer.name, 'name-text')
