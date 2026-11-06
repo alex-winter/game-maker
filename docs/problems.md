@@ -20,7 +20,7 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 7. **Fill and rubber do not agree on what a tile is.** Fill deletes every cell in the region and inserts one bitmap whose origin is the top-left of the bounds. Rubber deletes only a placement whose origin equals the snapped cursor, so a filled region is not erasable except at that corner. Fill's bounds use the canvas rectangle; the cursor math uses the viewport. Ticket T-008 keeps the current tools honest. Ticket T-014 replaces both with metatiles.
 
-8. **Cameras drift apart.** Each `CanvasLayer` copies `viewCoordinates`. Pan applies a delta to the others, which works only while they started equal. Layers created from `new-layer-mapped` are constructed without `userData`, so they start at `{0,0}`. Ticket T-004.
+8. **Fixed (T-004).** **Cameras drift apart.** Each `CanvasLayer` copies `viewCoordinates`. Pan applies a delta to the others, which works only while they started equal. Layers created from `new-layer-mapped` are constructed without `userData`, so they start at `{0,0}`. Ticket T-004.
 
 9. **Fixed (T-003).** **Placements are decoded twice.** `WorldEditor.setup` pushes a loaded placement, then `loadPlacement` in `CanvasLayer.setup` pushes another with the same uuid. The history lists both. The canvas draws both. Ticket T-003.
 

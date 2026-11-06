@@ -14,6 +14,7 @@ import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 import { LAYERS } from 'Client/Constants/layers'
+import { camera } from 'Client/Service/camera'
 import { FileUpload } from 'Client/Service/FileUpload'
 import { loadPlacement } from 'Client/Service/load-placement'
 import { layerRepository } from 'Client/Service/Repository/LayerRepository'
@@ -80,6 +81,8 @@ export class WorldEditor extends Component {
         this.userData = await userDataRepository.getAll()
         this.layers = await layerRepository.getAll()
 
+        camera.set(this.userData.lastViewPosition)
+
         await sheetRepository.getAll()
         await placementImageRepository.getAll()
 
@@ -111,7 +114,7 @@ export class WorldEditor extends Component {
         sideMenu.append(layerListing)
 
         const layerElements = this.layers.map(
-            layer => Dom.makeComponent(CanvasLayer, { layer, userData: this.userData })
+            layer => Dom.makeComponent(CanvasLayer, { layer })
         )
 
         const tools = Dom.makeComponent(CanvasTools, { currentTool: this.userData.currentTool })
@@ -211,7 +214,7 @@ export class WorldEditor extends Component {
     }
 
     private handleNewLayerMapped(layers: Layer[]): void {
-        this.shadowRoot?.append(
+        this.findOne('.canvas-container')?.append(
             ...layers
                 .sort((a, b) => b.order - a.order)
                 .map(layer => Dom.makeComponent(CanvasLayer, { layer }))

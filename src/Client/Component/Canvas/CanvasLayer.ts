@@ -9,23 +9,12 @@ import { generateImageDataURL } from 'Client/Service/generate-image'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { Layer } from 'Model/Layer'
 import { Canvas2D } from 'Client/Component/Canvas/Canvas'
+import { camera } from 'Client/Service/camera'
 import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
 import { layerRepository } from 'Client/Service/Repository/LayerRepository'
 import { loadPlacement } from 'Client/Service/load-placement'
 import { pointerToWorld } from 'Client/Service/pointer-to-world'
 import { snap } from 'Client/Service/snap'
-
-type Movement = {
-    layerUuid: string
-
-    clientX: number
-
-    clientY: number
-
-    viewCoordinates: Coordinates
-
-    lastMousePosition: Coordinates
-}
 
 export class CanvasLayer extends Component {
     private static readonly TILE_SIZE: number = 16
@@ -42,7 +31,6 @@ export class CanvasLayer extends Component {
     private readonly mouseCoordinates: Coordinates = { x: 0, y: 0 }
     private isMoving: boolean = false
     private lastMousePosition: Coordinates = { x: 0, y: 0 }
-    private viewCoordinates: Coordinates = { x: 0, y: 0 }
     private isCollisionLayer: boolean = false
     private toolSelection: string = 'pencil'
 
@@ -51,7 +39,6 @@ export class CanvasLayer extends Component {
     protected readonly externalListeners: ExternalListeners = {
         'layer-deleted': this.handleDelete,
         'layers-update': this.handleLayersUpdate,
-        'moving-in-canvas': this.handleMovement,
         'sheet-selection-made': this.handleCurrentImageChange,
         'tool-selection': this.handleToolSelection,
         'request-focus-on-placement': this.handleRequestFocusOnPlacement,
@@ -107,9 +94,6 @@ export class CanvasLayer extends Component {
                 ? CanvasLayer.COLLISION_IMAGE
                 : CanvasLayer.DEFAULT_IMAGE
         )
-
-        this.viewCoordinates.x = this.parsedDataset.userData?.lastViewPosition?.x || 0
-        this.viewCoordinates.y = this.parsedDataset.userData?.lastViewPosition?.y || 0
     }
 
     protected build(): HTMLElement {
@@ -160,7 +144,7 @@ export class CanvasLayer extends Component {
         const world = pointerToWorld(
             event,
             this.getContainer().getBoundingClientRect(),
-            this.viewCoordinates,
+            camera.get(),
         )
 
         return {
@@ -176,33 +160,34 @@ export class CanvasLayer extends Component {
         this.mouseCoordinates.y = cell.y
 
         const currentImage = this.getCurrentImage()
+        const view = camera.get()
 
         if (currentImage) {
             currentImage.classList.remove('hide')
-            currentImage.style.left = (cell.x - this.viewCoordinates.x) + 'px'
-            currentImage.style.top = (cell.y - this.viewCoordinates.y) + 'px'
+            currentImage.style.left = (cell.x - view.x) + 'px'
+            currentImage.style.top = (cell.y - view.y) + 'px'
         }
     }
 
-    private move(movement: Movement): void {
-        const dx = movement.clientX - movement.lastMousePosition.x
-        const dy = movement.clientY - movement.lastMousePosition.y
+    private panTo(clientX: number, clientY: number): void {
+        camera.panBy(
+            this.lastMousePosition.x - clientX,
+            this.lastMousePosition.y - clientY,
+        )
 
-        this.viewCoordinates.x -= dx
-        this.viewCoordinates.y -= dy
-
-        this.lastMousePosition.x = movement.clientX
-        this.lastMousePosition.y = movement.clientY
+        this.lastMousePosition.x = clientX
+        this.lastMousePosition.y = clientY
     }
 
     private frameFn(): void {
         const canvas = this.getCanvas()
+        const view = camera.get()
 
         const visible = loadedPlacementRepository.get()
             .filter(loadedPlacement => loadedPlacement.layerUuid === this.layer.uuid)
             .filter(loadedPlacement => {
                 return canvas.isRectVisible(
-                    this.viewCoordinates,
+                    view,
                     loadedPlacement,
                 )
             })
@@ -210,8 +195,8 @@ export class CanvasLayer extends Component {
         for (const placement of visible) {
             canvas.drawImage(
                 placement.image,
-                Math.floor(placement.x - this.viewCoordinates.x),
-                Math.floor(placement.y - this.viewCoordinates.y),
+                Math.floor(placement.x - view.x),
+                Math.floor(placement.y - view.y),
                 placement.image.width,
                 placement.image.height,
             )
@@ -250,7 +235,7 @@ export class CanvasLayer extends Component {
     private handleMouseUp(event: MouseEvent): void {
         if (event.button === MIDDLE_BUTTON) {
             this.isMoving = false
-            Events.emit('updated-view-coordinates', this.viewCoordinates)
+            Events.emit('updated-view-coordinates', camera.get())
         }
     }
 
@@ -264,12 +249,6 @@ export class CanvasLayer extends Component {
         }
     }
 
-    private handleMovement(movement: Movement): void {
-        if (movement.layerUuid !== this.layer.uuid) {
-            this.move(movement)
-        }
-    }
-
     private handleLayersUpdate(): void {
         this.layer = layerRepository.getByUuid(this.layer.uuid)
 
@@ -280,21 +259,11 @@ export class CanvasLayer extends Component {
     }
 
     private handleMouseMove(event: MouseEvent): void {
-        this.trackPointer(event)
-
         if (this.isMoving) {
-            const movement: Movement = {
-                layerUuid: this.layer.uuid,
-                clientX: event.clientX,
-                clientY: event.clientY,
-                viewCoordinates: { ...this.viewCoordinates },
-                lastMousePosition: { ...this.lastMousePosition },
-            }
-
-            this.move(movement)
-
-            Events.emit('moving-in-canvas', movement)
+            this.panTo(event.clientX, event.clientY)
         }
+
+        this.trackPointer(event)
     }
 
     private handleMouseDown(event: MouseEvent): void {
@@ -383,10 +352,11 @@ export class CanvasLayer extends Component {
         const canvasWidth = canvas.getBoundingClientRect().width
         const canvasHeight = canvas.getBoundingClientRect().height
 
-        const minX = this.snap(this.viewCoordinates.x)
-        const minY = this.snap(this.viewCoordinates.y)
-        const maxX = this.snap(this.viewCoordinates.x + canvasWidth)
-        const maxY = this.snap(this.viewCoordinates.y + canvasHeight)
+        const view = camera.get()
+        const minX = this.snap(view.x)
+        const minY = this.snap(view.y)
+        const maxX = this.snap(view.x + canvasWidth)
+        const maxY = this.snap(view.y + canvasHeight)
 
         const tileSize = CanvasLayer.TILE_SIZE
 
@@ -497,17 +467,17 @@ export class CanvasLayer extends Component {
         const targetPlacement = loadedPlacementRepository.getByUuid(uuid)
         const canvas = this.getCanvas()
 
-        if (!targetPlacement || !canvas) return
+        // The camera is shared, so only the layer that owns the placement animates it.
+        if (!targetPlacement || !canvas || targetPlacement.layerUuid !== this.layer.uuid) return
 
         const canvasRect = canvas.getBoundingClientRect()
 
         const targetViewX = targetPlacement.x + targetPlacement.width / 2 - canvasRect.width / 2
         const targetViewY = targetPlacement.y + targetPlacement.height / 2 - canvasRect.height / 2
 
-        const startX = this.viewCoordinates.x
-        const startY = this.viewCoordinates.y
-        const deltaX = targetViewX - startX
-        const deltaY = targetViewY - startY
+        const start = camera.get()
+        const deltaX = targetViewX - start.x
+        const deltaY = targetViewY - start.y
 
         const duration = 300
         const startTime = performance.now()
@@ -517,13 +487,15 @@ export class CanvasLayer extends Component {
             const progress = Math.min(elapsed / duration, 1)
             const easeOut = 1 - Math.pow(1 - progress, 3)
 
-            this.viewCoordinates.x = startX + deltaX * easeOut
-            this.viewCoordinates.y = startY + deltaY * easeOut
-
-            Events.emit('updated-view-coordinates', this.viewCoordinates)
+            camera.set({
+                x: start.x + deltaX * easeOut,
+                y: start.y + deltaY * easeOut,
+            })
 
             if (progress < 1) {
                 requestAnimationFrame(animate)
+            } else {
+                Events.emit('updated-view-coordinates', camera.get())
             }
         }
 

@@ -66,7 +66,6 @@ Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names a
 | `layers-update` | `LayerRepository` | `CanvasLayer`, `LayerItem` | none |
 | `sheet-selection-made` | `SheetViewer` | every `CanvasLayer` | `HTMLImageElement` |
 | `tool-selection` | `CanvasTools` | every `CanvasLayer` | tool name |
-| `moving-in-canvas` | active `CanvasLayer` | other `CanvasLayer`s | movement snapshot |
 | `request-focus-on-placement` | `PlacementHistory` | every `CanvasLayer` | uuid |
 | `placement-added` | `CanvasLayer` | `PlacementHistory` | none |
 | `close-modal` | `NewLayerForm` | `BasicModal` | the form element |

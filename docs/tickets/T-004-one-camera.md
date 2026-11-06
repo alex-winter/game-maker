@@ -1,7 +1,7 @@
 ---
 id: T-004
 title: Share one camera across layers
-status: ready
+status: done
 priority: P0
 phase: 0
 type: bug
@@ -15,6 +15,8 @@ blocks: [T-017, T-029]
 ## Outcome
 
 Every layer draws with the same camera, including a layer created after the editor has loaded. Panning moves them together. Reload restores that camera.
+
+Done in commit `fix(editor): share one camera across layers (T-004)`. The camera is `src/Client/Service/camera.ts` (`get`, `set`, `panBy`, with a node test). `WorldEditor.setup` seeds it from `lastViewPosition`; layers read it every frame. `moving-in-canvas` is gone. The camera is persisted on middle-button mouseup and once at the end of the focus animation. New layers now mount inside `.canvas-container` instead of the editor's shadow root.
 
 ## Why
 
@@ -49,9 +51,9 @@ Out:
 
 ## Acceptance
 
-- [ ] Paint on two layers, pan, and both layers stay aligned.
-- [ ] Add a layer after panning. Its existing and new stamps use the panned camera.
-- [ ] Reload restores the camera.
+- [x] Paint on two layers, pan, and both layers stay aligned.
+- [x] Add a layer after panning. Its existing and new stamps use the panned camera.
+- [x] Reload restores the camera.
 
 ## Test plan
 
