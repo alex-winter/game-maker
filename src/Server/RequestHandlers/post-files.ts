@@ -1,8 +1,7 @@
+import fs from 'fs'
 import path from 'path'
 import { UploadedSheet } from 'Model/UploadedSheet'
-import { config } from 'Server/config'
-import { readJson } from 'Server/services/read-json'
-import { writeJson } from 'Server/services/write-json'
+import { appendToUploadsIndex } from 'Server/services/uploads-index'
 import { RequestHandler, Request, Response } from 'Server/types'
 
 function toUploadedSheet(file: Express.Multer.File): UploadedSheet {
@@ -13,14 +12,34 @@ function toUploadedSheet(file: Express.Multer.File): UploadedSheet {
     }
 }
 
+function discard(files: Express.Multer.File[]): void {
+    for (const file of files) {
+        fs.rmSync(file.path, { force: true })
+    }
+}
+
 export const requestHandlerPostFiles: RequestHandler = (request: Request, response: Response): void => {
     const files = Array.isArray(request.files) ? request.files : []
+
+    if (files.length === 0) {
+        response.status(400).json({ error: 'No files were uploaded' })
+        return
+    }
+
+    const empty = files.filter(file => file.size === 0)
+
+    if (empty.length > 0) {
+        discard(files)
+        response.status(400).json({
+            error: 'Empty files are not accepted',
+            files: empty.map(file => file.originalname),
+        })
+        return
+    }
+
     const uploaded = files.map(toUploadedSheet)
 
-    const indexFile = config.uploadsIndexFileDir
-    const existing = readJson<UploadedSheet[]>(indexFile)
-
-    writeJson(indexFile, [...existing, ...uploaded])
+    appendToUploadsIndex(uploaded)
 
     response.json({
         message: 'Files uploaded successfully!',

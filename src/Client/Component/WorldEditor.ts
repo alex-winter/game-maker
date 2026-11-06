@@ -15,7 +15,6 @@ import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 import { LAYERS } from 'Client/Constants/layers'
 import { camera } from 'Client/Service/camera'
-import { FileUpload } from 'Client/Service/FileUpload'
 import { loadPlacement } from 'Client/Service/load-placement'
 import { layerRepository } from 'Client/Service/Repository/LayerRepository'
 import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
@@ -31,13 +30,11 @@ import { UserData, WindowConfiguration } from 'Model/UserData'
 import { DialogCreator } from './Dialog/DialogCreator'
 
 export class WorldEditor extends Component {
-    private openSheets: string[] = []
     private windowBoxes: { [key: string]: WindowBox } = {}
     private layers: Layer[] = []
     private userData!: UserData
 
     protected externalListeners: ExternalListeners = {
-        'upload-files-submission': this.handleUploadFilesSubmission,
         'open-sheet': this.handleOpenSheet,
         'window-destroyed': this.handleWindowDestroyed,
         'mouse-down-window-box': this.handleMouseDownWindowBox,
@@ -132,16 +129,20 @@ export class WorldEditor extends Component {
         return container
     }
 
-    private handleUploadFilesSubmission(files: File[]): void {
-        FileUpload.uploadMultiple(files)
-    }
+    private handleOpenSheet(sheetId: string): void {
+        const sheet = sheetRepository.getById(sheetId)
 
-    private handleOpenSheet(sheetName: string): void {
-        const sheet = sheetRepository.getByName(sheetName)
-        if (this.openSheets.includes(sheet.name)) {
-            this.windowBoxes[sheet.name].flash()
+        if (sheet === undefined) {
             return
         }
+
+        const openWindow = this.windowBoxes[sheet.id]
+
+        if (openWindow && openWindow.isConnected) {
+            openWindow.flash()
+            return
+        }
+
         const sheetViewerDataset = { imageSrc: sheet.imageSrc }
         const component = Dom.makeComponent(SheetViewer, sheetViewerDataset)
 
@@ -152,19 +153,19 @@ export class WorldEditor extends Component {
         })
 
         if (windowBox) {
-            this.openSheets.push(sheet.name)
-            this.windowBoxes[sheet.name] = windowBox
+            // Keyed by sheet id, since two uploads may share a display name.
+            this.windowBoxes[sheet.id] = windowBox
 
             this.shadowRoot?.append(windowBox)
         }
     }
 
-    private handleWindowDestroyed(name: string): void {
-        if (this.openSheets.includes(name)) {
-            this.openSheets = this.openSheets.filter(item => item !== name)
-        }
-        if (this.windowBoxes[name]) {
-            delete this.windowBoxes[name]
+    /** The event carries a title, not a key, so prune by connection instead. */
+    private handleWindowDestroyed(): void {
+        for (const [key, windowBox] of Object.entries(this.windowBoxes)) {
+            if (!windowBox.isConnected) {
+                delete this.windowBoxes[key]
+            }
         }
     }
 

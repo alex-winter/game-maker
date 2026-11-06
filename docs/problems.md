@@ -8,7 +8,7 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 2. **Fixed (T-009).** **Uploads trust the original filename.** `multer` writes `file.originalname` into `uploads/`. Two files with the same name overwrite each other. A name with `../` is a path escape. Ticket T-009.
 
-3. **Sheet GET is a synchronous base64 dump.** `get-sheets.ts` reads every upload inside the `readdir` callback with `readFileSync`, and builds `data:image/<ext>` so JPEG is `image/jpg`. The client keeps that whole payload in memory. Ticket T-007 for the round-trip; T-015 replaces the storage.
+3. **Round-trip and MIME fixed (T-007); storage still inline until T-015.** **Sheet GET is a synchronous base64 dump.** `get-sheets.ts` reads every upload inside the `readdir` callback with `readFileSync`, and builds `data:image/<ext>` so JPEG is `image/jpg`. The client keeps that whole payload in memory. Ticket T-007 for the round-trip; T-015 replaces the storage.
 
 4. **Fan-out fixed (T-005); atomic writes still open (T-016).** **JSON writes can tear.** `writeJson` truncates the destination in place. A crash or an overlapping request leaves `layers.json` half-written. `LayerRepository.update` fires a PATCH per call and does not order them. `setActive` and `toggleVisible` PATCH every layer, not the one that changed. Ticket T-005 for the fan-out; T-016 for atomic writes.
 
@@ -28,7 +28,7 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 11. **Frame delay is a bitwise accident.** `Canvas2D` does `1000 / fps | 30`. `|` is bitwise OR, and it binds looser than `/`, so 60 fps becomes `16 | 30 === 30` milliseconds. Ticket T-010.
 
-12. **Sheet open races the upload.** The listing shows a local data URL immediately. `open-sheet` looks up `sheetRepository`, which was filled from `GET /sheets` at startup and is never refreshed. A new file throws on `sheet.name` because `getByName` returns undefined. Reopening an upload also depends on the server having finished `multer`. Ticket T-007.
+12. **Fixed (T-007).** **Sheet open races the upload.** The listing shows a local data URL immediately. `open-sheet` looks up `sheetRepository`, which was filled from `GET /sheets` at startup and is never refreshed. A new file throws on `sheet.name` because `getByName` returns undefined. Reopening an upload also depends on the server having finished `multer`. Ticket T-007.
 
 13. **The dialog window is not a feature.** `WorldEditor.build` always appends `DialogCreator`. It does not save. Closing it forgets nothing worth keeping, and the next load opens it again. `userData.windows` is written and never read. Ticket T-036 owns real dialog; until then T-011's cleanup note and the empty handler in `handleOpenNewModel` should not be "finished" by wiring the stub. Leave the stub dark. A small fix lives in T-010's out-of-scope note: do it inside T-036, not as drive-by UI.
 

@@ -25,7 +25,7 @@ export const config = {
 
     userDataFileDir: path.join(dataDir, 'user-data.json'),
 
-    allowedExtensions: ['.png', '.jpg', '.jpeg', '.webp', '.svg'],
+    allowedExtensions: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'],
 
     fileUploadSizeLimit: '50mb',
 

@@ -41,8 +41,8 @@ Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names a
 | Event | Emitter | Listener | Payload |
 | --- | --- | --- | --- |
 | `window-resize` | `index.ts` | `Canvas2D` | none |
-| `upload-files-submission` | `FileUploader` | `WorldEditor`, `FileListing` | `File[]` |
-| `open-sheet` | `FileListing` | `WorldEditor` | sheet name |
+| `upload-files-submission` | `FileUploader` | `FileListing` | `File[]` |
+| `open-sheet` | `FileListing` | `WorldEditor` | sheet id |
 | `window-destroyed` | `WindowBox` | `WorldEditor` | title string |
 | `mouse-down-window-box` | `WindowBox` | `WorldEditor` | the window element |
 | `open-sheet-importer` | `SideMenu` | `WorldEditor` | none |
@@ -114,7 +114,7 @@ Painting uses `event.clientX` / `clientY` as if the canvas origin were the viewp
 | --- | --- | --- |
 | GET | `/` | editor HTML |
 | GET | `/play` | play HTML |
-| GET | `/sheets` | every upload, read synchronously, returned as base64 |
+| GET | `/sheets` | every upload, read asynchronously, returned as base64 with a mapped MIME type |
 | GET/POST/PATCH | `/layers` | the one map |
 | DELETE | `/layers/:uuid` | remove a layer |
 | GET/PATCH | `/user-data` | camera, tool, windows |

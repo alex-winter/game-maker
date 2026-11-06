@@ -1,8 +1,9 @@
-import fs from 'fs'
+import { promises as fs } from 'fs'
 import path from 'path'
 import { UploadedSheet } from 'Model/UploadedSheet'
 import { config } from 'Server/config'
-import { readJson } from 'Server/services/read-json'
+import { imageMimeType } from 'Server/services/image-mime'
+import { readUploadsIndex } from 'Server/services/uploads-index'
 import { Request, Response } from 'Server/types'
 
 /** Files uploaded before the index existed are listed under their stored name. */
@@ -15,33 +16,45 @@ function legacySheets(files: string[], indexed: UploadedSheet[]): UploadedSheet[
         .map(filename => ({ id: filename, originalName: filename, file: filename }))
 }
 
-export const requestHandlerGetSheets = (request: Request, response: Response) => {
-    const uploadsDir = config.uploadsDir
+async function toDataUrl(file: string): Promise<string | undefined> {
+    const mimeType = imageMimeType(file)
 
-    fs.readdir(
-        uploadsDir,
-        (error, files) => {
-            if (error) {
-                return response.status(500).json({ error: 'Failed to read uploads directory' })
-            }
+    if (mimeType === undefined) {
+        return undefined
+    }
 
-            const indexed = readJson<UploadedSheet[]>(config.uploadsIndexFileDir)
-                .filter(sheet => files.includes(sheet.file))
+    const bytes = await fs.readFile(path.join(config.uploadsDir, file))
 
-            const sheets = [...indexed, ...legacySheets(files, indexed)]
-                .map(sheet => {
-                    const fileData = fs.readFileSync(path.join(uploadsDir, sheet.file))
-                    const base64Image = `data:image/${path.extname(sheet.file).slice(1)};base64,${fileData.toString('base64')}`
+    return `data:${mimeType};base64,${bytes.toString('base64')}`
+}
 
-                    return {
-                        id: sheet.id,
-                        name: sheet.originalName,
-                        file: sheet.file,
-                        imageSrc: base64Image,
-                    }
-                })
+export const requestHandlerGetSheets = async (request: Request, response: Response): Promise<void> => {
+    let files: string[]
 
-            response.json(sheets)
+    try {
+        files = await fs.readdir(config.uploadsDir)
+    } catch {
+        response.status(500).json({ error: 'Failed to read uploads directory' })
+        return
+    }
+
+    const indexed = readUploadsIndex()
+        .filter(sheet => files.includes(sheet.file))
+
+    const sheets = []
+
+    for (const sheet of [...indexed, ...legacySheets(files, indexed)]) {
+        const imageSrc = await toDataUrl(sheet.file)
+
+        if (imageSrc !== undefined) {
+            sheets.push({
+                id: sheet.id,
+                name: sheet.originalName,
+                file: sheet.file,
+                imageSrc,
+            })
         }
-    )
+    }
+
+    response.json(sheets)
 }
