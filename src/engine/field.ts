@@ -4,10 +4,11 @@ import { Id } from '../domain/id'
 import { GridSize, isInside } from '../domain/map'
 import { CanEnter, Direction, MovementInput, newPlayer, Player, stepPlayer } from '../domain/movement'
 import { Interaction, resolveInteraction } from '../domain/interact'
-import { MapEvent, stepFinished, warpTaken } from '../domain/warp'
+import { ItemEvent, MapEvent, stepFinished, warpTaken } from '../domain/warp'
 import { advanceFade, Fade, startFade } from './fade'
-import { DialogPage } from '../domain/dialog'
+import { DialogPage, newPage } from '../domain/dialog'
 import { Memory, newMemory } from '../domain/flags'
+import { Bag, isTaken, newBag, pickUp } from '../domain/item'
 import { advanceMessage, MessageState, missingDialogPages, moveHighlight, openMessage } from './message'
 
 /** Where the player will be once the screen is black. */
@@ -40,6 +41,9 @@ export type FieldState = {
 
     /** Story flags and variables for this session (T-040). Items and gates read and write it. */
     readonly memory: Memory
+
+    /** What the player carries (T-038). */
+    readonly bag: Bag
 }
 
 /** Movement plus whether the interact key was pressed this frame (edge, not level). */
@@ -63,10 +67,28 @@ export type FieldWorld = {
 
     /** The pages of a dialog, or undefined when no dialog has that id. */
     pagesOf(dialogId: Id): readonly DialogPage[] | undefined
+
+    /** The name an item shows when found, or undefined when the catalog has no such item. */
+    itemNameOf(itemId: Id): string | undefined
 }
 
-export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down', memory: Memory = newMemory()): FieldState {
-    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory }
+export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down', memory: Memory = newMemory(), bag: Bag = newBag()): FieldState {
+    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag }
+}
+
+/** The map's events as the session sees them now: an item already taken is not there. */
+export function visibleEvents(events: readonly MapEvent[], memory: Memory): MapEvent[] {
+    return events.filter(event => event.kind !== 'item' || !isTaken(event, memory))
+}
+
+/** The items still lying on the map, for the host to draw. */
+export function itemsOnMap(events: readonly MapEvent[], memory: Memory): ItemEvent[] {
+    return events.filter((event): event is ItemEvent => event.kind === 'item' && !isTaken(event, memory))
+}
+
+/** What the box says when the player picks something up. */
+export function foundMessage(itemName: string | undefined): DialogPage[] {
+    return [newPage(itemName === undefined ? 'You found something, but the project has no such item.' : `You found a ${itemName.toUpperCase()}!`)]
 }
 
 /** True while a fade runs: the player does not move and input is ignored. */
@@ -109,13 +131,30 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
 
     // The interact key looks, it does not move: a standing player stays put this frame.
     if (input.interact && state.player.step === null) {
-        const interaction = resolveInteraction(state.player, world.eventsOf(state.mapId))
-        const message = interaction?.kind === 'sign' ? openMessage(world.pagesOf(interaction.dialogId) ?? missingDialogPages(interaction.dialogId)) : null
+        const events = visibleEvents(world.eventsOf(state.mapId), state.memory)
+        const interaction = resolveInteraction(state.player, events)
 
-        return { ...state, interaction, message, lastDirection: input.direction }
+        if (interaction?.kind === 'sign') {
+            const message = openMessage(world.pagesOf(interaction.dialogId) ?? missingDialogPages(interaction.dialogId))
+
+            return { ...state, interaction, message, lastDirection: input.direction }
+        }
+
+        if (interaction?.kind === 'item') {
+            const event = events.find((candidate): candidate is ItemEvent => candidate.kind === 'item' && candidate.id === interaction.itemEventId)
+
+            if (event !== undefined) {
+                const taken = pickUp(state.bag, state.memory, event)
+                const message = openMessage(foundMessage(world.itemNameOf(event.itemId)))
+
+                return { ...state, interaction, message, bag: taken.bag, memory: taken.memory, lastDirection: input.direction }
+            }
+        }
+
+        return { ...state, interaction, message: null, lastDirection: input.direction }
     }
 
-    const player = stepPlayer(state.player, input, deltaMs, seamAwareRule(state.mapId, size, world))
+    const player = stepPlayer(state.player, input, deltaMs, seamAwareRule(state.mapId, size, state.memory, world))
     const transition = transitionReached(state.player, player, state.mapId, size, world)
 
     if (transition !== undefined) {
@@ -126,13 +165,14 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
     return { ...state, player, interaction: undefined, lastDirection: input.direction }
 }
 
-/** Inside the map the collision rule decides; beyond an edge a seam may let the step through onto open ground. */
-function seamAwareRule(mapId: Id, size: GridSize, world: FieldWorld): CanEnter {
+/** Inside the map the collision rule decides and an item still lying there blocks; beyond an edge a seam may let the step through onto open ground. */
+function seamAwareRule(mapId: Id, size: GridSize, memory: Memory, world: FieldWorld): CanEnter {
     const inside = world.canEnter(mapId)
+    const items = itemsOnMap(world.eventsOf(mapId), memory)
 
     return (from, to) => {
         if (isInside(size, to)) {
-            return inside(from, to)
+            return inside(from, to) && !items.some(item => item.cell.x === to.x && item.cell.y === to.y)
         }
 
         const crossing = crossEdge(size, world.connectionsOf(mapId), to, id => world.sizeOf(id))

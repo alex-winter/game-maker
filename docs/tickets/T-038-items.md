@@ -1,7 +1,7 @@
 ---
 id: T-038
 title: Define items and pick them up once
-status: ready
+status: done
 priority: P1
 phase: 6
 type: feat
@@ -48,9 +48,17 @@ Out:
 
 ## Acceptance
 
-- [ ] Tests: first interact adds the item and the flag; second interact does not add it again.
-- [ ] In play, the item message shows once and the object no longer draws.
+- [x] Tests: first interact adds the item and the flag; second interact does not add it again.
+- [x] In play, the item message shows once and the object no longer draws.
 
 ## Test plan
 
 - Domain tests. Manual pickup and reload before save exists: the flag persistence can wait for T-041, but the in-session behavior must hold.
+
+## Result
+
+- `domain/item.ts`: `Item { id, name, description }`, `Bag`/`BagEntry` with `addToBag`/`bagCount`, `isTaken(event, memory)`, `pickUp(bag, memory, event) → { bag, memory, alreadyTaken }`, `isItemInput`, `isBag`. `ItemEvent` gained `flagId` and `metatileId | null`; `newItemEvent`; `isMapEvents` checks both.
+- Project `items: Item[]` with helpers and defaults; routes `POST/PUT/DELETE /project/items[/:itemId]`; `projectRepository.createItem/saveItem/deleteItem`.
+- Session (`engine/field.ts`): `FieldState.bag`, `FieldWorld.itemNameOf`, `visibleEvents` (taken items are not there), `itemsOnMap`, items block the step; the interact key picks one up once and shows `You found a POTION!`. `engine/item-actor.ts` draws the chosen metatile on the cell until then; `play.ts` passes those actors with the player.
+- Editor: `ItemsEditor` window (side menu box button) for the catalog; `EventKindPicker` offers Item; `ItemForm` picks item, flag (with “+ New flag” suggesting “Took <item> at x, y”), and metatile with a preview.
+- Tests: first pickup adds and flags, second does not; bag stacking; the session blocks, picks up once, hides, and opens the cell. Verified in headless Chrome: catalog → placed event → play shows the message once, the object stops drawing, the cell becomes walkable.

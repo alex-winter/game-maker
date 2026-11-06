@@ -3,8 +3,8 @@ import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 import { Cell } from 'domain/coordinates'
 
-/** The kinds an author can place by clicking an empty cell. Items and NPCs arrive with T-038 and T-042. */
-export type PlaceableKind = 'warp' | 'sign'
+/** The kinds an author can place by clicking an empty cell. NPCs arrive with T-042. */
+export type PlaceableKind = 'warp' | 'sign' | 'item'
 
 export type EventKindPick = { readonly kind: PlaceableKind; readonly cell: Cell }
 
@@ -15,6 +15,7 @@ export class EventKindPicker extends Component<{ cell: Cell }> {
     protected listeners: Listeners = {
         '.pick-warp:click': () => this.pick('warp'),
         '.pick-sign:click': () => this.pick('sign'),
+        '.pick-item:click': () => this.pick('item'),
     }
 
     protected css(): string {
@@ -73,6 +74,10 @@ export class EventKindPicker extends Component<{ cell: Cell }> {
                 background: #d4a017;
             }
 
+            .pick-item .letter {
+                background: #4caf50;
+            }
+
             .description {
                 display: flex;
                 flex-direction: column;
@@ -94,6 +99,7 @@ export class EventKindPicker extends Component<{ cell: Cell }> {
             title,
             this.option('pick-warp', 'W', 'Warp', 'Stepping here moves the player to another cell or map.'),
             this.option('pick-sign', 'S', 'Sign', 'Facing it and pressing the interact key shows a dialog.'),
+            this.option('pick-item', 'I', 'Item', 'Lies here until picked up; a flag remembers it is gone.'),
         )
 
         return picker

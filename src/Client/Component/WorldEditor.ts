@@ -26,6 +26,7 @@ import { View } from 'engine/view'
 import { UserData, WindowConfiguration } from 'Model/UserData'
 import { DialogEditor } from 'Client/Component/Dialog/DialogEditor'
 import { FlagsEditor } from 'Client/Component/Flags/FlagsEditor'
+import { ItemsEditor } from 'Client/Component/Items/ItemsEditor'
 
 /**
  * The editor page: picks the map, mounts the side menu, tool bar, and the one
@@ -48,6 +49,7 @@ export class WorldEditor extends Component {
         'open-sprite-editor': this.handleOpenSpriteEditor,
         'open-dialog-editor': this.handleOpenDialogEditor,
         'open-flags-editor': this.handleOpenFlagsEditor,
+        'open-items-editor': this.handleOpenItemsEditor,
         'updated-view-coordinates': this.handleUpdateViewCoordinates,
         'grid-toggled': this.handleGridToggled,
         'window-update': this.handleWindowUpdate,
@@ -274,6 +276,27 @@ export class WorldEditor extends Component {
         userData.windows[windowConfiguration.uuid] = windowConfiguration
 
         userDataRepository.persist(userData)
+    }
+
+    private async handleOpenItemsEditor(): Promise<void> {
+        const key = 'items'
+        const openWindow = this.windowBoxes[key]
+
+        if (openWindow && openWindow.isConnected) {
+            openWindow.flash()
+            return
+        }
+
+        const windowBox = WindowBoxFactory.make(Dom.makeComponent(ItemsEditor), 'Items', {
+            uuid: componentId(ItemsEditor),
+            componentConfigration: { dataset: {} },
+            title: 'Items',
+        })
+
+        if (windowBox) {
+            this.windowBoxes[key] = windowBox
+            this.shadowRoot?.append(windowBox)
+        }
     }
 
     private async handleOpenFlagsEditor(): Promise<void> {

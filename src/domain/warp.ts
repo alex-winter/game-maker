@@ -1,6 +1,7 @@
 import { Cell, isCell } from './coordinates'
 import { Id } from './id'
 import { Direction, isDirection, Player } from './movement'
+import { MetatileId } from './tileset'
 
 /**
  * A door, stairs, or hole: stepping onto `cell` puts the player on another
@@ -31,7 +32,11 @@ export type Sign = {
     dialogId: Id
 }
 
-/** An item lying on a cell. The item model and pickup arrive in T-038; this is the shape the resolver needs. */
+/**
+ * An item lying on a cell (T-038). Picking it up sets `flagId`; while that
+ * flag is set the item is gone. `metatileId` is the picture drawn on the
+ * cell until then — null for an invisible item.
+ */
 export type ItemEvent = {
     readonly kind: 'item'
 
@@ -40,6 +45,10 @@ export type ItemEvent = {
     cell: Cell
 
     itemId: Id
+
+    flagId: Id
+
+    metatileId: MetatileId | null
 }
 
 /** A person standing on a cell. Placement, sprites, and movement arrive in T-042; this is the shape the resolver needs. */
@@ -58,6 +67,10 @@ export type MapEvent = Warp | Sign | ItemEvent | NpcEvent
 
 export function newSign(id: Id, cell: Cell, dialogId: Id): Sign {
     return { kind: 'sign', id, cell, dialogId }
+}
+
+export function newItemEvent(id: Id, cell: Cell, itemId: Id, flagId: Id, metatileId: MetatileId | null): ItemEvent {
+    return { kind: 'item', id, cell, itemId, flagId, metatileId }
 }
 
 export function newWarp(id: Id, cell: Cell, toMapId: Id, toCell: Cell, facing: Direction): Warp {
@@ -137,7 +150,7 @@ function isMapEvent(value: unknown): value is MapEvent {
         return false
     }
 
-    const event = value as { kind: unknown; dialogId?: unknown; itemId?: unknown; npcId?: unknown }
+    const event = value as { kind: unknown; dialogId?: unknown; itemId?: unknown; flagId?: unknown; metatileId?: unknown; npcId?: unknown }
 
     switch (event.kind) {
         case 'warp':
@@ -145,7 +158,8 @@ function isMapEvent(value: unknown): value is MapEvent {
         case 'sign':
             return typeof event.dialogId === 'string'
         case 'item':
-            return typeof event.itemId === 'string'
+            return typeof event.itemId === 'string' && typeof event.flagId === 'string'
+                && (event.metatileId === null || Number.isInteger(event.metatileId))
         case 'npc':
             return typeof event.npcId === 'string'
         default:

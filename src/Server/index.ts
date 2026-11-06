@@ -21,6 +21,7 @@ import { requestHandlerPutTileMap } from 'Server/RequestHandlers/put-tile-map'
 import { requestHandlerDeleteMap, requestHandlerPutMapConnections, requestHandlerPutMapEvents, requestHandlerPutMapSize, requestHandlerPutStartMap } from 'Server/RequestHandlers/map-lifecycle'
 import { ensureProjectFile } from 'Server/services/project-store'
 import { requestHandlerPatchMetatile, requestHandlerPostTilesets, requestHandlerPutMapTileset } from 'Server/RequestHandlers/tilesets'
+import { requestHandlerDeleteItem, requestHandlerPostItems, requestHandlerPutItem } from 'Server/RequestHandlers/items'
 import { requestHandlerDeleteFlag, requestHandlerPostFlags, requestHandlerPutFlag } from 'Server/RequestHandlers/flags'
 import { requestHandlerDeleteDialog, requestHandlerPostDialogs, requestHandlerPutDialog } from 'Server/RequestHandlers/dialogs'
 import { requestHandlerDeleteSprite, requestHandlerPostSprites, requestHandlerPutPlayerSprite, requestHandlerPutSprite } from 'Server/RequestHandlers/sprites'
@@ -106,6 +107,9 @@ app.delete('/project/dialogs/:dialogId', requestHandlerDeleteDialog)
 app.post('/project/flags', requestHandlerPostFlags)
 app.put('/project/flags/:flagId', requestHandlerPutFlag)
 app.delete('/project/flags/:flagId', requestHandlerDeleteFlag)
+app.post('/project/items', requestHandlerPostItems)
+app.put('/project/items/:itemId', requestHandlerPutItem)
+app.delete('/project/items/:itemId', requestHandlerDeleteItem)
 
 
 app.post('/upload-files', uploadSheets, requestHandlerPostFiles)

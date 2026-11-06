@@ -4,7 +4,8 @@ import { Id } from 'domain/id'
 import { GridSize, TileMap } from 'domain/map'
 import { Dialog } from 'domain/dialog'
 import { Flag } from 'domain/flags'
-import { addDialog, addFlag, addSprite, GameMap, removeDialog, removeFlag, withDialog, withFlag, Project, removeMap, removeSprite, withMapConnections, withMapEvents, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withStartMap, withTileset } from 'domain/project'
+import { Item } from 'domain/item'
+import { addDialog, addFlag, addItem, addSprite, GameMap, removeDialog, removeFlag, removeItem, withDialog, withFlag, withItem, Project, removeMap, removeSprite, withMapConnections, withMapEvents, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withStartMap, withTileset } from 'domain/project'
 import { SpriteDefinition } from 'domain/sprite'
 import { MapEvent } from 'domain/warp'
 import { Metatile, MetatileAttributes, MetatileId, Tileset, withMetatileAttributes } from 'domain/tileset'
@@ -171,6 +172,36 @@ class ProjectRepository extends Repository {
 
         if (this.project) {
             this.project = removeFlag(this.project, flagId)
+        }
+    }
+
+    public async createItem(input: Omit<Item, 'id'>): Promise<Item> {
+        const response = await this.post(this.API_PATH + '/items', input)
+        const item: Item = await response.json()
+
+        if (this.project) {
+            this.project = addItem(this.project, item)
+        }
+
+        return item
+    }
+
+    public async saveItem(item: Item): Promise<Item> {
+        const response = await this.put(this.API_PATH + '/items/' + item.id, item)
+        const saved: Item = await response.json()
+
+        if (this.project) {
+            this.project = withItem(this.project, saved)
+        }
+
+        return saved
+    }
+
+    public async deleteItem(itemId: Id): Promise<void> {
+        await this.delete(this.API_PATH + '/items/' + itemId)
+
+        if (this.project) {
+            this.project = removeItem(this.project, itemId)
         }
     }
 

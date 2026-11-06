@@ -2,7 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { insideMap, WALK_MS_PER_CELL } from '../domain/movement'
 import { newPage } from '../domain/dialog'
-import { newSign, newWarp } from '../domain/warp'
+import { newItemEvent, newSign, newWarp } from '../domain/warp'
+import { bagCount } from '../domain/item'
+import { hasFlag } from '../domain/flags'
 import { FADE_MS, fadeOpacity } from './fade'
 import { advanceField, FieldState, FieldWorld, isTransitioning, newField } from './field'
 
@@ -20,6 +22,7 @@ const world: FieldWorld = {
         : id === 'ask' ? [newPage('Take the boat?', [{ label: 'Yes', nextDialogId: 'boat' }, { label: 'No', nextDialogId: null }])]
         : id === 'boat' ? [newPage('Off you go.')]
         : undefined),
+    itemNameOf: id => (id === 'potion' ? 'Potion' : undefined),
 }
 
 const right = { direction: 'right' as const, running: false, interact: false }
@@ -165,4 +168,34 @@ test('a held direction moves the choice cursor once; a fresh press moves it agai
     const yes = advanceField(opened, { ...none, interact: true }, 16, asking)
 
     assert.deepEqual(yes.message?.pages, [newPage('Off you go.')], '"Yes" opens the linked dialog')
+})
+
+test('an item on the floor blocks the step, is picked up once with a message, then is gone and the cell opens', () => {
+    const potion = newItemEvent('ball', { x: 6, y: 5 }, 'potion', 'took-potion', 7)
+    const floor: FieldWorld = { ...world, eventsOf: () => [potion] }
+    const start = newField('town', { x: 5, y: 5 }, 'right')
+
+    const walkedInto = advanceField(start, right, 16, floor)
+
+    assert.equal(walkedInto.player.step, null, 'the item blocks like a solid cell')
+
+    const found = advanceField(start, { ...none, interact: true }, 16, floor)
+
+    assert.deepEqual(found.message?.pages[0]?.text, 'You found a POTION!')
+    assert.equal(bagCount(found.bag, 'potion'), 1)
+    assert.equal(hasFlag(found.memory, 'took-potion'), true)
+
+    const closed = advanceField(found, { ...none, interact: true }, 16, floor)
+
+    assert.equal(closed.message, null)
+
+    const again = advanceField(closed, { ...none, interact: true }, 16, floor)
+
+    assert.equal(again.interaction, undefined, 'a taken item is not there to interact with')
+    assert.equal(again.message, null)
+    assert.equal(bagCount(again.bag, 'potion'), 1)
+
+    const walkedOnto = advanceField(closed, right, 16, floor)
+
+    assert.notEqual(walkedOnto.player.step, null, 'the cell is open once the item is gone')
 })

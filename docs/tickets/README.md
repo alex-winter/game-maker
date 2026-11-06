@@ -59,7 +59,7 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-035](T-035-message-box.md) | 5 | P1 | done | engine | Show paging messages |
 | [T-036](T-036-author-dialog.md) | 5 | P1 | done | editor | Author dialog in the project |
 | [T-037](T-037-dialog-choices.md) | 5 | P1 | done | domain | Branch dialog with choices |
-| [T-038](T-038-items.md) | 6 | P1 | ready | domain | Define items and pick them up once |
+| [T-038](T-038-items.md) | 6 | P1 | done | domain | Define items and pick them up once |
 | [T-039](T-039-bag.md) | 6 | P1 | backlog | play | Open a bag from the field |
 | [T-040](T-040-flags.md) | 6 | P1 | done | domain | Store story flags and variables |
 | [T-041](T-041-save-load.md) | 6 | P1 | ready | play | Save and load a play session |
@@ -82,8 +82,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 ## Counts
 
-- ready: 4
+- ready: 3
 - in_progress: 0
 - backlog: 16
-- done: 38
+- done: 39
 - total: 57

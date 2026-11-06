@@ -7,7 +7,7 @@ import { MapEvent, newSign, newWarp } from './warp'
 const at = { x: 4, y: 4 }
 const front = { x: 4, y: 3 }
 const sign = newSign('sign', front, 'dialog-1')
-const item: MapEvent = { kind: 'item', id: 'item', cell: front, itemId: 'potion' }
+const item: MapEvent = { kind: 'item', id: 'item', cell: front, itemId: 'potion', flagId: 'took-potion', metatileId: null }
 const npc: MapEvent = { kind: 'npc', id: 'npc-event', cell: front, npcId: 'mom' }
 
 test('cellInFront follows each facing, and a stepping player looks past the step target', () => {

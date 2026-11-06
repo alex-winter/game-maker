@@ -7,7 +7,7 @@ import { MAP_QUERY_PARAM } from 'Client/Service/active-map'
 import { buildScene } from 'Client/Service/build-scene'
 import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
 import { HeldDirections } from 'Client/Service/held-directions'
-import { findDialog, findMap, GameMap, playerSprite, Project, startMap } from 'domain/project'
+import { findDialog, findItem, findMap, GameMap, playerSprite, Project, startMap } from 'domain/project'
 import { isSolid } from 'domain/map'
 import { Scene } from 'engine/scene'
 import { PortSize } from 'engine/draw-port'
@@ -19,11 +19,12 @@ import { Direction, insideMap, Player, playerPixel } from 'domain/movement'
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { cameraFor, GBA_VIEW, integerScale } from 'engine/camera'
 import { fadeOpacity } from 'engine/fade'
-import { advanceField, FieldWorld, newField } from 'engine/field'
+import { advanceField, FieldWorld, itemsOnMap, newField } from 'engine/field'
 import { startLoop } from 'engine/loop'
 import { playerActor } from 'engine/player-actor'
 import { renderFrame } from 'engine/render'
 import { drawMessageBox } from 'engine/message'
+import { itemActor } from 'engine/item-actor'
 import { View } from 'engine/view'
 
 const held = new HeldDirections()
@@ -140,6 +141,7 @@ function worldOf(project: Project): FieldWorld {
         connectionsOf: mapId => findMap(project, mapId)?.connections ?? {},
         eventsOf: mapId => findMap(project, mapId)?.events ?? [],
         pagesOf: dialogId => findDialog(project, dialogId)?.pages,
+        itemNameOf: itemId => findItem(project, itemId)?.name,
     }
 }
 
@@ -221,7 +223,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const player = field.player
 
-        renderFrame(port, open.scene, followPlayer(player, open.pixels, zoom), [playerActor(player, sprite, spriteSheet)])
+        const items = itemsOnMap(open.map.events, field.memory).map(item => itemActor(item, open.scene.tileset, sheetById))
+
+        renderFrame(port, open.scene, followPlayer(player, open.pixels, zoom), [...items, playerActor(player, sprite, spriteSheet)])
 
         if (field.message !== null) {
             drawMessageBox(port, field.message, GBA_VIEW, zoom)

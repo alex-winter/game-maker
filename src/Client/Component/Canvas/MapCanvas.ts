@@ -11,9 +11,10 @@ import { drawEvents } from 'Client/Service/draw-events'
 import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 import { WARP_DELETE, WARP_SUBMIT, WarpForm } from 'Client/Component/Events/WarpForm'
 import { SIGN_DELETE, SIGN_SUBMIT, SignForm } from 'Client/Component/Events/SignForm'
+import { ITEM_DELETE, ITEM_SUBMIT, ItemForm } from 'Client/Component/Events/ItemForm'
 import { EVENT_KIND_PICK, EventKindPick, EventKindPicker } from 'Client/Component/Events/EventKindPicker'
 import { newId } from 'domain/id'
-import { eventsAt, newSign, newWarp, Sign, Warp, withEvent, withoutEvent } from 'domain/warp'
+import { eventsAt, ItemEvent, newItemEvent, newSign, newWarp, Sign, Warp, withEvent, withoutEvent } from 'domain/warp'
 import { drawGrid } from 'Client/Service/draw-grid'
 import { loadLegacyPlacements } from 'Client/Service/load-legacy-placements'
 import { MAP_SESSION_CHANGED, mapSession } from 'Client/Service/map-session'
@@ -73,6 +74,8 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         [WARP_DELETE]: this.handleWarpDelete,
         [SIGN_SUBMIT]: this.handleSignSubmit,
         [SIGN_DELETE]: this.handleSignDelete,
+        [ITEM_SUBMIT]: this.handleItemSubmit,
+        [ITEM_DELETE]: this.handleItemDelete,
         [EVENT_KIND_PICK]: this.handleEventKindPick,
     }
 
@@ -654,7 +657,35 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
             await this.openWarpForm(cell, first)
         } else if (first.kind === 'sign') {
             await this.openSignForm(cell, first)
+        } else if (first.kind === 'item') {
+            await this.openItemForm(cell, first)
         }
+    }
+
+    private async openItemForm(cell: Cell, event: ItemEvent | null): Promise<void> {
+        const project = await projectRepository.load()
+        const sheets = await sheetRepository.getAll()
+        const tileset = projectRepository.cachedTileset(mapSession.current.tileMap.tilesetId)
+
+        this.openModal(Dom.makeComponent(ItemForm, {
+            event,
+            cell,
+            items: project.items.map(each => ({ id: each.id, name: each.name })),
+            flags: project.flags.map(each => ({ id: each.id, name: each.name })),
+            metatiles: tileset?.metatiles ?? [],
+            sheetSources: Object.fromEntries(sheets.map(sheet => [sheet.id, sheet.imageSrc])),
+        }))
+    }
+
+    private async handleItemSubmit(submitted: Omit<ItemEvent, 'id'> & { id: Id | null }): Promise<void> {
+        const map = mapSession.current
+        const event = newItemEvent(submitted.id ?? newId(), submitted.cell, submitted.itemId, submitted.flagId, submitted.metatileId)
+
+        await mapSession.commitEvents(withEvent(map.events, event))
+    }
+
+    private async handleItemDelete(eventId: Id): Promise<void> {
+        await mapSession.commitEvents(withoutEvent(mapSession.current.events, eventId))
     }
 
     private openModal(form: HTMLElement): void {
@@ -687,8 +718,10 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
     private async handleEventKindPick(pick: EventKindPick): Promise<void> {
         if (pick.kind === 'warp') {
             await this.openWarpForm(pick.cell, null)
-        } else {
+        } else if (pick.kind === 'sign') {
             await this.openSignForm(pick.cell, null)
+        } else {
+            await this.openItemForm(pick.cell, null)
         }
     }
 

@@ -7,6 +7,7 @@ import { SpriteDefinition } from './sprite'
 import type { MapEvent } from './warp'
 import { Dialog, withDialogDefaults } from './dialog'
 import type { Flag } from './flags'
+import type { Item } from './item'
 import { Tileset } from './tileset'
 
 /** Cells in a new map. A gen 3 town is about this size. */
@@ -58,6 +59,9 @@ export type Project = {
     /** The story's named switches (T-040). A play session remembers which are set. */
     flags: Flag[]
 
+    /** Things the player can find and carry (T-038). Item events refer to them by id. */
+    items: Item[]
+
     /** Where play begins (T-030). Null until the author picks; `startMap` falls back to the first map. */
     startMapId: Id | null
 }
@@ -72,7 +76,7 @@ export function newMap(name: string, layers: Layer[] = [], size: GridSize = DEFA
 }
 
 export function newProject(name: string, maps: GameMap[] = []): Project {
-    return { id: newId(), name, tilesets: [], maps, sprites: [], playerSpriteId: null, dialogs: [], flags: [], startMapId: null }
+    return { id: newId(), name, tilesets: [], maps, sprites: [], playerSpriteId: null, dialogs: [], flags: [], items: [], startMapId: null }
 }
 
 /**
@@ -88,6 +92,7 @@ export function withProjectDefaults(stored: Partial<Project> & Pick<Project, 'id
         playerSpriteId: stored.playerSpriteId ?? null,
         dialogs: (stored.dialogs ?? []).map(withDialogDefaults),
         flags: stored.flags ?? [],
+        items: stored.items ?? [],
         startMapId: stored.startMapId ?? null,
         maps: stored.maps.map(map => {
             const tileMap = withTileMapDefaults(map.tileMap ?? emptyTileMap(DEFAULT_MAP_SIZE))
@@ -297,4 +302,20 @@ export function withFlag(project: Project, flag: Flag): Project {
 
 export function removeFlag(project: Project, flagId: Id): Project {
     return { ...project, flags: project.flags.filter(flag => flag.id !== flagId) }
+}
+
+export function findItem(project: Project, itemId: Id): Item | undefined {
+    return project.items.find(item => item.id === itemId)
+}
+
+export function addItem(project: Project, item: Item): Project {
+    return { ...project, items: [...project.items, item] }
+}
+
+export function withItem(project: Project, item: Item): Project {
+    return { ...project, items: project.items.map(existing => existing.id === item.id ? item : existing) }
+}
+
+export function removeItem(project: Project, itemId: Id): Project {
+    return { ...project, items: project.items.filter(item => item.id !== itemId) }
 }
