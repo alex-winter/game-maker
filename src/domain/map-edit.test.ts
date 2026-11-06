@@ -8,10 +8,13 @@ import {
     floodFillCells,
     isBlocked,
     isTileMap,
+    isValidGridSize,
     metatileIdAt,
     moveTileLayer,
     removeTileLayer,
     renameTileLayer,
+    resizeGrid,
+    resizeTileMap,
     TileLayer,
     withCell,
     withCellsRect,
@@ -170,4 +173,49 @@ test('withTileMapDefaults adds the ledge array an older file lacks', () => {
     assert.equal(isTileMap(old), false)
     assert.equal(isTileMap(fixed), true)
     assert.equal(withTileMapDefaults(fixed), fixed)
+})
+
+test('resizeGrid: 10×10 → 12×8 keeps the top-left 10×8 and pads the rest with empty', () => {
+    const from = { width: 10, height: 10 }
+    const cells = Array.from({ length: 100 }, (_, i) => i + 1)
+    const resized = resizeGrid(from, cells, { width: 12, height: 8 }, 0)
+
+    assert.equal(resized.length, 96)
+
+    for (let y = 0; y < 8; y++) {
+        for (let x = 0; x < 12; x++) {
+            const expected = x < 10 ? y * 10 + x + 1 : 0
+
+            assert.equal(resized[y * 12 + x], expected, `cell ${x},${y}`)
+        }
+    }
+})
+
+test('resizeTileMap resizes every layer and attribute grid together', () => {
+    const map = emptyTileMap({ width: 3, height: 2 })
+
+    map.layers[0] = withTile(map, map.layers[0], { x: 2, y: 1 }, 7)
+    map.attributes.collision[0] = 1
+
+    const bigger = resizeTileMap(map, { width: 4, height: 3 })
+
+    assert.equal(bigger.width, 4)
+    assert.equal(bigger.layers[0].tiles.length, 12)
+    assert.equal(bigger.layers[0].tiles[1 * 4 + 2], 7)
+    assert.equal(bigger.attributes.collision[0], 1)
+    assert.equal(bigger.attributes.ledge.length, 12)
+    assert.equal(isTileMap(bigger), true)
+
+    const smaller = resizeTileMap(bigger, { width: 2, height: 1 })
+
+    assert.deepEqual(smaller.layers[0].tiles, [0, 0])
+    assert.equal(resizeTileMap(smaller, { width: 2, height: 1 }), smaller, 'same size is a no-op')
+})
+
+test('isValidGridSize accepts 1..256 integers only', () => {
+    assert.equal(isValidGridSize({ width: 20, height: 20 }), true)
+    assert.equal(isValidGridSize({ width: 0, height: 20 }), false)
+    assert.equal(isValidGridSize({ width: 2.5, height: 20 }), false)
+    assert.equal(isValidGridSize({ width: 257, height: 20 }), false)
+    assert.equal(isValidGridSize('20x20'), false)
 })

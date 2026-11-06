@@ -1,7 +1,7 @@
 import { Repository } from 'Client/Service/Repository/Repository'
 import { Id } from 'domain/id'
-import { TileMap } from 'domain/map'
-import { GameMap, Project, withMapTileMap, withMapTileset, withTileset } from 'domain/project'
+import { GridSize, TileMap } from 'domain/map'
+import { GameMap, Project, removeMap, withMapTileMap, withMapTileset, withTileset } from 'domain/project'
 import { Metatile, MetatileAttributes, MetatileId, Tileset, withMetatileAttributes } from 'domain/tileset'
 
 class ProjectRepository extends Repository {
@@ -73,6 +73,25 @@ class ProjectRepository extends Repository {
         this.project?.maps.push(map)
 
         return map
+    }
+
+    public async deleteMap(mapId: Id): Promise<void> {
+        await this.delete(this.API_PATH + '/maps/' + mapId)
+
+        if (this.project) {
+            this.project = removeMap(this.project, mapId)
+        }
+    }
+
+    public async resizeMap(mapId: Id, size: GridSize): Promise<GameMap> {
+        const response = await this.put(`${this.API_PATH}/maps/${mapId}/size`, size)
+        const resized: GameMap = await response.json()
+
+        if (this.project) {
+            this.project = withMapTileMap(this.project, mapId, resized.tileMap)
+        }
+
+        return resized
     }
 
     public async renameMap(mapId: Id, name: string): Promise<GameMap> {

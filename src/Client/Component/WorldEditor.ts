@@ -33,8 +33,8 @@ import { DialogCreator } from './Dialog/DialogCreator'
 export class WorldEditor extends Component {
     private windowBoxes: { [key: string]: WindowBox } = {}
     private userData!: UserData
-    private mapId!: Id
-    private map!: GameMap
+    /** Undefined when the project has no maps: the editor shows an empty state with the map list. */
+    private map: GameMap | undefined
 
     protected externalListeners: ExternalListeners = {
         'open-sheet': this.handleOpenSheet,
@@ -64,22 +64,30 @@ export class WorldEditor extends Component {
                 flex-grow: 1;
                 position: relative;
             }
+
+            .empty-state {
+                position: absolute;
+                inset: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #bbb;
+                background: #2b2b2b;
+                font-size: 16px;
+            }
         `
     }
 
     protected async setup(): Promise<void> {
         const project = await projectRepository.load()
         const mapId = activeMapId(window.location.search, project)
-        const map = mapId === undefined ? undefined : findMap(project, mapId)
 
-        if (mapId === undefined || map === undefined) {
-            throw new Error('The project has no maps')
+        this.map = mapId === undefined ? undefined : findMap(project, mapId)
+
+        if (this.map !== undefined) {
+            mapSession.open(this.map)
+            this.pointPlayLinkAtMap(this.map.id)
         }
-
-        this.mapId = mapId
-        this.map = map
-        mapSession.open(map)
-        this.pointPlayLinkAtMap(mapId)
 
         this.userData = await userDataRepository.getAll()
 
@@ -105,10 +113,19 @@ export class WorldEditor extends Component {
             this.shadowRoot?.append(dialog)
         }
 
-        sideMenu.append(
-            Dom.makeComponent(MapSelect, { activeMapId: this.mapId }),
-            Dom.makeComponent(LayerListing),
-        )
+        sideMenu.append(Dom.makeComponent(MapSelect, { activeMapId: this.map?.id ?? null }))
+
+        if (this.map === undefined) {
+            const empty = Dom.div('empty-state')
+
+            empty.textContent = 'This project has no maps yet. Use "+ Map" to create one.'
+            canvasContainer.append(empty)
+            container.append(sideMenu, canvasContainer)
+
+            return container
+        }
+
+        sideMenu.append(Dom.makeComponent(LayerListing))
 
         const tools = Dom.makeComponent(CanvasTools, { currentTool: this.userData.currentTool })
 
@@ -167,7 +184,7 @@ export class WorldEditor extends Component {
     private async handleOpenTilesetPalette(tilesetId: Id | undefined): Promise<void> {
         const project = await projectRepository.load()
         const tileset = project.tilesets.find(candidate => candidate.id === tilesetId)
-            ?? project.tilesets.find(candidate => candidate.id === this.map.tileMap.tilesetId)
+            ?? project.tilesets.find(candidate => candidate.id === this.map?.tileMap.tilesetId)
             ?? project.tilesets[0]
 
         if (tileset === undefined) {

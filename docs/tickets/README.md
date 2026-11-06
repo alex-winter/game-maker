@@ -46,8 +46,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-022](T-022-collision-attributes.md) | 2 | P1 | done | editor | Paint collision and elevation as attributes |
 | [T-023](T-023-overhead-layer.md) | 2 | P1 | done | engine | Draw an overhead layer above actors |
 | [T-024](T-024-undo-redo.md) | 2 | P1 | done | editor | Undo and redo map strokes |
-| [T-025](T-025-map-list.md) | 2 | P1 | ready | editor | Create, rename, resize, and delete maps |
-| [T-026](T-026-player-steps.md) | 3 | P1 | backlog | engine | Step the player from cell to cell |
+| [T-025](T-025-map-list.md) | 2 | P1 | done | editor | Create, rename, resize, and delete maps |
+| [T-026](T-026-player-steps.md) | 3 | P1 | ready | engine | Step the player from cell to cell |
 | [T-027](T-027-walk-animation.md) | 3 | P1 | backlog | engine | Animate the player in four directions |
 | [T-028](T-028-movement-collision.md) | 3 | P1 | backlog | domain | Block steps into solid cells |
 | [T-029](T-029-follow-camera.md) | 3 | P1 | backlog | engine | Follow the player in a 240×160 view |
@@ -84,6 +84,6 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 - ready: 1
 - in_progress: 0
-- backlog: 33
-- done: 24
+- backlog: 32
+- done: 25
 - total: 57

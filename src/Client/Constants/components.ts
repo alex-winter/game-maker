@@ -16,6 +16,8 @@ import { WorldEditor } from 'Client/Component/WorldEditor'
 import { Ide } from 'Client/Component/Ide'
 import { DialogCreator } from 'Client/Component/Dialog/DialogCreator'
 import { MapSelect } from 'Client/Component/MapSelect/MapSelect'
+import { ConfirmDialog } from 'Client/Component/MapSelect/ConfirmDialog'
+import { MapSizeForm } from 'Client/Component/MapSelect/MapSizeForm'
 import { TilesetPalette } from 'Client/Component/Tileset/TilesetPalette'
 import { ComponentConstructor } from 'Client/Service/Dom'
 
@@ -38,6 +40,8 @@ export const COMPONENTS = new Map<ComponentConstructor, string>([
   [AnimationMaker, 'animation-maker'],
   [DialogCreator, 'dialog-creator'],
   [MapSelect, 'map-select'],
+  [ConfirmDialog, 'confirm-dialog'],
+  [MapSizeForm, 'map-size-form'],
   [TilesetPalette, 'tileset-palette'],
 ])
 

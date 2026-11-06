@@ -245,6 +245,60 @@ export function floodFill(map: GridSize, layer: TileLayer, start: Cell, id: Meta
     return { ...layer, tiles: floodFillCells(map, layer.tiles, start, id, EMPTY_METATILE_ID) }
 }
 
+/**
+ * A dense cell array laid out for a new size: overlapping cells keep their
+ * value (anchored top-left), new cells get `empty`, cells past the new edge
+ * are dropped.
+ */
+export function resizeGrid<T>(from: GridSize, cells: readonly T[], to: GridSize, empty: T): T[] {
+    const next = new Array<T>(to.width * to.height).fill(empty)
+    const width = Math.min(from.width, to.width)
+    const height = Math.min(from.height, to.height)
+
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            next[y * to.width + x] = cells[y * from.width + x] ?? empty
+        }
+    }
+
+    return next
+}
+
+/** The map at a new size: every layer and attribute grid resized together. */
+export function resizeTileMap(map: TileMap, to: GridSize): TileMap {
+    if (map.width === to.width && map.height === to.height) {
+        return map
+    }
+
+    return {
+        ...map,
+        width: to.width,
+        height: to.height,
+        layers: map.layers.map(layer => ({ ...layer, tiles: resizeGrid(map, layer.tiles, to, EMPTY_METATILE_ID) })),
+        attributes: {
+            collision: resizeGrid(map, map.attributes.collision, to, 0),
+            elevation: resizeGrid(map, map.attributes.elevation, to, 0),
+            ledge: resizeGrid<LedgeDirection | null>(map, map.attributes.ledge, to, null),
+        },
+    }
+}
+
+/** A usable size: positive integers, and not so large that a dense grid is a problem. */
+export function isValidGridSize(value: unknown): value is GridSize {
+    if (typeof value !== 'object' || value === null) {
+        return false
+    }
+
+    const size = value as Partial<GridSize>
+
+    return isNonNegativeInteger(size.width) && isNonNegativeInteger(size.height)
+        && size.width >= 1 && size.height >= 1
+        && size.width <= MAX_MAP_SIDE && size.height <= MAX_MAP_SIDE
+}
+
+/** Cells per side a map may have. 256×256 is already far beyond a gen 3 town. */
+export const MAX_MAP_SIDE = 256
+
 /** The painted attributes at `cell`; outside the map everything is the default. */
 export function attributesAt(map: TileMap, cell: Cell): CellAttributes {
     const index = cellIndex(map, cell)

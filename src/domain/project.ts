@@ -110,6 +110,11 @@ export function withTileset(project: Project, tileset: Tileset): Project {
     }
 }
 
+/** A new project without the map. Removing the last map leaves an empty project. */
+export function removeMap(project: Project, mapId: Id): Project {
+    return { ...project, maps: project.maps.filter(map => map.id !== mapId) }
+}
+
 /** A new project with one map's grid replaced. */
 export function withMapTileMap(project: Project, mapId: Id, tileMap: TileMap): Project {
     return {

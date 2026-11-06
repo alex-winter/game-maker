@@ -1,7 +1,7 @@
 ---
 id: T-026
 title: Step the player from cell to cell
-status: backlog
+status: ready
 priority: P1
 phase: 3
 type: feat

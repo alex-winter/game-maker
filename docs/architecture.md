@@ -24,7 +24,7 @@ Editor (`public/index.html` → `src/Client/index.ts`):
 2. On `DOMContentLoaded`, append an `<ide-wrapper>`.
 3. `Ide` paints a menu bar (the items do nothing) and a `WorldEditor`.
 4. `WorldEditor.setup` loads the project, picks the active map (`Client/Service/active-map.ts`: `?map=` if it exists, else the first map), opens it in `mapSession`, then loads user data and sheets.
-5. `WorldEditor.build` mounts the side menu (with `MapSelect`, a select plus a "+ Map" button that reloads the page on the chosen map, and `LayerListing`), the tool bar, one `MapCanvas`, and always opens a dialog window. `MapCanvas.setup` decodes the sheets and the map's legacy placements.
+5. `WorldEditor.build` mounts the side menu (with `MapSelect` — switch, create, rename, resize, delete; switching and creating reload the page on the chosen map — and `LayerListing`), the tool bar, one `MapCanvas`, and always opens a dialog window. A project with no maps shows an empty state with only the map list. `MapCanvas.setup` decodes the sheets and the map's legacy placements.
 
 Play (`public/play.html` → `src/Client/play.ts`):
 
@@ -54,7 +54,9 @@ Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names a
 | `window-update` | `WindowBox` | `WorldEditor` | `WindowConfiguration` |
 | `tool-selection` | `CanvasTools` | `MapCanvas` | `Tool` (`Client/Service/tool.ts`: pencil, fill, rect, rubber) |
 | `map-session-changed` | `Client/Service/map-session.ts` | `MapCanvas`, `LayerListing` | none |
-| `close-modal` | `NewLayerForm` | `BasicModal` | the form element |
+| `close-modal` | `NewLayerForm`, `ConfirmDialog`, `MapSizeForm` | `BasicModal` | the form element |
+| `confirmed` | `ConfirmDialog` | `MapSelect` | the topic string the dialog was opened with |
+| `map-size-submit` | `MapSizeForm` | `MapSelect` | `GridSize` |
 | `open-tileset-palette` | `SheetViewer`, `SideMenu` | `WorldEditor` | tileset id, or none for the active map's tileset |
 | `brush-changed` | `Client/Service/brush.ts` | `TilesetPalette` | `Brush` |
 
@@ -76,7 +78,7 @@ The current brush is `Client/Service/brush.ts`: `{ tilesetId, metatileId }` or `
 
 `Project` and `GameMap` live in `domain/project.ts` with pure helpers (`addMap`, `renameMap`, `withMapLayers`, `findMap`). `Server/services/project-store.ts` reads and writes the file; handlers call a domain helper and write the result. `withProjectDefaults` fills fields an older file lacks, and boot writes the result back once.
 
-A map's grid is a `TileMap` (`domain/map.ts`): `width` and `height` in cells, a `tilesetId`, `layers: TileLayer[]` back to front (each a dense row-major `MetatileId[]` with `kind: 'ground' | 'overhead'`), and `attributes` (`collision[]`, `elevation[]`, `ledge[]` on the same index; `ledge` is stored since T-022 and enforced in T-028). A `Tileset` (`domain/tileset.ts`) maps ids to a `sheetId` plus a pixel rectangle and the defaults `solid`, `elevation`, `ledge`. Id 0 is the empty cell and is never solid. `isBlocked(map, tileset, to, from?)` is the movement rule: outside, painted collision, or any solid metatile blocks; with `from`, a change between two non-zero elevations blocks. Tilesets are sliced from a sheet (`sliceSheet`, T-019) and edited through the palette. The editor's tools write metatile ids into the active `TileLayer` (T-020); a map without a tileset adopts the brush's tileset on the first stroke, and a brush from a different tileset is refused. `isTileMap` is the server's structural check on a saved grid; `withTileMapDefaults` adds arrays an older file lacks. Attribute painting (T-022) goes through `withCollision`/`withElevation` with the generic `withCell`, `withCellsRect`, and `floodFillCells`; `attributesAt` reads one cell. Painting an attribute never touches a picture layer.
+A map's grid is a `TileMap` (`domain/map.ts`): `width` and `height` in cells, a `tilesetId`, `layers: TileLayer[]` back to front (each a dense row-major `MetatileId[]` with `kind: 'ground' | 'overhead'`), and `attributes` (`collision[]`, `elevation[]`, `ledge[]` on the same index; `ledge` is stored since T-022 and enforced in T-028). A `Tileset` (`domain/tileset.ts`) maps ids to a `sheetId` plus a pixel rectangle and the defaults `solid`, `elevation`, `ledge`. Id 0 is the empty cell and is never solid. `isBlocked(map, tileset, to, from?)` is the movement rule: outside, painted collision, or any solid metatile blocks; with `from`, a change between two non-zero elevations blocks. Tilesets are sliced from a sheet (`sliceSheet`, T-019) and edited through the palette. The editor's tools write metatile ids into the active `TileLayer` (T-020); a map without a tileset adopts the brush's tileset on the first stroke, and a brush from a different tileset is refused. `isTileMap` is the server's structural check on a saved grid; `withTileMapDefaults` adds arrays an older file lacks; `resizeGrid`/`resizeTileMap` re-lay every layer and attribute grid for a new size, anchored top-left. Attribute painting (T-022) goes through `withCollision`/`withElevation` with the generic `withCell`, `withCellsRect`, and `floodFillCells`; `attributesAt` reads one cell. Painting an attribute never touches a picture layer.
 
 A legacy placement layer (`Model/Layer.ts`) is:
 
@@ -120,6 +122,8 @@ Play: `play.ts` builds a scene once and runs the same loop and `renderFrame` at 
 | GET | `/project` | the project with every map, its grid, and its legacy layers |
 | POST | `/project/maps` | `{ name }` → the new map |
 | PATCH | `/project/maps/:mapId` | `{ name }` → the renamed map |
+| DELETE | `/project/maps/:mapId` | removes the map; the last one may go |
+| PUT | `/project/maps/:mapId/size` | `{ width, height }` in cells (1–256) → the resized map; overlapping cells keep their ids |
 | POST | `/project/tilesets` | `{ name, metatiles }` → the new tileset (ids and rectangles only, no pixels) |
 | PATCH | `/project/tilesets/:tilesetId/metatiles/:metatileId` | `{ solid?, elevation?, ledge? }` → the updated tileset |
 | PUT | `/project/maps/:mapId/tileset` | `{ tilesetId }` → the updated map |

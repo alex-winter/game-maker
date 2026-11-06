@@ -1,7 +1,7 @@
 ---
 id: T-025
 title: Create, rename, resize, and delete maps
-status: ready
+status: done
 priority: P1
 phase: 2
 type: feat
@@ -46,10 +46,17 @@ Out:
 
 ## Acceptance
 
-- [ ] Two maps can be created, named, and switched.
-- [ ] Resize from 10×10 to 12×8 keeps the top-left 10×8 and drops the rest.
-- [ ] Delete removes the map from the project file.
+- [x] Two maps can be created, named, and switched.
+- [x] Resize from 10×10 to 12×8 keeps the top-left 10×8 and drops the rest.
+- [x] Delete removes the map from the project file.
 
 ## Test plan
 
 - Unit test `resizeGrid`. Manual create, rename, switch, delete.
+
+## Result
+
+- Domain: `resizeGrid` (generic, top-left anchored, pads with the empty value) and `resizeTileMap` (every layer and attribute grid together), `isValidGridSize` (1–256), `MAX_MAP_SIDE`, `removeMap`. Tests include the 10×10 → 12×8 case.
+- Server: `DELETE /project/maps/:mapId`, `PUT /project/maps/:mapId/size`.
+- Editor: `MapSelect` now shows the active map's size with rename (prompt), resize (`MapSizeForm` in the modal), and delete (`ConfirmDialog` in the modal) next to the select and "+ Map". Deleting the active map opens another, or the new empty state in `WorldEditor` when none remain. Resize reloads the page so the session, canvas, and listing all pick up the new grid.
+- Verified in headless Chrome: create, rename, resize to 12×8 (96 cells), switch via the select, delete with the modal confirm; the empty state renders with only the map list.
