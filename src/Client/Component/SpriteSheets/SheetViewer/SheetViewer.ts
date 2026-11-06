@@ -3,6 +3,8 @@ import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 import { extractImageFromCanvasArea } from 'Client/Service/extract-image-from-canvas-area'
+import { snap } from 'Client/Service/snap'
+import { GRID_SIZE } from 'Model/grid-size'
 
 export class SheetViewer extends Component {
     private image: HTMLImageElement | null = null
@@ -60,7 +62,7 @@ export class SheetViewer extends Component {
         let startY = 0
         let isDragging = false
 
-        const snap = (value: number) => Math.round(value / 16) * 16
+        const snapToCell = snap(GRID_SIZE)
 
         const onMouseMove = (event: MouseEvent) => {
             if (!isDragging) return
@@ -69,14 +71,17 @@ export class SheetViewer extends Component {
             const currentX = event.clientX - rect.left + this.scrollLeft
             const currentY = event.clientY - rect.top + this.scrollTop
 
-            const width = snap(Math.abs(currentX - startX))
-            const height = snap(Math.abs(currentY - startY))
+            // The selection spans the cells that contain both corners of the drag.
+            const left = snapToCell(Math.min(currentX, startX))
+            const top = snapToCell(Math.min(currentY, startY))
+            const right = snapToCell(Math.max(currentX, startX)) + GRID_SIZE
+            const bottom = snapToCell(Math.max(currentY, startY)) + GRID_SIZE
 
             box.style.display = 'block'
-            box.style.left = snap(Math.min(currentX, startX)) + 'px'
-            box.style.top = snap(Math.min(currentY, startY)) + 'px'
-            box.style.width = width + 'px'
-            box.style.height = height + 'px'
+            box.style.left = left + 'px'
+            box.style.top = top + 'px'
+            box.style.width = (right - left) + 'px'
+            box.style.height = (bottom - top) + 'px'
         }
 
         const onMouseUp = async (event: MouseEvent) => {

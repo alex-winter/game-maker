@@ -16,9 +16,9 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 5. **Fixed (T-002).** **The brush is in the wrong coordinate space.** `CanvasLayer.handleMouseMove` treats `clientX`/`clientY` as canvas pixels. The canvas is inset by the side menu, so stamped tiles land away from the cursor. The ghost image is `position: fixed`, so it follows the cursor and disagrees with the stamp. Ticket T-002.
 
-6. **The first click can stamp a stale cell.** `mousedown` calls `generatePlacement` using `mouseCoordinates` from the previous move, or `{0,0}` if the pointer has not moved on that layer. The rubber's document-level `mousemove` has the same stale read. Ticket T-008.
+6. **Fixed (T-008).** **The first click can stamp a stale cell.** `mousedown` calls `generatePlacement` using `mouseCoordinates` from the previous move, or `{0,0}` if the pointer has not moved on that layer. The rubber's document-level `mousemove` has the same stale read. Ticket T-008.
 
-7. **Fill and rubber do not agree on what a tile is.** Fill deletes every cell in the region and inserts one bitmap whose origin is the top-left of the bounds. Rubber deletes only a placement whose origin equals the snapped cursor, so a filled region is not erasable except at that corner. Fill's bounds use the canvas rectangle; the cursor math uses the viewport. Ticket T-008 keeps the current tools honest. Ticket T-014 replaces both with metatiles.
+7. **Fixed (T-008).** **Fill and rubber do not agree on what a tile is.** Fill deletes every cell in the region and inserts one bitmap whose origin is the top-left of the bounds. Rubber deletes only a placement whose origin equals the snapped cursor, so a filled region is not erasable except at that corner. Fill's bounds use the canvas rectangle; the cursor math uses the viewport. Ticket T-008 keeps the current tools honest. Ticket T-014 replaces both with metatiles.
 
 8. **Fixed (T-004).** **Cameras drift apart.** Each `CanvasLayer` copies `viewCoordinates`. Pan applies a delta to the others, which works only while they started equal. Layers created from `new-layer-mapped` are constructed without `userData`, so they start at `{0,0}`. Ticket T-004.
 
@@ -32,7 +32,7 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 13. **The dialog window is not a feature.** `WorldEditor.build` always appends `DialogCreator`. It does not save. Closing it forgets nothing worth keeping, and the next load opens it again. `userData.windows` is written and never read. Ticket T-036 owns real dialog; until then T-011's cleanup note and the empty handler in `handleOpenNewModel` should not be "finished" by wiring the stub. Leave the stub dark. A small fix lives in T-010's out-of-scope note: do it inside T-036, not as drive-by UI.
 
-14. **Selector snap and map snap differ.** The sheet viewer rounds to 16 (`Math.round`). The map floors to 16 (`Math.floor` via `snap`). A selection on a sheet and a stamp on the map do not share a function. Ticket T-008.
+14. **Fixed (T-008).** **Selector snap and map snap differ.** The sheet viewer rounds to 16 (`Math.round`). The map floors to 16 (`Math.floor` via `snap`). A selection on a sheet and a stamp on the map do not share a function. Ticket T-008.
 
 15. **`SpriteModelMaker` is dead code that does not compile into the page.** It is not in `COMPONENTS`, so `Dom.makeComponent` would throw. The camera button emits `click-open-new-model` and the handler is empty. Leave it until T-027.
 

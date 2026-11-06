@@ -95,7 +95,7 @@ A layer is:
 
 `type` is `image`, `collision`, or `player_controlled`. Collision is still an image placement (a translucent red square). The `CollisionsLayer` type is unused. `player_controlled` is a blue circle the user stamps by hand. Play mode reads `type` and ignores it.
 
-Images live inline in JSON. A fill merges a region into one new data URL, so the cell stops being a tile. That is why the placement model gets retired rather than extended. See [decisions/0001-tile-grid.md](decisions/0001-tile-grid.md) and [decisions/0003-assets-on-disk.md](decisions/0003-assets-on-disk.md).
+Images live inline in JSON. Until T-008 a fill merged a region into one new data URL; it now writes one placement per cell, but the model is still retired rather than extended. See [decisions/0001-tile-grid.md](decisions/0001-tile-grid.md) and [decisions/0003-assets-on-disk.md](decisions/0003-assets-on-disk.md).
 
 ## Draw path in the editor
 

@@ -15,14 +15,17 @@ import { LayerChange, layerRepository } from 'Client/Service/Repository/LayerRep
 import { loadPlacement } from 'Client/Service/load-placement'
 import { pointerToWorld } from 'Client/Service/pointer-to-world'
 import { snap } from 'Client/Service/snap'
+import { CellBounds, floodFillCells } from 'Client/Service/flood-fill-cells'
+import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { drawOrder } from 'Model/draw-order'
+import { GRID_SIZE } from 'Model/grid-size'
+import { rectContainsPoint } from 'Model/rect-contains'
 
 export class CanvasLayer extends Component {
-    private static readonly TILE_SIZE: number = 16
     private static readonly BASE_Z_INDEX: number = 500
     private static readonly COLLISION_IMAGE: string = generateImageDataURL(
-        CanvasLayer.TILE_SIZE,
-        CanvasLayer.TILE_SIZE,
+        GRID_SIZE,
+        GRID_SIZE,
         { r: 255, g: 0, b: 0, a: 0.3 },
     )
     private static readonly DEFAULT_IMAGE: string = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII='
@@ -30,13 +33,12 @@ export class CanvasLayer extends Component {
     private currentImage!: HTMLImageElement
 
     private layer!: Layer
-    private readonly mouseCoordinates: Coordinates = { x: 0, y: 0 }
     private isMoving: boolean = false
     private lastMousePosition: Coordinates = { x: 0, y: 0 }
     private isCollisionLayer: boolean = false
     private toolSelection: string = 'pencil'
 
-    private snap = snap(CanvasLayer.TILE_SIZE)
+    private snap = snap(GRID_SIZE)
 
     protected readonly externalListeners: ExternalListeners = {
         'layer-deleted': this.handleDelete,
@@ -150,12 +152,9 @@ export class CanvasLayer extends Component {
         }
     }
 
+    /** Moves the ghost preview to the cell under the pointer. */
     private trackPointer(event: MouseEvent): void {
         const cell = this.snappedWorldPointAt(event)
-
-        this.mouseCoordinates.x = cell.x
-        this.mouseCoordinates.y = cell.y
-
         const currentImage = this.getCurrentImage()
         const view = camera.get()
 
@@ -200,33 +199,89 @@ export class CanvasLayer extends Component {
         }
     }
 
-    private async generatePlacement(): Promise<void> {
-        if (this.getCurrentImage().src === CanvasLayer.DEFAULT_IMAGE) {
+    private hasImageSelected(): boolean {
+        return this.getCurrentImage().src !== CanvasLayer.DEFAULT_IMAGE
+    }
+
+    private currentImageUuid(): Promise<string> {
+        return placementImageRepository
+            .findOrCreateBySrc(this.getCurrentImage().src)
+            .then(image => image.uuid)
+    }
+
+    /** One placement at one cell. Pencil and fill both end here. */
+    private stamp(cell: Coordinates, imageUuid: string): Promise<void> {
+        const placement: ImagePlacement = {
+            uuid: crypto.randomUUID(),
+            coordinate: { x: cell.x, y: cell.y },
+            imageUuid,
+        }
+
+        this.layer.placements.push(placement)
+
+        return loadPlacement(placement, this.layer.uuid)
+    }
+
+    private async generatePlacement(cell: Coordinates): Promise<void> {
+        if (!this.hasImageSelected()) {
             return
         }
 
-        const newPlacement: ImagePlacement = {
-            uuid: crypto.randomUUID(),
-            coordinate: {
-                x: this.mouseCoordinates.x,
-                y: this.mouseCoordinates.y,
-            },
-            imageUuid: (await placementImageRepository.findOrCreateBySrc(this.getCurrentImage().src)).uuid,
-        }
-
+        const imageUuid = await this.currentImageUuid()
         const lastPlacement = this.layer.placements[this.layer.placements.length - 1]
 
         if (
             lastPlacement
-            && this.snap(lastPlacement.coordinate.x) === this.snap(newPlacement.coordinate.x)
-            && this.snap(lastPlacement.coordinate.y) === this.snap(newPlacement.coordinate.y)
-            && lastPlacement.imageUuid === newPlacement.imageUuid
+            && lastPlacement.coordinate.x === cell.x
+            && lastPlacement.coordinate.y === cell.y
+            && lastPlacement.imageUuid === imageUuid
         ) {
             return
         }
 
-        this.layer.placements.push(newPlacement)
-        loadPlacement(newPlacement, this.layer.uuid)
+        await this.stamp(cell, imageUuid)
+    }
+
+    private loadedPlacementsOfThisLayer(): LoadedPlacement[] {
+        return loadedPlacementRepository.get()
+            .filter(loadedPlacement => loadedPlacement.layerUuid === this.layer.uuid)
+    }
+
+    /** The front-most loaded placement whose rectangle covers `cell`. */
+    private placementCovering(cell: Coordinates): LoadedPlacement | undefined {
+        const covering = this.loadedPlacementsOfThisLayer()
+            .filter(loadedPlacement => rectContainsPoint(loadedPlacement, cell))
+
+        return covering[covering.length - 1]
+    }
+
+    /**
+     * Runs `step` for the mousedown and every mousemove until mouseup, then
+     * persists the layer once every step has settled.
+     */
+    private runStroke(
+        firstEvent: MouseEvent,
+        step: (cell: Coordinates) => Promise<void>,
+        onDone: () => void,
+    ): void {
+        const pending: Promise<void>[] = [step(this.snappedWorldPointAt(firstEvent))]
+
+        const mouseMove = (event: MouseEvent) => {
+            pending.push(step(this.snappedWorldPointAt(event)))
+        }
+
+        const mouseUp = async () => {
+            document.removeEventListener('mouseup', mouseUp)
+            document.removeEventListener('mousemove', mouseMove)
+
+            await Promise.all(pending)
+
+            Events.emit('layer-placement-made', this.layer)
+            onDone()
+        }
+
+        document.addEventListener('mouseup', mouseUp)
+        document.addEventListener('mousemove', mouseMove)
     }
 
     private handleMouseUp(event: MouseEvent): void {
@@ -274,44 +329,23 @@ export class CanvasLayer extends Component {
 
         if (event.button === LEFT_BUTTON) {
             if (this.toolSelection === 'pencil') {
-                this.generatePlacement()
-
-                const mouseMove = (event: MouseEvent) => {
-                    this.generatePlacement()
-                }
-
-                const mouseUp = (event: MouseEvent) => {
-                    Events.emit('layer-placement-made', this.layer)
-                    Events.emit('placement-added', undefined)
-
-                    document.removeEventListener('mouseup', mouseUp)
-                    document.removeEventListener('mousemove', mouseMove)
-                }
-
-                document.addEventListener('mouseup', mouseUp)
-                document.addEventListener('mousemove', mouseMove)
+                this.runStroke(
+                    event,
+                    cell => this.generatePlacement(cell),
+                    () => Events.emit('placement-added', undefined),
+                )
             }
 
             if (this.toolSelection === 'fill') {
-                this.performFill(this.mouseCoordinates.x, this.mouseCoordinates.y)
+                this.performFill(this.snappedWorldPointAt(event))
             }
 
             if (this.toolSelection === 'rubber') {
-                this.removePlacementAt(this.mouseCoordinates.x, this.mouseCoordinates.y)
-
-                const mouseMove = (event: MouseEvent) => {
-                    this.removePlacementAt(this.mouseCoordinates.x, this.mouseCoordinates.y)
-                }
-
-                const mouseUp = (event: MouseEvent) => {
-                    Events.emit('layer-placement-made', this.layer)
-
-                    document.removeEventListener('mouseup', mouseUp)
-                    document.removeEventListener('mousemove', mouseMove)
-                }
-
-                document.addEventListener('mouseup', mouseUp)
-                document.addEventListener('mousemove', mouseMove)
+                this.runStroke(
+                    event,
+                    async cell => this.removePlacementAt(cell),
+                    () => undefined,
+                )
             }
         }
 
@@ -321,19 +355,20 @@ export class CanvasLayer extends Component {
         }
     }
 
-    private removePlacementAt(x: number, y: number): void {
-        const snappedX = this.snap(x)
-        const snappedY = this.snap(y)
+    private removePlacementAt(cell: Coordinates): void {
+        const covering = this.placementCovering(cell)
 
-        const index = this.layer.placements.findIndex(p =>
-            p.coordinate.x === snappedX && p.coordinate.y === snappedY
-        )
+        if (covering === undefined) {
+            return
+        }
+
+        const index = this.layer.placements.findIndex(p => p.uuid === covering.uuid)
 
         if (index !== -1) {
-            const [removed] = this.layer.placements.splice(index, 1)
-            console.log('found to remove')
-            loadedPlacementRepository.removeByUuid(removed.uuid)
+            this.layer.placements.splice(index, 1)
         }
+
+        loadedPlacementRepository.removeByUuid(covering.uuid)
     }
 
     private handleMouseLeave(event: MouseEvent): void {
@@ -345,120 +380,62 @@ export class CanvasLayer extends Component {
         this.currentImage = newImage
     }
 
-    private async performFill(startX: number, startY: number): Promise<void> {
-        const targetX = this.snap(startX)
-        const targetY = this.snap(startY)
-        const startTile = { x: targetX, y: targetY }
-
-        const canvas = this.getCanvas()
-
-        const canvasWidth = canvas.getBoundingClientRect().width
-        const canvasHeight = canvas.getBoundingClientRect().height
-
+    /** The visible map, in cells. Fill does not run off into the infinite plane. */
+    private visibleCellBounds(): CellBounds {
+        const canvasRect = this.getCanvas().getBoundingClientRect()
         const view = camera.get()
-        const minX = this.snap(view.x)
-        const minY = this.snap(view.y)
-        const maxX = this.snap(view.x + canvasWidth)
-        const maxY = this.snap(view.y + canvasHeight)
 
-        const tileSize = CanvasLayer.TILE_SIZE
+        return {
+            minX: this.snap(view.x),
+            minY: this.snap(view.y),
+            maxX: this.snap(view.x + canvasRect.width),
+            maxY: this.snap(view.y + canvasRect.height),
+        }
+    }
 
-        const isInBounds = (x: number, y: number): boolean => {
-            return x >= minX && x < maxX && y >= minY && y < maxY
+    private imageUuidAt(cell: Coordinates): string | undefined {
+        const covering = this.placementCovering(cell)
+
+        if (covering === undefined) {
+            return undefined
         }
 
-        const existing = this.layer.placements.find(p =>
-            p.coordinate.x === startTile.x && p.coordinate.y === startTile.y
+        return this.layer.placements.find(p => p.uuid === covering.uuid)?.imageUuid
+    }
+
+    /** Replaces every connected cell that matches the clicked one with one placement per cell. */
+    private async performFill(start: Coordinates): Promise<void> {
+        if (!this.hasImageSelected()) {
+            return
+        }
+
+        const newImageUuid = await this.currentImageUuid()
+
+        if (this.imageUuidAt(start) === newImageUuid) {
+            return
+        }
+
+        const cells = floodFillCells(
+            start,
+            this.visibleCellBounds(),
+            GRID_SIZE,
+            cell => this.imageUuidAt(cell),
         )
 
-        const targetImageUuid = existing?.imageUuid ?? null
-        const newImageUuid = (await placementImageRepository.findOrCreateBySrc(this.getCurrentImage().src)).uuid
-
-        // Optimization: avoid unnecessary reprocessing
-        if (targetImageUuid === newImageUuid) return
-
-        const visited = new Set<string>()
-        const queue: Coordinates[] = [startTile]
-        const filledTiles: Coordinates[] = []
-
-        while (queue.length > 0) {
-            const { x, y } = queue.pop()!
-            const key = `${x},${y}`
-
-            if (visited.has(key) || !isInBounds(x, y)) continue
-            visited.add(key)
-
-            const match = this.layer.placements.find(p =>
-                p.coordinate.x === x && p.coordinate.y === y
-            )
-
-            const matchesTarget = targetImageUuid === null
-                ? !match
-                : match?.imageUuid === targetImageUuid
-
-            if (!matchesTarget) continue
-
-            filledTiles.push({ x, y })
-
-            queue.push(
-                { x: x - tileSize, y },
-                { x: x + tileSize, y },
-                { x, y: y - tileSize },
-                { x, y: y + tileSize },
-            )
+        if (cells.length === 0) {
+            return
         }
 
-        if (filledTiles.length === 0) return
-
-        // ✅ Skip if all matched tiles already have the new image
-        const allAlreadyCorrect = filledTiles.every(({ x, y }) => {
-            const match = this.layer.placements.find(p =>
-                p.coordinate.x === x && p.coordinate.y === y
-            )
-            return match?.imageUuid === newImageUuid
-        })
-
-        if (allAlreadyCorrect) return
-
-        // 🔄 Remove old placements in the filled region
-        this.layer.placements = this.layer.placements.filter(p => {
-            return !filledTiles.some(t => t.x === p.coordinate.x && t.y === p.coordinate.y)
-        })
-
-        const fillCanvas = Dom.canvas()
-        const fillCtx = fillCanvas.getContext('2d')!
-
-        const offsetX = Math.min(...filledTiles.map(t => t.x))
-        const offsetY = Math.min(...filledTiles.map(t => t.y))
-        const widthInTiles = Math.max(...filledTiles.map(t => t.x)) - offsetX + tileSize
-        const heightInTiles = Math.max(...filledTiles.map(t => t.y)) - offsetY + tileSize
-
-        fillCanvas.width = widthInTiles
-        fillCanvas.height = heightInTiles
-
-        filledTiles.forEach(tile => {
-            fillCtx.drawImage(
-                this.getCurrentImage(),
-                tile.x - offsetX,
-                tile.y - offsetY,
-                tileSize,
-                tileSize
-            )
-        })
-
-        const dataURL = fillCanvas.toDataURL()
-        const mergedImageUuid = (await placementImageRepository.findOrCreateBySrc(dataURL)).uuid
-
-        const placement: ImagePlacement = {
-            uuid: crypto.randomUUID(),
-            coordinate: { x: offsetX, y: offsetY },
-            imageUuid: mergedImageUuid,
+        for (const cell of cells) {
+            this.removePlacementAt(cell)
         }
 
-        this.layer.placements.push(placement)
-        await loadPlacement(placement, this.layer.uuid)
+        await Promise.all(
+            cells.map(cell => this.stamp(cell, newImageUuid))
+        )
 
         Events.emit('layer-placement-made', this.layer)
+        Events.emit('placement-added', undefined)
     }
 
 
