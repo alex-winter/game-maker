@@ -12,6 +12,7 @@ import { Bag, isTaken, newBag, pickUp } from '../domain/item'
 import { advanceMessage, MessageState, missingDialogPages, moveHighlight, openMessage } from './message'
 import { MenuEntry, MenuState, moveMenu, openMenu, selectedEntry } from './menu'
 import { SavedSession } from '../domain/save'
+import { BagScreenState, moveBagCursor, openBagScreen } from './bag-screen'
 
 /** Where the player will be once the screen is black. */
 export type Transition = {
@@ -52,6 +53,9 @@ export type FieldState = {
 
     /** The entry the player just confirmed in the menu, for the host to open. Cleared the next frame. */
     readonly menuChoice: MenuEntry | undefined
+
+    /** The bag screen, while it is open over the menu (T-039). */
+    readonly bagScreen: BagScreenState | null
 }
 
 /** Movement plus whether the interact and menu keys were pressed this frame (edges, not levels). */
@@ -79,12 +83,12 @@ export type FieldWorld = {
     /** The pages of a dialog, or undefined when no dialog has that id. */
     pagesOf(dialogId: Id): readonly DialogPage[] | undefined
 
-    /** The name an item shows when found, or undefined when the catalog has no such item. */
-    itemNameOf(itemId: Id): string | undefined
+    /** The item's name and description, or undefined when the catalog has no such item. */
+    itemOf(itemId: Id): { readonly name: string; readonly description: string } | undefined
 }
 
 export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down', memory: Memory = newMemory(), bag: Bag = newBag()): FieldState {
-    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined }
+    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined, bagScreen: null }
 }
 
 /** What a save keeps of the session (T-041): the standing cell, never a half-finished step. */
@@ -132,7 +136,8 @@ export function isTransitioning(state: FieldState): boolean {
  * confirms — the next page, the chosen branch, or closing. The menu key
  * opens the start menu, which likewise holds the player; up and down move
  * its cursor, the interact key confirms an entry into `menuChoice` (Close
- * and the menu key close it). Otherwise the player steps, and a warp or a
+ * and the menu key close it; Bag opens the bag screen over it, which the
+ * menu key steps back out of). Otherwise the player steps, and a warp or a
  * seam reached by that step starts a fade with the destination pending.
  */
 export function advanceField(state: FieldState, input: FieldInput, deltaMs: number, world: FieldWorld): FieldState {
@@ -155,12 +160,27 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
         return { ...state, interaction: undefined, message, lastDirection: input.direction, menuChoice: undefined }
     }
 
+    if (state.bagScreen !== null) {
+        const count = state.bag.length
+        const moved = pressed === 'up' ? moveBagCursor(state.bagScreen, -1, count) : pressed === 'down' ? moveBagCursor(state.bagScreen, 1, count) : state.bagScreen
+
+        // The menu key steps back to the menu; there is nothing to do with an item yet, so the interact key does too.
+        return { ...state, interaction: undefined, menuChoice: undefined, bagScreen: input.menu || input.interact ? null : moved, lastDirection: input.direction }
+    }
+
     if (state.menu !== null) {
         const moved = pressed === 'up' ? moveMenu(state.menu, -1) : pressed === 'down' ? moveMenu(state.menu, 1) : state.menu
         const choice = input.interact ? selectedEntry(moved) : undefined
         const closes = input.menu || choice === 'close'
 
-        return { ...state, interaction: undefined, menu: closes ? null : moved, menuChoice: choice, lastDirection: input.direction }
+        return {
+            ...state,
+            interaction: undefined,
+            menu: closes ? null : moved,
+            menuChoice: choice,
+            bagScreen: choice === 'bag' ? openBagScreen() : null,
+            lastDirection: input.direction,
+        }
     }
 
     if (input.menu && state.player.step === null) {
@@ -189,7 +209,7 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
 
             if (event !== undefined) {
                 const taken = pickUp(state.bag, state.memory, event)
-                const message = openMessage(foundMessage(world.itemNameOf(event.itemId)))
+                const message = openMessage(foundMessage(world.itemOf(event.itemId)?.name))
 
                 return { ...state, interaction, message, bag: taken.bag, memory: taken.memory, lastDirection: input.direction, menuChoice: undefined }
             }

@@ -22,7 +22,7 @@ const world: FieldWorld = {
         : id === 'ask' ? [newPage('Take the boat?', [{ label: 'Yes', nextDialogId: 'boat' }, { label: 'No', nextDialogId: null }])]
         : id === 'boat' ? [newPage('Off you go.')]
         : undefined),
-    itemNameOf: id => (id === 'potion' ? 'Potion' : undefined),
+    itemOf: id => (id === 'potion' ? { name: 'Potion', description: 'Heals 20 HP.' } : undefined),
 }
 
 const right = { direction: 'right' as const, running: false, interact: false, menu: false }
@@ -283,4 +283,41 @@ test('a save snapshots the standing cell, memory, and bag, and restoring it resu
 
     assert.equal(notice.menu, null)
     assert.equal(notice.message?.pages[0]?.text, 'Saved the game.')
+})
+
+test('Bag in the menu opens the bag screen, which holds the player, moves its cursor, and steps back to the menu', () => {
+    const potion = newItemEvent('ball', { x: 6, y: 5 }, 'potion', 'took-potion', 7)
+    const rope = newItemEvent('coil', { x: 4, y: 5 }, 'rope', 'took-rope', null)
+    const floor: FieldWorld = { ...world, eventsOf: () => [potion, rope] }
+    let state = newField('town', { x: 5, y: 5 }, 'right')
+
+    state = advanceField(state, { ...none, interact: true }, 16, floor)   // potion
+    state = advanceField(state, { ...none, interact: true }, 16, floor)   // close
+    state = advanceField(state, { ...none, direction: 'left' }, 16, floor) // turn (blocked by the rope)
+    state = advanceField(state, none, 16, floor)
+    state = advanceField(state, { ...none, interact: true }, 16, floor)   // rope
+    state = advanceField(state, { ...none, interact: true }, 16, floor)
+    assert.equal(state.bag.length, 2)
+
+    const menu = advanceField(state, { ...none, menu: true }, 16, floor)
+    const opened = advanceField(menu, { ...none, interact: true }, 16, floor)
+
+    assert.equal(opened.menuChoice, 'bag')
+    assert.deepEqual(opened.bagScreen, { highlight: 0 })
+    assert.notEqual(opened.menu, null, 'the menu waits underneath')
+
+    const moved = advanceField(opened, { ...down, running: true }, 400, floor)
+
+    assert.equal(moved.bagScreen?.highlight, 1)
+    assert.deepEqual(moved.player.cell, { x: 5, y: 5 })
+    assert.equal(moved.player.step, null)
+
+    const back = advanceField(moved, { ...none, menu: true }, 16, floor)
+
+    assert.equal(back.bagScreen, null)
+    assert.notEqual(back.menu, null, 'back on the menu, not in the field')
+
+    const field = advanceField(back, { ...none, menu: true }, 16, floor)
+
+    assert.equal(field.menu, null)
 })

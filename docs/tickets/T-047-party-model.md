@@ -1,7 +1,7 @@
 ---
 id: T-047
 title: Model a party of creatures
-status: backlog
+status: ready
 priority: P1
 phase: 8
 type: feat

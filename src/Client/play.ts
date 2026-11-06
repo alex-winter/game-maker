@@ -28,6 +28,7 @@ import { newPage } from 'domain/dialog'
 import { saveRepository } from 'Client/Service/Repository/SaveRepository'
 import { SavedSession } from 'domain/save'
 import { drawMenu, MenuEntry } from 'engine/menu'
+import { drawBagScreen } from 'engine/bag-screen'
 import { itemActor } from 'engine/item-actor'
 import { View } from 'engine/view'
 
@@ -60,7 +61,7 @@ const INTERACT_CODES: readonly string[] = ['KeyZ', 'Space']
 const MENU_CODES: readonly string[] = ['Enter', 'Escape']
 
 /** Menu entries that open something today. The rest show greyed until their tickets land. */
-const ENABLED_ENTRIES: ReadonlySet<MenuEntry> = new Set(['save', 'close'])
+const ENABLED_ENTRIES: ReadonlySet<MenuEntry> = new Set(['bag', 'save', 'close'])
 
 function releaseAllKeys(): void {
     held.clear()
@@ -153,7 +154,7 @@ function worldOf(project: Project): FieldWorld {
         connectionsOf: mapId => findMap(project, mapId)?.connections ?? {},
         eventsOf: mapId => findMap(project, mapId)?.events ?? [],
         pagesOf: dialogId => findDialog(project, dialogId)?.pages,
-        itemNameOf: itemId => findItem(project, itemId)?.name,
+        itemOf: itemId => findItem(project, itemId),
     }
 }
 
@@ -304,7 +305,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             drawMessageBox(port, field.message, GBA_VIEW, zoom)
         }
 
-        if (field.menu !== null) {
+        if (field.bagScreen !== null) {
+            drawBagScreen(port, field.bag, world.itemOf, field.bagScreen, GBA_VIEW, zoom)
+        } else if (field.menu !== null) {
             drawMenu(port, field.menu, GBA_VIEW, zoom, ENABLED_ENTRIES)
         }
 

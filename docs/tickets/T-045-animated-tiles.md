@@ -1,7 +1,7 @@
 ---
 id: T-045
 title: Animate water and other tiles
-status: backlog
+status: ready
 priority: P2
 phase: 8
 type: feat

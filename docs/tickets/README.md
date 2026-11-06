@@ -60,18 +60,18 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-036](T-036-author-dialog.md) | 5 | P1 | done | editor | Author dialog in the project |
 | [T-037](T-037-dialog-choices.md) | 5 | P1 | done | domain | Branch dialog with choices |
 | [T-038](T-038-items.md) | 6 | P1 | done | domain | Define items and pick them up once |
-| [T-039](T-039-bag.md) | 6 | P1 | backlog | play | Open a bag from the field |
+| [T-039](T-039-bag.md) | 6 | P1 | done | play | Open a bag from the field |
 | [T-040](T-040-flags.md) | 6 | P1 | done | domain | Store story flags and variables |
 | [T-041](T-041-save-load.md) | 6 | P1 | done | play | Save and load a play session |
 | [T-042](T-042-place-npcs.md) | 7 | P1 | ready | editor | Place NPC object events |
 | [T-043](T-043-npc-talk.md) | 7 | P1 | backlog | engine | Talk to an NPC |
 | [T-044](T-044-npc-movement.md) | 7 | P2 | backlog | engine | Let NPCs look around or wander |
-| [T-045](T-045-animated-tiles.md) | 8 | P2 | backlog | engine | Animate water and other tiles |
+| [T-045](T-045-animated-tiles.md) | 8 | P2 | ready | engine | Animate water and other tiles |
 | [T-046](T-046-start-menu.md) | 6 | P1 | done | play | Open a field start menu |
-| [T-047](T-047-party-model.md) | 8 | P1 | backlog | domain | Model a party of creatures |
+| [T-047](T-047-party-model.md) | 8 | P1 | ready | domain | Model a party of creatures |
 | [T-048](T-048-encounters.md) | 8 | P1 | backlog | domain | Start an encounter from grass |
 | [T-049](T-049-trainer-sight.md) | 8 | P2 | backlog | engine | Let a trainer notice the player |
-| [T-050](T-050-field-gates.md) | 8 | P2 | backlog | domain | Open a field gate with a flag |
+| [T-050](T-050-field-gates.md) | 8 | P2 | ready | domain | Open a field gate with a flag |
 | [T-051](T-051-vertical-slice.md) | 8 | P1 | backlog | content | Build the Gate A and Gate B town in the editor |
 | [T-052](T-052-move-catalog.md) | 9 | P1 | backlog | domain | Define moves and a type chart |
 | [T-053](T-053-battle-scene.md) | 9 | P1 | backlog | engine | Resolve a single-creature battle |
@@ -82,8 +82,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 ## Counts
 
-- ready: 1
+- ready: 4
 - in_progress: 0
-- backlog: 16
-- done: 41
+- backlog: 11
+- done: 42
 - total: 57

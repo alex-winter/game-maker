@@ -1,7 +1,7 @@
 ---
 id: T-050
 title: Open a field gate with a flag
-status: backlog
+status: ready
 priority: P2
 phase: 8
 type: feat
