@@ -643,3 +643,37 @@ test('a dialog page that names a flag sets it when shown, and a gate reading tha
     play(right, WALK_MS_PER_CELL + 32)
     assert.deepEqual(state.player.cell, { x: 6, y: 5 }, 'and the gate lets the player through')
 })
+
+test('the Party entry opens the party screen over the menu, the cursor moves through the party, and closing returns the player where they stood (T-055)', () => {
+    const species = newSpecies('sprout', 'Sprout', ['grass'])
+    const party = [...starterParty({ speciesId: 'sprout', level: 7 }, [species]), ...starterParty({ speciesId: 'sprout', level: 3 }, [species])]
+    let state = newField('town', { x: 5, y: 5 }, 'left', undefined, undefined, party)
+
+    state = advanceField(state, { ...none, menu: true }, 16, world)
+    state = advanceField(state, { ...none, direction: 'down' }, 16, world) // highlight party
+    state = advanceField(state, { ...none, interact: true }, 16, world)
+    assert.equal(state.menuChoice, 'party')
+    assert.deepEqual(state.partyScreen, { highlight: 0 })
+    assert.equal(state.bagScreen, null)
+
+    state = advanceField(state, { ...none }, 16, world)
+    state = advanceField(state, { ...down, running: true }, 400, world)
+    assert.equal(state.partyScreen?.highlight, 1, 'down moves the cursor')
+    assert.deepEqual(state.player.cell, { x: 5, y: 5 }, 'the field is paused')
+    assert.equal(state.player.step, null)
+
+    state = advanceField(state, { ...none }, 16, world)
+    state = advanceField(state, { ...down, running: true }, 16, world)
+    assert.equal(state.partyScreen?.highlight, 1, 'stops at the last creature')
+
+    const back = advanceField(state, { ...none, interact: true }, 16, world)
+
+    assert.equal(back.partyScreen, null)
+    assert.notEqual(back.menu, null, 'back on the menu')
+
+    const field = advanceField(back, { ...none, menu: true }, 16, world)
+
+    assert.equal(field.menu, null)
+    assert.deepEqual(field.player.cell, { x: 5, y: 5 })
+    assert.equal(field.player.facing, 'left', 'exactly where and how they stood')
+})

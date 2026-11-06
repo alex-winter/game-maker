@@ -7,7 +7,7 @@ import { MAP_QUERY_PARAM } from 'Client/Service/active-map'
 import { buildScene } from 'Client/Service/build-scene'
 import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
 import { HeldDirections } from 'Client/Service/held-directions'
-import { GameMap, Project, findDialog, findItem, findMap, findSpecies, findSprite, playerSprite, startMap } from 'domain/project'
+import { GameMap, Project, findDialog, findItem, findMap, findMove, findSpecies, findSprite, playerSprite, startMap } from 'domain/project'
 import { isGrassAt, isSolid, withOpenGates } from 'domain/map'
 import { hasFlag, Memory } from 'domain/flags'
 import { Scene } from 'engine/scene'
@@ -30,6 +30,7 @@ import { saveRepository } from 'Client/Service/Repository/SaveRepository'
 import { SavedSession } from 'domain/save'
 import { drawMenu, MenuEntry } from 'engine/menu'
 import { drawBagScreen } from 'engine/bag-screen'
+import { drawPartyScreen, PartyLookup } from 'engine/party-screen'
 import { itemActor } from 'engine/item-actor'
 import { npcActor, SpriteLookup } from 'engine/npc-actor'
 import { npcsOn } from 'domain/warp'
@@ -71,7 +72,7 @@ const INTERACT_CODES: readonly string[] = ['KeyZ', 'Space']
 const MENU_CODES: readonly string[] = ['Enter', 'Escape']
 
 /** Menu entries that open something today. The rest show greyed until their tickets land. */
-const ENABLED_ENTRIES: ReadonlySet<MenuEntry> = new Set(['bag', 'save', 'close'])
+const ENABLED_ENTRIES: ReadonlySet<MenuEntry> = new Set(['bag', 'party', 'save', 'close'])
 
 function releaseAllKeys(): void {
     held.clear()
@@ -310,6 +311,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const battleData: BattleData = { moves: project.moves, typeChart: project.typeChart }
     const speciesOf = (speciesId: Id) => findSpecies(project, speciesId)
+    const partyLookup: PartyLookup = { speciesOf, moveName: moveId => findMove(project, moveId)?.name }
 
     // The battle scene the field handed off to (T-053), or undefined while the field runs.
     let battleScene: BattleSceneState | undefined
@@ -377,6 +379,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (field.bagScreen !== null) {
             drawBagScreen(port, field.bag, world.itemOf, field.bagScreen, GBA_VIEW, zoom)
+        } else if (field.partyScreen !== null) {
+            drawPartyScreen(port, field.party, partyLookup, field.partyScreen, GBA_VIEW, zoom)
         } else if (field.menu !== null) {
             drawMenu(port, field.menu, GBA_VIEW, zoom, ENABLED_ENTRIES)
         }

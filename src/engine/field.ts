@@ -18,6 +18,7 @@ import { advanceMessage, currentPage, MessageState, missingDialogPages, moveHigh
 import { MenuEntry, MenuState, moveMenu, openMenu, selectedEntry } from './menu'
 import { SavedSession } from '../domain/save'
 import { BagScreenState, moveBagCursor, openBagScreen } from './bag-screen'
+import { movePartyCursor, openPartyScreen, PartyScreenState } from './party-screen'
 
 /** Where the player will be once the screen is black. */
 export type Transition = {
@@ -61,6 +62,9 @@ export type FieldState = {
 
     /** The bag screen, while it is open over the menu (T-039). */
     readonly bagScreen: BagScreenState | null
+
+    /** The party screen while it is open (T-055), over the menu. */
+    readonly partyScreen: PartyScreenState | null
 
     /** The person being talked to and the way they turned to face the player (T-043), while the message is open. */
     readonly talkingTo: { readonly eventId: Id; readonly facing: Direction } | null
@@ -126,7 +130,7 @@ export type FieldWorld = {
 }
 
 export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down', memory: Memory = newMemory(), bag: Bag = newBag(), party: Party = []): FieldState {
-    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined, bagScreen: null, talkingTo: null, people: [], party, battle: undefined, approach: null, challengedBy: null }
+    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined, bagScreen: null, partyScreen: null, talkingTo: null, people: [], party, battle: undefined, approach: null, challengedBy: null }
 }
 
 /** What a save keeps of the session (T-041): the standing cell, never a half-finished step. */
@@ -366,6 +370,14 @@ function advanceFrame(state: FieldState, input: FieldInput, deltaMs: number, wor
         return { ...state, interaction: undefined, menuChoice: undefined, bagScreen: input.menu || input.interact ? null : moved, lastDirection: input.direction, people: pausePeople(state.people, deltaMs) }
     }
 
+    if (state.partyScreen !== null) {
+        const count = state.party.length
+        const moved = pressed === 'up' ? movePartyCursor(state.partyScreen, -1, count) : pressed === 'down' ? movePartyCursor(state.partyScreen, 1, count) : state.partyScreen
+
+        // Nothing can be done to a creature here yet, so either key steps back to the menu.
+        return { ...state, interaction: undefined, menuChoice: undefined, partyScreen: input.menu || input.interact ? null : moved, lastDirection: input.direction, people: pausePeople(state.people, deltaMs) }
+    }
+
     if (state.menu !== null) {
         const moved = pressed === 'up' ? moveMenu(state.menu, -1) : pressed === 'down' ? moveMenu(state.menu, 1) : state.menu
         const choice = input.interact ? selectedEntry(moved) : undefined
@@ -377,6 +389,7 @@ function advanceFrame(state: FieldState, input: FieldInput, deltaMs: number, wor
             menu: closes ? null : moved,
             menuChoice: choice,
             bagScreen: choice === 'bag' ? openBagScreen() : null,
+            partyScreen: choice === 'party' ? openPartyScreen() : null,
             lastDirection: input.direction,
             people: pausePeople(state.people, deltaMs),
         }
