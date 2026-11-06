@@ -181,3 +181,23 @@ test('an actor with a sprite draws its frame; one outside the view is skipped', 
 
     assert.deepEqual(port.calls, [{ image: 'hero', sx: 32, sy: 0, dx: 16, dy: 16, dw: 32 }])
 })
+
+test('an animated tile draws the frame the clock says, and the first frame when no clock is given', () => {
+    const water: Tileset = { ...tileset, metatiles: [{ ...tileset.metatiles[0], animation: { frames: [{ x: 32, y: 16 }], frameMs: 200 } }] }
+    const map = emptyTileMap({ width: 4, height: 4 })
+    const view = { x: 0, y: 0, zoom: 1 }
+
+    map.layers[0] = withTile(map, map.layers[0], { x: 0, y: 0 }, 1)
+
+    const first = recordingPort()
+    renderFrame(first, scene({ tileset: water, tileMap: map }), view)
+    assert.deepEqual([first.calls[0].sx, first.calls[0].sy], [0, 0])
+
+    const second = recordingPort()
+    renderFrame(second, scene({ tileset: water, tileMap: map }), view, [], 200)
+    assert.deepEqual([second.calls[0].sx, second.calls[0].sy], [32, 16])
+
+    const round = recordingPort()
+    renderFrame(round, scene({ tileset: water, tileMap: map }), view, [], 400)
+    assert.deepEqual([round.calls[0].sx, round.calls[0].sy], [0, 0])
+})

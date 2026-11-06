@@ -1,3 +1,4 @@
+import { Coordinates, Rect } from './coordinates'
 import { GRID_SIZE } from './grid'
 import { Id, newId } from './id'
 
@@ -7,6 +8,19 @@ export type MetatileId = number
 export const EMPTY_METATILE_ID: MetatileId = 0
 
 export type LedgeDirection = 'up' | 'down' | 'left' | 'right'
+
+/**
+ * Extra pictures a metatile cycles through (T-045): where each later frame
+ * sits on the same sheet (same size as the metatile) and how long every
+ * frame shows. The metatile's own rectangle is frame 0.
+ */
+export type TileAnimation = {
+    readonly frames: readonly Coordinates[]
+
+    readonly frameMs: number
+}
+
+export const DEFAULT_FRAME_MS = 250
 
 /**
  * One 16×16 cell picture plus its default attributes. Pixels are not stored
@@ -33,6 +47,9 @@ export type Metatile = {
 
     /** Set when the cell can only be crossed in this direction (a one-way ledge). */
     readonly ledge: LedgeDirection | null
+
+    /** Absent for a tile that never changes. */
+    readonly animation?: TileAnimation
 }
 
 export type Tileset = {
@@ -84,7 +101,8 @@ export function sliceSheet(name: string, sheetId: Id, widthPx: number, heightPx:
     return { id: newId(), name, metatiles }
 }
 
-export type MetatileAttributes = Pick<Metatile, 'solid' | 'elevation' | 'ledge'>
+/** The fields an author may set on a metatile; `animation: null` takes the animation away. */
+export type MetatileAttributes = Pick<Metatile, 'solid' | 'elevation' | 'ledge'> & { readonly animation: TileAnimation | null }
 
 /** A new tileset with one metatile's attributes changed. Unknown ids change nothing. */
 export function withMetatileAttributes(
@@ -92,10 +110,80 @@ export function withMetatileAttributes(
     id: MetatileId,
     attributes: Partial<MetatileAttributes>,
 ): Tileset {
+    const { animation, ...rest } = attributes
+
     return {
         ...tileset,
-        metatiles: tileset.metatiles.map(metatile => metatile.id === id ? { ...metatile, ...attributes } : metatile),
+        metatiles: tileset.metatiles.map(metatile => {
+            if (metatile.id !== id) {
+                return metatile
+            }
+
+            const changed: Metatile = { ...metatile, ...rest }
+
+            if (animation === undefined) {
+                return changed
+            }
+
+            if (animation === null) {
+                const { animation: _dropped, ...still } = changed
+
+                return still
+            }
+
+            return { ...changed, animation }
+        }),
     }
+}
+
+/** How many pictures a metatile cycles through: one for a still tile. */
+export function frameCount(metatile: Metatile): number {
+    return 1 + (metatile.animation?.frames.length ?? 0)
+}
+
+/**
+ * The source rectangle to draw for `metatile` at `timeMs` on the session
+ * clock: frame 0 for the first `frameMs`, frame 1 for the next, round and
+ * round. A still tile is always its own rectangle.
+ */
+export function frameAt(metatile: Metatile, timeMs: number): Rect {
+    const own: Rect = { x: metatile.x, y: metatile.y, width: metatile.w, height: metatile.h }
+
+    if (metatile.animation === undefined || metatile.animation.frames.length === 0 || metatile.animation.frameMs <= 0) {
+        return own
+    }
+
+    const index = Math.floor(Math.max(0, timeMs) / metatile.animation.frameMs) % frameCount(metatile)
+
+    if (index === 0) {
+        return own
+    }
+
+    const frame = metatile.animation.frames[index - 1]
+
+    return { ...own, x: frame.x, y: frame.y }
+}
+
+/** The animation with one more frame at `frame`, or a fresh animation at `DEFAULT_FRAME_MS` for a still tile. */
+export function withAddedFrame(metatile: Metatile, frame: Coordinates): TileAnimation {
+    const animation = metatile.animation ?? { frames: [], frameMs: DEFAULT_FRAME_MS }
+
+    return { ...animation, frames: [...animation.frames, frame] }
+}
+
+/** True for `{ frames: [{ x, y }...], frameMs > 0 }`. */
+export function isTileAnimation(value: unknown): value is TileAnimation {
+    if (typeof value !== 'object' || value === null) {
+        return false
+    }
+
+    const record = value as { [key: string]: unknown }
+
+    return Array.isArray(record.frames)
+        && record.frames.every(frame => typeof frame === 'object' && frame !== null
+            && typeof (frame as { x?: unknown }).x === 'number' && (frame as { x: number }).x >= 0
+            && typeof (frame as { y?: unknown }).y === 'number' && (frame as { y: number }).y >= 0)
+        && typeof record.frameMs === 'number' && Number.isInteger(record.frameMs) && record.frameMs > 0
 }
 
 const LEDGES: readonly (LedgeDirection | null)[] = [null, 'up', 'down', 'left', 'right']
@@ -112,10 +200,11 @@ export function isMetatileAttributes(value: unknown): value is Partial<MetatileA
 
     const record = value as { [key: string]: unknown }
 
-    return Object.keys(record).every(key => key === 'solid' || key === 'elevation' || key === 'ledge')
+    return Object.keys(record).every(key => key === 'solid' || key === 'elevation' || key === 'ledge' || key === 'animation')
         && (record.solid === undefined || typeof record.solid === 'boolean')
         && (record.elevation === undefined || (typeof record.elevation === 'number' && Number.isInteger(record.elevation) && record.elevation >= 0))
         && (record.ledge === undefined || isLedge(record.ledge))
+        && (record.animation === undefined || record.animation === null || isTileAnimation(record.animation))
 }
 
 function isMetatile(value: unknown): value is Metatile {
@@ -131,6 +220,7 @@ function isMetatile(value: unknown): value is Metatile {
         && typeof record.solid === 'boolean'
         && typeof record.elevation === 'number'
         && isLedge(record.ledge)
+        && (record.animation === undefined || isTileAnimation(record.animation))
 }
 
 /** True for a tileset body a client may store: a name and well-formed metatiles with unique ids. */

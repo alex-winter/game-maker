@@ -20,14 +20,14 @@ export const requestHandlerPostTilesets: RequestHandler = (request: Request, res
     response.json(tileset)
 }
 
-/** Body: any of `{ solid, elevation, ledge }`. Answers the updated metatile. */
+/** Body: any of `{ solid, elevation, ledge, animation }` (`animation: null` clears it). Answers the updated metatile. */
 export const requestHandlerPatchMetatile: RequestHandler = (request: Request, response: Response): void => {
     const { tilesetId } = request.params
     const metatileId = Number(request.params.metatileId)
     const body: unknown = request.body
 
     if (!isMetatileAttributes(body)) {
-        response.status(400).json({ error: 'Only solid, elevation, and ledge can be set' })
+        response.status(400).json({ error: 'Only solid, elevation, ledge, and animation can be set' })
         return
     }
 

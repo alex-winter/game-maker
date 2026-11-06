@@ -285,7 +285,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     let open = openMap(map, sheetById, legacyPlacements)
     let field: FieldState = resume !== undefined && savedMap !== undefined ? restoreField(resume) : newField(map.id, map.spawn)
 
+    // The session clock animated tiles follow: it runs on through fades and menus so water never stutters.
+    let clockMs = 0
+
     startLoop(deltaSeconds => {
+        clockMs += deltaSeconds * 1000
         field = advanceField(field, { direction: held.latest(), running, interact: interactPressed, menu: menuPressed }, deltaSeconds * 1000, world)
         interactPressed = false
         menuPressed = false
@@ -309,7 +313,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const items = itemsOnMap(open.map.events, field.memory).map(item => itemActor(item, open.scene.tileset, sheetById))
         const people = npcsOn(open.map.events).map(npc => npcActor(npc, npcMover(field, npc), spriteLookup))
 
-        renderFrame(port, open.scene, followPlayer(player, open.pixels, zoom), [...items, ...people, playerActor(player, sprite, spriteSheet)])
+        renderFrame(port, open.scene, followPlayer(player, open.pixels, zoom), [...items, ...people, playerActor(player, sprite, spriteSheet)], clockMs)
 
         if (field.message !== null) {
             drawMessageBox(port, field.message, GBA_VIEW, zoom)

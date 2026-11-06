@@ -23,7 +23,7 @@ import { drawGrid } from 'Client/Service/draw-grid'
 import { loadLegacyPlacements } from 'Client/Service/load-legacy-placements'
 import { MAP_SESSION_CHANGED, mapSession } from 'Client/Service/map-session'
 import { pointerToWorld } from 'Client/Service/pointer-to-world'
-import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
+import { projectRepository, TILESET_CHANGED } from 'Client/Service/Repository/ProjectRepository'
 import { sheetRepository } from 'Client/Service/Repository/SheetRepository'
 import { isTool, Tool } from 'Client/Service/tool'
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
@@ -72,6 +72,7 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
 
     protected readonly externalListeners: ExternalListeners = {
         [MAP_SESSION_CHANGED]: this.invalidate,
+        [TILESET_CHANGED]: this.invalidate,
         [BRUSH_CHANGED]: this.redrawGhost,
         'tool-selection': this.handleToolSelection,
         [WARP_SUBMIT]: this.handleWarpSubmit,
@@ -335,7 +336,8 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         const view = camera.get()
         const tileMap = mapSession.tileMap
 
-        renderFrame(this.port, this.currentScene(), view, this.npcActors())
+        // The editor previews animated tiles on the wall clock, so water moves while the author paints it.
+        renderFrame(this.port, this.currentScene(), view, this.npcActors(), performance.now())
 
         if (this.showGrid) {
             drawGrid(ctx, view, tileMap)

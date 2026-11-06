@@ -1,3 +1,4 @@
+import { Events } from 'Client/Service/Events'
 import { Repository } from 'Client/Service/Repository/Repository'
 import { Connections } from 'domain/connection'
 import { Id } from 'domain/id'
@@ -9,6 +10,9 @@ import { addDialog, addFlag, addItem, addSprite, GameMap, removeDialog, removeFl
 import { SpriteDefinition } from 'domain/sprite'
 import { MapEvent } from 'domain/warp'
 import { Metatile, MetatileAttributes, MetatileId, Tileset, withMetatileAttributes } from 'domain/tileset'
+
+/** Emitted with the tileset id after a metatile's attributes change, so a scene built from it rebuilds. */
+export const TILESET_CHANGED = 'tileset-changed'
 
 class ProjectRepository extends Repository {
     private readonly API_PATH = '/project'
@@ -58,6 +62,8 @@ class ProjectRepository extends Repository {
         if (this.project && tileset) {
             this.project = withTileset(this.project, withMetatileAttributes(tileset, metatileId, attributes))
         }
+
+        Events.emit(TILESET_CHANGED, tilesetId)
     }
 
     /** Replaces one map's whole grid on the server and in the cache. */

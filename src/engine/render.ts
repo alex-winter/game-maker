@@ -2,7 +2,7 @@ import { Rect } from '../domain/coordinates'
 import { GRID_SIZE } from '../domain/grid'
 import { metatileAt, TileLayer, TileLayerKind } from '../domain/map'
 import { rectsIntersect } from '../domain/rect'
-import { Tileset } from '../domain/tileset'
+import { frameAt, Tileset } from '../domain/tileset'
 import { DrawPort } from './draw-port'
 import { Actor, Scene } from './scene'
 import { View, viewRect, worldToScreen } from './view'
@@ -25,6 +25,7 @@ function drawTileLayer<TImage>(
     tileset: Tileset,
     layer: TileLayer,
     view: View,
+    timeMs: number,
 ): void {
     const range = visibleCellRange(viewRect(port, view), scene.tileMap.width, scene.tileMap.height)
     const cellSize = GRID_SIZE * view.zoom
@@ -44,10 +45,11 @@ function drawTileLayer<TImage>(
             }
 
             const screen = worldToScreen(view, { x: x * GRID_SIZE, y: y * GRID_SIZE })
+            const source = frameAt(metatile, timeMs)
 
             port.drawImage(
                 sheet,
-                metatile.x, metatile.y, metatile.w, metatile.h,
+                source.x, source.y, source.width, source.height,
                 screen.x, screen.y, cellSize, cellSize,
             )
         }
@@ -74,14 +76,14 @@ function drawPlacements<TImage>(port: DrawPort<TImage>, scene: Scene<TImage>, vi
     }
 }
 
-function drawTilePass<TImage>(port: DrawPort<TImage>, scene: Scene<TImage>, kind: TileLayerKind, view: View): void {
+function drawTilePass<TImage>(port: DrawPort<TImage>, scene: Scene<TImage>, kind: TileLayerKind, view: View, timeMs: number): void {
     if (scene.tileset === undefined) {
         return
     }
 
     for (const layer of scene.tileMap.layers) {
         if (layer.kind === kind) {
-            drawTileLayer(port, scene, scene.tileset, layer, view)
+            drawTileLayer(port, scene, scene.tileset, layer, view, timeMs)
         }
     }
 }
@@ -109,18 +111,21 @@ function drawActors<TImage>(port: DrawPort<TImage>, actors: readonly Actor<TImag
 /**
  * Paints one frame in fixed passes: the frozen legacy placements as a
  * background, ground tile layers (in list order), actors, then overhead
- * tile layers. Both hosts call this and nothing else draws a map.
+ * tile layers. Both hosts call this and nothing else draws a map. `timeMs`
+ * is the clock animated tiles follow (T-045); a host that passes nothing
+ * draws every tile's first frame.
  */
 export function renderFrame<TImage>(
     port: DrawPort<TImage>,
     scene: Scene<TImage>,
     view: View,
     actors: readonly Actor<TImage>[] = [],
+    timeMs = 0,
 ): void {
     port.clear()
 
     drawPlacements(port, scene, view)
-    drawTilePass(port, scene, 'ground', view)
+    drawTilePass(port, scene, 'ground', view, timeMs)
     drawActors(port, actors, view)
-    drawTilePass(port, scene, 'overhead', view)
+    drawTilePass(port, scene, 'overhead', view, timeMs)
 }
