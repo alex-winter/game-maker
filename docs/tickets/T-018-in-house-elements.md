@@ -1,7 +1,7 @@
 ---
 id: T-018
 title: Replace the third-party element base
-status: backlog
+status: ready
 priority: P2
 phase: 1
 type: refactor

@@ -1,7 +1,7 @@
 ---
 id: T-016
 title: Write JSON by rename
-status: backlog
+status: ready
 priority: P1
 phase: 1
 type: fix

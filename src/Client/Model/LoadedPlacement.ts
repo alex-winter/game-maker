@@ -1,4 +1,4 @@
-import { Rect } from 'Model/Coordinates'
+import { Rect } from 'domain/coordinates'
 
 export type LoadedPlacement = Rect & {
     uuid: string

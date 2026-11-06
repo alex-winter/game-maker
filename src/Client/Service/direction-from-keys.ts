@@ -1,4 +1,4 @@
-import { Coordinates } from 'Model/Coordinates'
+import { Coordinates } from 'domain/coordinates'
 
 export type HeldKeys = {
     readonly up: boolean

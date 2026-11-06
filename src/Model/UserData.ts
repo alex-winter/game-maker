@@ -1,4 +1,4 @@
-import { Coordinates, Rect } from 'Model/Coordinates'
+import { Coordinates, Rect } from 'domain/coordinates'
 import { Dataset } from 'Model/Dataset'
 
 type ComponentConfiguration = {

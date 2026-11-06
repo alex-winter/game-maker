@@ -5,7 +5,8 @@ The program is a local editor plus a play page. Both are webpack bundles. An Exp
 ```
 src/
   Client/     browser UI and the play page
-  Model/      shared types (some are unused sketches)
+  domain/     pure types and rules: coordinates, grid, rect, ids. No DOM, no Express.
+  Model/      shared types for the placement model (some are unused sketches)
   Server/     Express routes and JSON files
 public/       index.html, play.html, built bundles in dist/
 data/         created at runtime: layers, placement images, user data, sprite models
@@ -97,6 +98,16 @@ A layer is:
 `type` is `image`, `collision`, or `player_controlled`. Collision is still an image placement (a translucent red square). The `CollisionsLayer` type is unused. `player_controlled` is a blue circle the user stamps by hand. Play mode reads `type` and ignores it.
 
 Images live inline in JSON. Until T-008 a fill merged a region into one new data URL; it now writes one placement per cell, but the model is still retired rather than extended. See [decisions/0001-tile-grid.md](decisions/0001-tile-grid.md) and [decisions/0003-assets-on-disk.md](decisions/0003-assets-on-disk.md).
+
+### Persisted names that do not follow the standard
+
+These field names are on disk and in the types that read them. New fields are camelCase. These stay as they are until the ticket that retires their file migrates them in the same change.
+
+| File | Field | Should be | Retired by |
+| --- | --- | --- | --- |
+| `data/layers.json` | `created_at`, `is_visible`, `is_active` | `createdAt`, `isVisible`, `isActive` | T-020 (placement layers are replaced by metatile layers) |
+| `data/layers.json` | `type: 'player_controlled'` | an object event, not a layer | T-026 |
+| `data/user-data.json` | `componentConfigration` | `componentConfiguration` | T-036 (the window config is only read for the dialog stub) |
 
 ## Draw path in the editor
 

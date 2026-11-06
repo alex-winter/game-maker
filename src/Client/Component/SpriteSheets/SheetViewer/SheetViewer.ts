@@ -3,8 +3,7 @@ import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 import { extractImageFromCanvasArea } from 'Client/Service/extract-image-from-canvas-area'
-import { snap } from 'Client/Service/snap'
-import { GRID_SIZE } from 'Model/grid-size'
+import { GRID_SIZE, snap } from 'domain/grid'
 
 export class SheetViewer extends Component {
     private image: HTMLImageElement | null = null

@@ -1,6 +1,6 @@
 import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
-import { Coordinates, Rect } from 'Model/Coordinates'
+import { Coordinates, Rect } from 'domain/coordinates'
 import { frameDelayMs } from 'Client/Component/Canvas/frame-delay'
 
 export class Canvas2D extends Component {

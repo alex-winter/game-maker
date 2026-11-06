@@ -1,6 +1,6 @@
 import { LAYERS } from 'Client/Constants/layers'
 import { LEFT_BUTTON, MIDDLE_BUTTON } from 'Client/Constants/mouse-events'
-import { Coordinates } from 'Model/Coordinates'
+import { Coordinates } from 'domain/coordinates'
 import { ImagePlacement } from 'Model/Placement'
 import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
@@ -14,12 +14,11 @@ import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlace
 import { LayerChange, layerRepository } from 'Client/Service/Repository/LayerRepository'
 import { loadPlacement } from 'Client/Service/load-placement'
 import { pointerToWorld } from 'Client/Service/pointer-to-world'
-import { snap } from 'Client/Service/snap'
 import { CellBounds, floodFillCells } from 'Client/Service/flood-fill-cells'
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { drawOrder } from 'Model/draw-order'
-import { GRID_SIZE } from 'Model/grid-size'
-import { rectContainsPoint } from 'Model/rect-contains'
+import { GRID_SIZE, snap } from 'domain/grid'
+import { rectContainsPoint } from 'domain/rect'
 
 export class CanvasLayer extends Component {
     private static readonly BASE_Z_INDEX: number = 500

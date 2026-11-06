@@ -1,4 +1,4 @@
-import { Coordinates } from 'Model/Coordinates'
+import { Coordinates } from 'domain/coordinates'
 
 /** Half-open pixel bounds of the cells that may be filled: `min <= cell < max`. */
 export type CellBounds = {

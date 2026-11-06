@@ -1,4 +1,4 @@
-import { Coordinates } from 'Model/Coordinates'
+import { Coordinates } from 'domain/coordinates'
 
 /**
  * The one editor camera. Every layer reads it on each frame, so panning

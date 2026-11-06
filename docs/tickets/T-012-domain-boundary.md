@@ -1,7 +1,7 @@
 ---
 id: T-012
 title: Cut a pure domain layer out of the UI
-status: backlog
+status: done
 priority: P1
 phase: 1
 type: refactor
@@ -15,6 +15,10 @@ blocks: [T-013, T-014, T-017, T-018, T-040, T-047]
 ## Outcome
 
 `src/domain` holds the game types and pure rules, imports no DOM and no Express, and is what new code uses. A node test imports it without a browser.
+
+## Result
+
+`src/domain/coordinates.ts` (pixel `Coordinates`, `Rect`, cell `Cell`), `grid.ts` (`GRID_SIZE`, `snap`, `snapToGrid`, `pixelToCell`, `cellToPixel`), `rect.ts` (`rectContainsPoint`, `rectsIntersect`), and `id.ts` (`newId`). `Model/Coordinates`, `Model/grid-size`, `Model/rect-contains`, and `Client/Service/snap` moved there and every import was updated; no shim was left behind. Domain modules import each other relatively so `node --test` runs them without path mapping. The persisted names that still differ are listed in architecture.md under "Persisted names that do not follow the standard".
 
 ## Why
 
@@ -48,9 +52,9 @@ Out:
 
 ## Acceptance
 
-- [ ] `src/domain` has no import from `Client`, `Server`, `express`, or the DOM lib's runtime (types used only as data, such as numbers, are fine; `HTMLElement` is not).
-- [ ] `npm run typecheck` passes.
-- [ ] A node test imports `domain` and passes.
+- [x] `src/domain` has no import from `Client`, `Server`, `express`, or the DOM lib's runtime (types used only as data, such as numbers, are fine; `HTMLElement` is not).
+- [x] `npm run typecheck` passes.
+- [x] A node test imports `domain` and passes.
 
 ## Test plan
 

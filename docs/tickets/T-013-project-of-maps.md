@@ -1,7 +1,7 @@
 ---
 id: T-013
 title: Store a project that contains many maps
-status: backlog
+status: ready
 priority: P1
 phase: 1
 type: feat
