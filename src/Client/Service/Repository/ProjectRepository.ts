@@ -23,6 +23,11 @@ class ProjectRepository extends Repository {
         return this.project
     }
 
+    /** The loaded project, for synchronous readers such as a frame; undefined before `load` resolves. */
+    public get cachedProject(): Project | undefined {
+        return this.project
+    }
+
     /** From the loaded project; undefined before `load` resolves or for a map without a tileset. */
     public cachedTileset(tilesetId: Id | null): Tileset | undefined {
         if (tilesetId === null) {

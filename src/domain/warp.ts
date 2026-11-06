@@ -51,7 +51,10 @@ export type ItemEvent = {
     metatileId: MetatileId | null
 }
 
-/** A person standing on a cell. Placement, sprites, and movement arrive in T-042; this is the shape the resolver needs. */
+/**
+ * A person standing on a cell (T-042): what they look like, which way they
+ * face, and what they say when talked to (T-043). Movement arrives in T-044.
+ */
 export type NpcEvent = {
     readonly kind: 'npc'
 
@@ -59,7 +62,15 @@ export type NpcEvent = {
 
     cell: Cell
 
-    npcId: Id
+    name: string
+
+    /** A `SpriteDefinition` id, or null to draw a stand-in rectangle. */
+    spriteId: Id | null
+
+    facing: Direction
+
+    /** The dialog spoken when talked to, or null for a person with nothing to say yet. */
+    dialogId: Id | null
 }
 
 /** Something placed on a map cell that is not a tile. */
@@ -71,6 +82,15 @@ export function newSign(id: Id, cell: Cell, dialogId: Id): Sign {
 
 export function newItemEvent(id: Id, cell: Cell, itemId: Id, flagId: Id, metatileId: MetatileId | null): ItemEvent {
     return { kind: 'item', id, cell, itemId, flagId, metatileId }
+}
+
+export function newNpcEvent(id: Id, cell: Cell, name: string, spriteId: Id | null, facing: Direction, dialogId: Id | null): NpcEvent {
+    return { kind: 'npc', id, cell, name, spriteId, facing, dialogId }
+}
+
+/** The people standing on a map. */
+export function npcsOn(events: readonly MapEvent[]): NpcEvent[] {
+    return events.filter((event): event is NpcEvent => event.kind === 'npc')
 }
 
 export function newWarp(id: Id, cell: Cell, toMapId: Id, toCell: Cell, facing: Direction): Warp {
@@ -150,7 +170,7 @@ function isMapEvent(value: unknown): value is MapEvent {
         return false
     }
 
-    const event = value as { kind: unknown; dialogId?: unknown; itemId?: unknown; flagId?: unknown; metatileId?: unknown; npcId?: unknown }
+    const event = value as { kind: unknown; dialogId?: unknown; itemId?: unknown; flagId?: unknown; metatileId?: unknown; name?: unknown; spriteId?: unknown; facing?: unknown }
 
     switch (event.kind) {
         case 'warp':
@@ -161,7 +181,10 @@ function isMapEvent(value: unknown): value is MapEvent {
             return typeof event.itemId === 'string' && typeof event.flagId === 'string'
                 && (event.metatileId === null || Number.isInteger(event.metatileId))
         case 'npc':
-            return typeof event.npcId === 'string'
+            return typeof event.name === 'string'
+                && (event.spriteId === null || typeof event.spriteId === 'string')
+                && isDirection(event.facing)
+                && (event.dialogId === null || typeof event.dialogId === 'string')
         default:
             return false
     }

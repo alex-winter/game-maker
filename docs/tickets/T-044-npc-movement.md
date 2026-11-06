@@ -1,7 +1,7 @@
 ---
 id: T-044
 title: Let NPCs look around or wander
-status: backlog
+status: ready
 priority: P2
 phase: 7
 type: feat

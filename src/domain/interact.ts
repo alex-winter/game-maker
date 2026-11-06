@@ -7,7 +7,7 @@ import { eventsAt, MapEvent } from './warp'
 export type Interaction =
     | { readonly kind: 'sign'; readonly eventId: Id; readonly dialogId: Id }
     | { readonly kind: 'item'; readonly itemEventId: Id }
-    | { readonly kind: 'npc'; readonly npcId: Id; readonly eventId: Id }
+    | { readonly kind: 'npc'; readonly eventId: Id; readonly dialogId: Id | null }
 
 /** The cell the player faces. While stepping it is the cell beyond the step's target. */
 export function cellInFront(player: Player): Cell {
@@ -32,7 +32,7 @@ export function interactionAt(events: readonly MapEvent[], cell: Cell): Interact
 
         switch (event.kind) {
             case 'npc':
-                return { kind: 'npc', npcId: event.npcId, eventId: event.id }
+                return { kind: 'npc', eventId: event.id, dialogId: event.dialogId }
             case 'item':
                 return { kind: 'item', itemEventId: event.id }
             case 'sign':

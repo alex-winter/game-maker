@@ -7,7 +7,7 @@ import { MAP_QUERY_PARAM } from 'Client/Service/active-map'
 import { buildScene } from 'Client/Service/build-scene'
 import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
 import { HeldDirections } from 'Client/Service/held-directions'
-import { findDialog, findItem, findMap, GameMap, playerSprite, Project, startMap } from 'domain/project'
+import { findDialog, findItem, findMap, findSprite, GameMap, playerSprite, Project, startMap } from 'domain/project'
 import { isSolid } from 'domain/map'
 import { Scene } from 'engine/scene'
 import { DrawPort, PortSize } from 'engine/draw-port'
@@ -30,6 +30,8 @@ import { SavedSession } from 'domain/save'
 import { drawMenu, MenuEntry } from 'engine/menu'
 import { drawBagScreen } from 'engine/bag-screen'
 import { itemActor } from 'engine/item-actor'
+import { npcActor, SpriteLookup } from 'engine/npc-actor'
+import { npcsOn } from 'domain/warp'
 import { View } from 'engine/view'
 
 const held = new HeldDirections()
@@ -262,6 +264,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     )
     const port = canvasDrawPort(ctx)
     const world = worldOf(project)
+    const spriteLookup: SpriteLookup<CanvasImageSource> = spriteId => {
+        const definition = findSprite(project, spriteId)
+        const image = definition === undefined ? undefined : sheetById.get(definition.sheetId)
+
+        return definition === undefined || image === undefined ? undefined : { sprite: definition, image }
+    }
     // The editor's "try this map" starts fresh there; otherwise a save, if any, offers to continue.
     const tryingMap = new URLSearchParams(window.location.search).has(MAP_QUERY_PARAM)
     const saved = tryingMap ? undefined : await saveRepository.load()
@@ -298,8 +306,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const player = field.player
 
         const items = itemsOnMap(open.map.events, field.memory).map(item => itemActor(item, open.scene.tileset, sheetById))
+        const people = npcsOn(open.map.events).map(npc => npcActor(npc, npc.facing, spriteLookup))
 
-        renderFrame(port, open.scene, followPlayer(player, open.pixels, zoom), [...items, playerActor(player, sprite, spriteSheet)])
+        renderFrame(port, open.scene, followPlayer(player, open.pixels, zoom), [...items, ...people, playerActor(player, sprite, spriteSheet)])
 
         if (field.message !== null) {
             drawMessageBox(port, field.message, GBA_VIEW, zoom)

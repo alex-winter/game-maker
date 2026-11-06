@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { insideMap, WALK_MS_PER_CELL } from '../domain/movement'
 import { newPage } from '../domain/dialog'
-import { newItemEvent, newSign, newWarp } from '../domain/warp'
+import { newItemEvent, newNpcEvent, newSign, newWarp } from '../domain/warp'
 import { bagCount } from '../domain/item'
 import { hasFlag } from '../domain/flags'
 import { FADE_MS, fadeOpacity } from './fade'
@@ -320,4 +320,13 @@ test('Bag in the menu opens the bag screen, which holds the player, moves its cu
     const field = advanceField(back, { ...none, menu: true }, 16, floor)
 
     assert.equal(field.menu, null)
+})
+
+test('a person standing on a cell blocks the step like a wall', () => {
+    const mom = newNpcEvent('mom', { x: 6, y: 5 }, 'Mom', null, 'down', null)
+    const peopled: FieldWorld = { ...world, eventsOf: () => [mom] }
+    const tried = advanceField(newField('town', { x: 5, y: 5 }), right, 16, peopled)
+
+    assert.equal(tried.player.step, null)
+    assert.equal(tried.player.facing, 'right')
 })

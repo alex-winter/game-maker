@@ -17,6 +17,7 @@ import { DialogEditor } from 'Client/Component/Dialog/DialogEditor'
 import { FlagsEditor } from 'Client/Component/Flags/FlagsEditor'
 import { ItemsEditor } from 'Client/Component/Items/ItemsEditor'
 import { ItemForm } from 'Client/Component/Events/ItemForm'
+import { NpcForm } from 'Client/Component/Events/NpcForm'
 import { SignForm } from 'Client/Component/Events/SignForm'
 import { EventKindPicker } from 'Client/Component/Events/EventKindPicker'
 import { MapSelect } from 'Client/Component/MapSelect/MapSelect'
@@ -47,6 +48,7 @@ export const COMPONENTS = new Map<ComponentConstructor, string>([
   [FlagsEditor, 'flags-editor'],
   [ItemsEditor, 'items-editor'],
   [ItemForm, 'item-form'],
+  [NpcForm, 'npc-form'],
   [SignForm, 'sign-form'],
   [EventKindPicker, 'event-kind-picker'],
   [MapSelect, 'map-select'],

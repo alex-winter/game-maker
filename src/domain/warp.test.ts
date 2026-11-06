@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { advanceStep, beginStep, newPlayer, stepPlayer } from './movement'
-import { isMapEvents, newWarp, warpAt, warpTaken, withEvent, withoutEvent } from './warp'
+import { isMapEvents, newNpcEvent, newWarp, npcsOn, warpAt, warpTaken, withEvent, withoutEvent } from './warp'
 
 const door = newWarp('door', { x: 4, y: 2 }, 'house', { x: 3, y: 5 }, 'up')
 const exit = newWarp('exit', { x: 3, y: 6 }, 'town', { x: 4, y: 3 }, 'down')
@@ -56,4 +56,14 @@ test('the event list is checked on the way in', () => {
     assert.equal(isMapEvents([{ kind: 'npc', id: 'n' }]), false)
     assert.equal(isMapEvents([{ kind: 'sign', id: 's', cell: { x: 1, y: 1 }, dialogId: 'd' }]), true)
     assert.equal(isMapEvents([{ kind: 'sign', id: 's', cell: { x: 1, y: 1 } }]), false)
+    assert.equal(isMapEvents([newNpcEvent('mom', { x: 2, y: 2 }, 'Mom', null, 'down', null)]), true)
+    assert.equal(isMapEvents([{ ...newNpcEvent('mom', { x: 2, y: 2 }, 'Mom', 'sprite-1', 'left', 'hello'), facing: 'away' }]), false)
+})
+
+test('a map reports the people standing on it, by cell', () => {
+    const mom = newNpcEvent('mom', { x: 2, y: 2 }, 'Mom', 'sprite-1', 'down', 'mom-hello')
+    const events = withEvent(withEvent([door], mom), { ...mom, cell: { x: 3, y: 2 } })
+
+    assert.deepEqual(npcsOn(events).map(npc => npc.cell), [{ x: 3, y: 2 }], 'moving an NPC replaces them, it does not clone them')
+    assert.equal(npcsOn(withoutEvent(events, 'mom')).length, 0)
 })

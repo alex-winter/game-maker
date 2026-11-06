@@ -4,7 +4,7 @@ import { Id } from '../domain/id'
 import { GridSize, isInside } from '../domain/map'
 import { CanEnter, Direction, MovementInput, newPlayer, Player, stepPlayer } from '../domain/movement'
 import { Interaction, resolveInteraction } from '../domain/interact'
-import { ItemEvent, MapEvent, stepFinished, warpTaken } from '../domain/warp'
+import { ItemEvent, MapEvent, npcsOn, stepFinished, warpTaken } from '../domain/warp'
 import { advanceFade, Fade, startFade } from './fade'
 import { DialogPage, newPage } from '../domain/dialog'
 import { Memory, newMemory } from '../domain/flags'
@@ -229,14 +229,15 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
     return { ...state, player, interaction: undefined, lastDirection: input.direction, menuChoice: undefined }
 }
 
-/** Inside the map the collision rule decides and an item still lying there blocks; beyond an edge a seam may let the step through onto open ground. */
+/** Inside the map the collision rule decides and an item still lying there or a person standing there blocks; beyond an edge a seam may let the step through onto open ground. */
 function seamAwareRule(mapId: Id, size: GridSize, memory: Memory, world: FieldWorld): CanEnter {
     const inside = world.canEnter(mapId)
-    const items = itemsOnMap(world.eventsOf(mapId), memory)
+    const events = world.eventsOf(mapId)
+    const occupied: readonly Cell[] = [...itemsOnMap(events, memory), ...npcsOn(events)].map(event => event.cell)
 
     return (from, to) => {
         if (isInside(size, to)) {
-            return inside(from, to) && !items.some(item => item.cell.x === to.x && item.cell.y === to.y)
+            return inside(from, to) && !occupied.some(cell => cell.x === to.x && cell.y === to.y)
         }
 
         const crossing = crossEdge(size, world.connectionsOf(mapId), to, id => world.sizeOf(id))

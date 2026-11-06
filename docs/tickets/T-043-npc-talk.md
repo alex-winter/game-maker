@@ -1,7 +1,7 @@
 ---
 id: T-043
 title: Talk to an NPC
-status: backlog
+status: ready
 priority: P1
 phase: 7
 type: feat

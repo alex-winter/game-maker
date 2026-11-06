@@ -12,9 +12,12 @@ import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 import { WARP_DELETE, WARP_SUBMIT, WarpForm } from 'Client/Component/Events/WarpForm'
 import { SIGN_DELETE, SIGN_SUBMIT, SignForm } from 'Client/Component/Events/SignForm'
 import { ITEM_DELETE, ITEM_SUBMIT, ItemForm } from 'Client/Component/Events/ItemForm'
+import { NPC_DELETE, NPC_SUBMIT, NpcForm } from 'Client/Component/Events/NpcForm'
+import { npcActor } from 'engine/npc-actor'
+import { findSprite } from 'domain/project'
 import { EVENT_KIND_PICK, EventKindPick, EventKindPicker } from 'Client/Component/Events/EventKindPicker'
 import { newId } from 'domain/id'
-import { eventsAt, ItemEvent, newItemEvent, newSign, newWarp, Sign, Warp, withEvent, withoutEvent } from 'domain/warp'
+import { eventsAt, ItemEvent, newItemEvent, newNpcEvent, newSign, newWarp, NpcEvent, npcsOn, Sign, Warp, withEvent, withoutEvent } from 'domain/warp'
 import { drawGrid } from 'Client/Service/draw-grid'
 import { loadLegacyPlacements } from 'Client/Service/load-legacy-placements'
 import { MAP_SESSION_CHANGED, mapSession } from 'Client/Service/map-session'
@@ -76,6 +79,8 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         [SIGN_DELETE]: this.handleSignDelete,
         [ITEM_SUBMIT]: this.handleItemSubmit,
         [ITEM_DELETE]: this.handleItemDelete,
+        [NPC_SUBMIT]: this.handleNpcSubmit,
+        [NPC_DELETE]: this.handleNpcDelete,
         [EVENT_KIND_PICK]: this.handleEventKindPick,
     }
 
@@ -329,7 +334,7 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         const view = camera.get()
         const tileMap = mapSession.tileMap
 
-        renderFrame(this.port, this.currentScene(), view)
+        renderFrame(this.port, this.currentScene(), view, this.npcActors())
 
         if (this.showGrid) {
             drawGrid(ctx, view, tileMap)
@@ -343,6 +348,18 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         if (!mapSession.isHidden('events')) {
             drawEvents(ctx, view, mapSession.current.events)
         }
+    }
+
+    /** People stand on the map in the editor too, so the author sees where they are and how they face. */
+    private npcActors() {
+        const project = projectRepository.cachedProject
+
+        return npcsOn(mapSession.current.events).map(npc => npcActor(npc, npc.facing, spriteId => {
+            const sprite = project === undefined ? undefined : findSprite(project, spriteId)
+            const image = sprite === undefined ? undefined : this.sheetById.get(sprite.sheetId)
+
+            return sprite === undefined || image === undefined ? undefined : { sprite, image }
+        }))
     }
 
     private getCanvas(): HTMLCanvasElement | null {
@@ -659,7 +676,31 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
             await this.openSignForm(cell, first)
         } else if (first.kind === 'item') {
             await this.openItemForm(cell, first)
+        } else if (first.kind === 'npc') {
+            await this.openNpcForm(cell, first)
         }
+    }
+
+    private async openNpcForm(cell: Cell, npc: NpcEvent | null): Promise<void> {
+        const project = await projectRepository.load()
+
+        this.openModal(Dom.makeComponent(NpcForm, {
+            npc,
+            cell,
+            sprites: project.sprites.map(each => ({ id: each.id, name: each.name })),
+            dialogs: project.dialogs.map(each => ({ id: each.id, name: each.name })),
+        }))
+    }
+
+    private async handleNpcSubmit(submitted: Omit<NpcEvent, 'id'> & { id: Id | null }): Promise<void> {
+        const map = mapSession.current
+        const npc = newNpcEvent(submitted.id ?? newId(), submitted.cell, submitted.name, submitted.spriteId, submitted.facing, submitted.dialogId)
+
+        await mapSession.commitEvents(withEvent(map.events, npc))
+    }
+
+    private async handleNpcDelete(eventId: Id): Promise<void> {
+        await mapSession.commitEvents(withoutEvent(mapSession.current.events, eventId))
     }
 
     private async openItemForm(cell: Cell, event: ItemEvent | null): Promise<void> {
@@ -720,8 +761,10 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
             await this.openWarpForm(pick.cell, null)
         } else if (pick.kind === 'sign') {
             await this.openSignForm(pick.cell, null)
-        } else {
+        } else if (pick.kind === 'item') {
             await this.openItemForm(pick.cell, null)
+        } else {
+            await this.openNpcForm(pick.cell, null)
         }
     }
 
