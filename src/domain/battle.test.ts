@@ -73,13 +73,16 @@ test('a high-power move faints the opponent and wins; the result carries the fig
 
     assert.equal(after.outcome, 'won')
     assert.equal(after.foe.creature.hp, 0)
-    assert.deepEqual(after.log, ['SPROUT used BLAST!', 'Wild PEBBLE fainted!'])
+    // A level 10 foe yields 120 points: 1000 + 120 = 1120 < 11³ = 1331, so no level this time (T-054).
+    assert.deepEqual(after.log, ['SPROUT used BLAST!', 'Wild PEBBLE fainted!', 'SPROUT gained 120 EXP. Points!'])
     assert.equal(after.player.creature.hp, 35, 'the fainted foe never got its turn')
+    assert.equal(after.player.creature.experience, 1120)
 
     const result = battleResult(after)
 
     assert.equal(result.outcome, 'won')
     assert.equal(result.party[0]?.hp, 35)
+    assert.equal(result.party[0]?.experience, 1120, 'the experience comes back in the party')
     assert.equal(battleStep(after, { kind: 'move', moveId: 'blast' }, data, fixed(0)), after, 'a finished battle does not step')
 })
 
@@ -170,4 +173,25 @@ test('newBattle refuses an unknown species or a party with nobody standing; the 
     assert.equal(state.partyIndex, 1, 'the first able creature fights')
     assert.deepEqual(playerMoves(state, data).map(move => move.id), ['tackle', 'ember', 'blast', 'wild'])
     assert.equal(foeChoice(state, data, () => 0)?.id, 'tackle')
+})
+
+test('a win that crosses a level refills the fighter and recomputes its stats (T-054)', () => {
+    // A level 5 Sprout (125 points) one point short of level 6 beats a level 10 foe: +120 → 245 ≥ 216.
+    const nearly = { ...newCreature(sprout, 5), experience: 215 }
+    const state = newBattle(request('pebble', 10, [nearly]), speciesOf)
+
+    assert.ok(state !== undefined)
+    assert.equal(state.player.stats.attack, 10, 'floor(50 × 5 / 50) + 5')
+
+    // At level 5 Blast does floor(floor(4) × 400 × 10 / 15 / 50) + 2 = 23 → × 0.85 = 19 < 35: a two-turn fight. Give the foe 1 HP instead.
+    const weakFoe = { ...state, foe: { ...state.foe, creature: { ...state.foe.creature, hp: 1 } } }
+    const after = battleStep(weakFoe, { kind: 'move', moveId: 'blast' }, data, fixed(0, 0, 0))
+
+    assert.equal(after.outcome, 'won')
+    assert.equal(after.log[0], 'Wild PEBBLE used TACKLE!', 'the faster foe struck first: floor(6 × 40 × 15 / 10 / 50) + 2 = 9, × 0.85 = 7')
+    assert.equal(after.player.creature.level, 6)
+    assert.equal(after.player.maxHp, 27)
+    assert.equal(after.player.creature.hp, 27, 'refilled from 18 to the new maximum')
+    assert.equal(after.player.stats.attack, 11, 'floor(50 × 6 / 50) + 5: stats follow the level')
+    assert.ok(after.log.includes('SPROUT grew to Lv6!'))
 })

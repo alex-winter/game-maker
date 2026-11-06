@@ -75,15 +75,15 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-051](T-051-vertical-slice.md) | 8 | P1 | backlog | content | Build the Gate A and Gate B town in the editor |
 | [T-052](T-052-move-catalog.md) | 9 | P1 | done | domain | Define moves and a type chart |
 | [T-053](T-053-battle-scene.md) | 9 | P1 | done | engine | Resolve a single-creature battle |
-| [T-054](T-054-experience.md) | 9 | P2 | ready | domain | Award experience and levels |
+| [T-054](T-054-experience.md) | 9 | P2 | done | domain | Award experience and levels |
 | [T-055](T-055-party-screen.md) | 9 | P2 | ready | play | Show the party screen |
 | [T-056](T-056-wild-battle.md) | 9 | P1 | ready | engine | Run wild encounters through the battle scene |
 | [T-057](T-057-trainer-battle.md) | 9 | P1 | ready | engine | Run trainer battles through the battle scene |
 
 ## Counts
 
-- ready: 4
+- ready: 3
 - in_progress: 0
 - backlog: 1
-- done: 52
+- done: 53
 - total: 57

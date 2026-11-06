@@ -3,6 +3,7 @@ import { BattleRequest, BattleResult } from './encounter'
 import { Creature, damaged, isFainted, maxHpAt, Move, newCreature, Species, statAt } from './creature'
 import { Id } from './id'
 import { Random } from './random'
+import { experienceYield, gainExperience, growthLines } from './experience'
 
 /**
  * A single-creature battle (T-053): one creature on each side, moves with
@@ -258,12 +259,22 @@ export function battleStep(state: BattleState, choice: BattleChoice, data: Battl
         next = attack(next, side, move, data, random)
     }
 
-    return settle(next)
+    return settle(next, data)
 }
 
-function settle(state: BattleState): BattleState {
+/** A faint ends it. A win pays experience to the fighter (T-054): levels, HP refills, and learnset moves while slots are free, all told in the log. */
+function settle(state: BattleState, data: BattleData): BattleState {
     if (isFainted(state.foe.creature)) {
-        return { ...state, outcome: 'won' }
+        const amount = experienceYield(state.foe.creature.level)
+        const growth = gainExperience(state.player.creature, state.player.species, amount)
+        const moveName = (moveId: Id) => data.moves.find(move => move.id === moveId)?.name ?? moveId
+
+        return {
+            ...state,
+            outcome: 'won',
+            player: combatant(growth.creature, state.player.species),
+            log: [...state.log, ...growthLines(state.player.species.name, amount, growth, moveName)],
+        }
     }
 
     if (isFainted(state.player.creature)) {

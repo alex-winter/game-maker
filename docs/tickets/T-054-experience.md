@@ -1,7 +1,7 @@
 ---
 id: T-054
 title: Award experience and levels
-status: ready
+status: done
 priority: P2
 phase: 9
 type: feat
@@ -45,9 +45,15 @@ Out:
 
 ## Acceptance
 
-- [ ] A test creature levels from 5 to 6 at the threshold and not one point below.
-- [ ] A move on the learnset at that level is added when a slot is free.
+- [x] A test creature levels from 5 to 6 at the threshold and not one point below.
+- [x] A move on the learnset at that level is added when a slot is free.
 
 ## Test plan
 
 - Domain tests.
+
+## Result
+
+- `domain/experience.ts`: `experienceYield(foeLevel) = 12 × level`, `levelForExperience`, `gainExperience(creature, species, amount)` → `Growth { creature, levelUps }` applying each level in turn (HP refilled to the new maximum; learnset moves for that level added while a slot is free, otherwise listed as skipped), `growthLines` for the box.
+- `battleStep` pays it on a win: the log carries the points, each level, each move learned or skipped; the fighter's stats are recomputed from the new level; `battleResult` carries it all back into the party.
+- Tests: 5 → 6 at 216 and not at 215; refill and Ember learned at 6; a full move list skips and says so across two levels; the cap; a battle win that crosses a level. Checked in Chrome: after beating Ace's level 3 Sprout the save held 379 experience (343 + 36).

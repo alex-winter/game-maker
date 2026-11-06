@@ -53,7 +53,10 @@ test('the scene announces the foe, offers FIGHT and RUN, lists moves, reads the 
 
     scene = advanceBattleScene(scene, press('interact'), data, () => 0)
     assert.equal(sceneText(scene), 'Wild PEBBLE fainted!')
-    assert.equal(isBattleOver(scene), false, 'the last line is still being read')
+    assert.equal(isBattleOver(scene), false, 'more lines are still being read')
+
+    scene = advanceBattleScene(scene, press('interact'), data, () => 0)
+    assert.equal(sceneText(scene), 'SPROUT gained 120 EXP. Points!', 'the win pays experience (T-054)')
 
     scene = advanceBattleScene(scene, press('interact'), data, () => 0)
     assert.equal(isBattleOver(scene), true)
