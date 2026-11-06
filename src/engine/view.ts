@@ -1,5 +1,5 @@
 import { Coordinates, Rect } from '../domain/coordinates'
-import { DrawPort } from './draw-port'
+import { PortSize } from './draw-port'
 
 /**
  * Where the camera is and how big a world pixel is on screen. `x`/`y` are
@@ -19,7 +19,7 @@ export function clampZoom(zoom: number): number {
 }
 
 /** The world rectangle a port shows from `view`. */
-export function viewRect<TImage>(port: DrawPort<TImage>, view: View): Rect {
+export function viewRect(port: PortSize, view: View): Rect {
     return { x: view.x, y: view.y, width: port.width / view.zoom, height: port.height / view.zoom }
 }
 

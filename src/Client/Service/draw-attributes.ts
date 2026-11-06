@@ -30,8 +30,7 @@ export function drawAttributes(
         return
     }
 
-    const port = { width: ctx.canvas.width, height: ctx.canvas.height, clear(): void { }, drawImage(): void { } }
-    const visible = viewRect(port, view)
+    const visible = viewRect(ctx.canvas, view)
     const minX = Math.max(0, Math.floor(visible.x / GRID_SIZE))
     const minY = Math.max(0, Math.floor(visible.y / GRID_SIZE))
     const maxX = Math.min(map.width, Math.ceil((visible.x + visible.width) / GRID_SIZE))

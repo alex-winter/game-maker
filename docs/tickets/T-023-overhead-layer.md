@@ -1,7 +1,7 @@
 ---
 id: T-023
 title: Draw an overhead layer above actors
-status: ready
+status: done
 priority: P1
 phase: 2
 type: feat
@@ -44,9 +44,16 @@ Out:
 
 ## Acceptance
 
-- [ ] A tile on the overhead layer covers the stand-in actor. A ground tile does not.
-- [ ] Editor and play agree.
+- [x] A tile on the overhead layer covers the stand-in actor. A ground tile does not.
+- [x] Editor and play agree.
 
 ## Test plan
 
 - Recording-port test for draw order: ground, actor, overhead. Manual check.
+
+## Result
+
+- `renderFrame(port, scene, view, actors)` draws in fixed passes: legacy background, `ground` layers, actors, `overhead` layers. The layer `kind` from T-014 is the pass; list order sorts inside a pass. Recording-port test: ground, actor, overhead, regardless of list index.
+- `engine/scene.ts` gains `Actor<TImage>` (rect + optional `SpriteFrame`, else a colour) and `DrawPort` gains `fillRect` for the stand-in. `viewRect` takes a `PortSize` so overlays can pass a canvas.
+- Play: a red one-cell stand-in moved by the arrow keys, camera following, at zoom 2. The editor already targets either layer kind (T-020) and shows a cloud icon on overhead layers.
+- Verified in headless Chrome: the centre pixel is red over an empty cell and over a ground tile, the tile colour when an overhead tile is at the actor's cell, and red again after walking out from under it.

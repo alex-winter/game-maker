@@ -44,7 +44,7 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-020](T-020-paint-metatiles.md) | 2 | P1 | done | editor | Paint metatiles and delete placement painting |
 | [T-021](T-021-grid-zoom-coordinates.md) | 2 | P1 | done | editor | Show a grid, zoom, and the cell coordinate |
 | [T-022](T-022-collision-attributes.md) | 2 | P1 | done | editor | Paint collision and elevation as attributes |
-| [T-023](T-023-overhead-layer.md) | 2 | P1 | ready | engine | Draw an overhead layer above actors |
+| [T-023](T-023-overhead-layer.md) | 2 | P1 | done | engine | Draw an overhead layer above actors |
 | [T-024](T-024-undo-redo.md) | 2 | P1 | ready | editor | Undo and redo map strokes |
 | [T-025](T-025-map-list.md) | 2 | P1 | ready | editor | Create, rename, resize, and delete maps |
 | [T-026](T-026-player-steps.md) | 3 | P1 | backlog | engine | Step the player from cell to cell |
@@ -82,8 +82,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 ## Counts
 
-- ready: 3
+- ready: 2
 - in_progress: 0
 - backlog: 33
-- done: 22
+- done: 23
 - total: 57

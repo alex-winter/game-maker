@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { clampZoom, screenToWorld, viewRect, worldToScreen, zoomedAt } from './view'
 
-const port = { width: 320, height: 240, clear(): void { }, drawImage(): void { } }
+const port = { width: 320, height: 240 }
 
 test('viewRect shows fewer world pixels as zoom grows', () => {
     assert.deepEqual(viewRect(port, { x: 10, y: 20, zoom: 1 }), { x: 10, y: 20, width: 320, height: 240 })

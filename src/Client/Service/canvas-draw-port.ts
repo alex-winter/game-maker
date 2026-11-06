@@ -16,6 +16,10 @@ export function canvasDrawPort(ctx: CanvasRenderingContext2D): DrawPort<CanvasIm
             ctx.imageSmoothingEnabled = false
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
         },
+        fillRect(x, y, width, height, color): void {
+            ctx.fillStyle = color
+            ctx.fillRect(x, y, width, height)
+        },
         drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh): void {
             ctx.drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh)
         },

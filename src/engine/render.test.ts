@@ -17,6 +17,9 @@ function recordingPort(width = 64, height = 64): DrawPort<string> & { calls: Cal
         clear(): void {
             port.clears++
         },
+        fillRect(x: number, y: number, w: number, h: number, color: string): void {
+            port.calls.push({ image: 'rect:' + color, sx: 0, sy: 0, dx: x, dy: y, dw: w })
+        },
         drawImage(image: string, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number, dw: number): void {
             port.calls.push({ image, sx, sy, dx, dy, dw })
         },
@@ -143,4 +146,35 @@ test('zoom multiplies the draw size and the screen offset, and shrinks the visib
     assert.deepEqual(port.calls, [
         { image: 'sheet-image', sx: 0, sy: 0, dx: 32, dy: 32, dw: 32 },
     ])
+})
+
+test('passes: ground tiles, then actors, then overhead tiles, in that order', () => {
+    const port = recordingPort()
+    const map = emptyTileMap({ width: 4, height: 4 })
+
+    // Layer list order is overhead-first here on purpose: the pass decides, not the index.
+    map.layers = [
+        withTile(map, { ...map.layers[1], id: 'over' }, { x: 0, y: 0 }, 2),
+        withTile(map, { ...map.layers[0], id: 'ground' }, { x: 0, y: 0 }, 1),
+    ]
+
+    const actor = { x: 0, y: 0, width: 16, height: 16, color: 'red' }
+
+    renderFrame(port, scene({ tileMap: map }), { x: 0, y: 0, zoom: 1 }, [actor])
+
+    assert.deepEqual(port.calls.map(call => [call.image, call.sx]), [
+        ['sheet-image', 0],
+        ['rect:red', 0],
+        ['sheet-image', 16],
+    ])
+})
+
+test('an actor with a sprite draws its frame; one outside the view is skipped', () => {
+    const port = recordingPort(32, 32)
+    const seen = { x: 8, y: 8, width: 16, height: 16, color: 'red', sprite: { image: 'hero', sx: 32, sy: 0, sw: 16, sh: 16 } }
+    const unseen = { x: 100, y: 100, width: 16, height: 16, color: 'red' }
+
+    renderFrame(port, scene(), { x: 0, y: 0, zoom: 2 }, [seen, unseen])
+
+    assert.deepEqual(port.calls, [{ image: 'hero', sx: 32, sy: 0, dx: 16, dy: 16, dw: 32 }])
 })

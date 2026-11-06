@@ -1,10 +1,10 @@
 import { Rect } from '../domain/coordinates'
 import { GRID_SIZE } from '../domain/grid'
-import { metatileAt, TileLayer } from '../domain/map'
+import { metatileAt, TileLayer, TileLayerKind } from '../domain/map'
 import { rectsIntersect } from '../domain/rect'
 import { Tileset } from '../domain/tileset'
 import { DrawPort } from './draw-port'
-import { Scene } from './scene'
+import { Actor, Scene } from './scene'
 import { View, viewRect, worldToScreen } from './view'
 
 export { viewRect } from './view'
@@ -74,18 +74,53 @@ function drawPlacements<TImage>(port: DrawPort<TImage>, scene: Scene<TImage>, vi
     }
 }
 
-/**
- * Paints one frame: the frozen legacy placements as a background, then the
- * tile layers back to front. Both hosts call this and nothing else draws a map.
- */
-export function renderFrame<TImage>(port: DrawPort<TImage>, scene: Scene<TImage>, view: View): void {
-    port.clear()
+function drawTilePass<TImage>(port: DrawPort<TImage>, scene: Scene<TImage>, kind: TileLayerKind, view: View): void {
+    if (scene.tileset === undefined) {
+        return
+    }
 
-    drawPlacements(port, scene, view)
-
-    if (scene.tileset !== undefined) {
-        for (const layer of scene.tileMap.layers) {
+    for (const layer of scene.tileMap.layers) {
+        if (layer.kind === kind) {
             drawTileLayer(port, scene, scene.tileset, layer, view)
         }
     }
+}
+
+function drawActors<TImage>(port: DrawPort<TImage>, actors: readonly Actor<TImage>[], view: View): void {
+    const visible = viewRect(port, view)
+
+    for (const actor of actors) {
+        if (!rectsIntersect(visible, actor)) {
+            continue
+        }
+
+        const screen = worldToScreen(view, actor)
+        const width = actor.width * view.zoom
+        const height = actor.height * view.zoom
+
+        if (actor.sprite === undefined) {
+            port.fillRect(screen.x, screen.y, width, height, actor.color)
+        } else {
+            port.drawImage(actor.sprite.image, actor.sprite.sx, actor.sprite.sy, actor.sprite.sw, actor.sprite.sh, screen.x, screen.y, width, height)
+        }
+    }
+}
+
+/**
+ * Paints one frame in fixed passes: the frozen legacy placements as a
+ * background, ground tile layers (in list order), actors, then overhead
+ * tile layers. Both hosts call this and nothing else draws a map.
+ */
+export function renderFrame<TImage>(
+    port: DrawPort<TImage>,
+    scene: Scene<TImage>,
+    view: View,
+    actors: readonly Actor<TImage>[] = [],
+): void {
+    port.clear()
+
+    drawPlacements(port, scene, view)
+    drawTilePass(port, scene, 'ground', view)
+    drawActors(port, actors, view)
+    drawTilePass(port, scene, 'overhead', view)
 }
