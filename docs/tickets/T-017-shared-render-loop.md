@@ -1,7 +1,7 @@
 ---
 id: T-017
 title: Draw a map through one engine loop
-status: backlog
+status: ready
 priority: P1
 phase: 1
 type: feat

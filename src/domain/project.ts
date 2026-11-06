@@ -1,35 +1,61 @@
 import type { Layer } from 'Model/Layer'
 import { Id, newId } from './id'
+import { emptyTileMap, GridSize, TileMap } from './map'
+import { Tileset } from './tileset'
+
+/** Cells in a new map. A gen 3 town is about this size. */
+export const DEFAULT_MAP_SIZE: GridSize = { width: 20, height: 20 }
 
 /**
- * One place in the game: a town, a route, a house interior.
- * Until T-014 a map is the legacy placement layer list under a name.
- * `Layer` is a type-only import; it leaves `domain` free of runtime
- * dependencies and dies with the placement model in T-020.
+ * One place in the game: a town, a route, a house interior. The grid lives
+ * in `tileMap`. `layers` is the legacy placement list; `Layer` is a type-only
+ * import so `domain` has no runtime dependency on it, and both die with the
+ * placement model in T-020.
  */
 export type GameMap = {
     readonly id: Id
 
     name: string
 
+    tileMap: TileMap
+
     layers: Layer[]
 }
 
-/** One game. There is one local project; it owns every map. */
+/** One game. There is one local project; it owns every map and tileset. */
 export type Project = {
     readonly id: Id
 
     name: string
 
+    tilesets: Tileset[]
+
     maps: GameMap[]
 }
 
-export function newMap(name: string, layers: Layer[] = []): GameMap {
-    return { id: newId(), name, layers }
+export function newMap(name: string, layers: Layer[] = [], size: GridSize = DEFAULT_MAP_SIZE): GameMap {
+    return { id: newId(), name, tileMap: emptyTileMap(size), layers }
 }
 
 export function newProject(name: string, maps: GameMap[] = []): Project {
-    return { id: newId(), name, maps }
+    return { id: newId(), name, tilesets: [], maps }
+}
+
+/**
+ * Fills fields that an older project file does not have. The file written
+ * before T-014 has maps without a `tileMap` and no `tilesets`.
+ */
+export function withProjectDefaults(stored: Partial<Project> & Pick<Project, 'id' | 'name' | 'maps'>): Project {
+    return {
+        id: stored.id,
+        name: stored.name,
+        tilesets: stored.tilesets ?? [],
+        maps: stored.maps.map(map => ({
+            ...map,
+            tileMap: map.tileMap ?? emptyTileMap(DEFAULT_MAP_SIZE),
+            layers: map.layers ?? [],
+        })),
+    }
 }
 
 /** The project the editor opens when there is no file yet: one empty map to paint on. */

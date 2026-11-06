@@ -10,6 +10,8 @@ import {
     projectFromLegacyLayers,
     renameMap,
     withMapLayers,
+    withProjectDefaults,
+    DEFAULT_MAP_SIZE,
 } from './project'
 
 const layer = (uuid: string): Layer => ({
@@ -31,11 +33,27 @@ test('a legacy layer list becomes one map that keeps its placements', () => {
     assert.deepEqual(project.maps[0].layers[0].placements[0].coordinate, { x: 16, y: 32 })
 })
 
-test('the default project has one empty map', () => {
+test('the default project has one empty map with a tile grid', () => {
     const project = defaultProject()
 
     assert.equal(project.maps.length, 1)
     assert.deepEqual(project.maps[0].layers, [])
+    assert.equal(project.maps[0].tileMap.width, DEFAULT_MAP_SIZE.width)
+    assert.equal(project.maps[0].tileMap.layers.length, 2)
+    assert.deepEqual(project.tilesets, [])
+})
+
+test('a project file from before tile maps gets a grid and an empty tileset list', () => {
+    const stored = {
+        id: 'p',
+        name: 'Old',
+        maps: [{ id: 'm', name: 'Legacy map', layers: [layer('a')] }],
+    }
+    const project = withProjectDefaults(stored as never)
+
+    assert.deepEqual(project.tilesets, [])
+    assert.equal(project.maps[0].tileMap.height, DEFAULT_MAP_SIZE.height)
+    assert.deepEqual(project.maps[0].layers.map(l => l.uuid), ['a'])
 })
 
 test('adding a map keeps the first and does not mutate the input', () => {

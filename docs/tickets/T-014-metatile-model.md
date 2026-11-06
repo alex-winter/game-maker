@@ -1,7 +1,7 @@
 ---
 id: T-014
 title: Add a metatile map and tileset model
-status: ready
+status: done
 priority: P1
 phase: 1
 type: feat
@@ -15,6 +15,10 @@ blocks: [T-017, T-019, T-020, T-022, T-026, T-031]
 ## Outcome
 
 A map can store, for each layer, a grid of metatile ids. A tileset maps those ids to a rectangle on a sheet. A pure function returns the metatile at a cell and another returns whether the cell blocks movement.
+
+## Result
+
+`domain/tileset.ts`: `Metatile`, `Tileset`, `EMPTY_METATILE_ID = 0`, `metatileById`, `nextMetatileId`. `domain/map.ts`: `TileLayer` (with `kind`), `AttributeLayer` (`collision`, `elevation`), `TileMap`, `emptyTileMap`, `cellIndex`, `metatileIdAt`, `metatileAt`, `withTile`, `elevationAt`, `isSolid`, `elevationsAgree`, `isBlocked`. `GameMap` gained `tileMap` and `Project` gained `tilesets`; `withProjectDefaults` upgrades the T-013 file. Elevation 0 means "any", so stairs and doorways join two heights; two different non-zero elevations block a step. Both painted attributes and metatile defaults count, so T-022 can paint collision without a new rule.
 
 ## Why
 
@@ -50,9 +54,9 @@ Out:
 
 ## Acceptance
 
-- [ ] A test builds a 3×3 map, sets one solid metatile, and `isBlocked` is true only there.
-- [ ] A cell outside the map is blocked, so the player cannot walk into the void.
-- [ ] No domain module imports the DOM.
+- [x] A test builds a 3×3 map, sets one solid metatile, and `isBlocked` is true only there.
+- [x] A cell outside the map is blocked, so the player cannot walk into the void.
+- [x] No domain module imports the DOM.
 
 ## Test plan
 

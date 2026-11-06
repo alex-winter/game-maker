@@ -5,7 +5,7 @@ The program is a local editor plus a play page. Both are webpack bundles. An Exp
 ```
 src/
   Client/     browser UI and the play page
-  domain/     pure types and rules: coordinates, grid, rect, ids. No DOM, no Express.
+  domain/     pure types and rules: coordinates, grid, rect, ids, project, tileset, map (metatile grids, collision, elevation). No DOM, no Express.
   Model/      shared types for the placement model (some are unused sketches)
   Server/     Express routes and JSON files
 public/       index.html, play.html, built bundles in dist/
@@ -77,7 +77,7 @@ Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names a
 
 | File | Written by | Shape |
 | --- | --- | --- |
-| `data/project.json` | project, map, and layer routes | `{ id, name, maps: { id, name, layers: Layer[] }[] }` |
+| `data/project.json` | project, map, and layer routes | `{ id, name, tilesets: Tileset[], maps: { id, name, tileMap: TileMap, layers: Layer[] }[] }` |
 | `data/layers.json` | nothing any more | imported once into a map named "Legacy map" when `project.json` is first created, then ignored |
 | `data/placement-images.json` | placement-image route | `{ uuid, src }[]` where `src` is a data URL |
 | `data/user-data.json` | user-data route | camera, tool name, window rects |
@@ -85,7 +85,9 @@ Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names a
 | `uploads/<uuid><ext>` | `multer` | the sheet bytes |
 | `uploads/index.json` | upload route | `{ id, originalName, file }[]` |
 
-`Project` and `GameMap` live in `domain/project.ts` with pure helpers (`addMap`, `renameMap`, `withMapLayers`, `findMap`). `Server/services/project-store.ts` reads and writes the file; handlers call a domain helper and write the result.
+`Project` and `GameMap` live in `domain/project.ts` with pure helpers (`addMap`, `renameMap`, `withMapLayers`, `findMap`). `Server/services/project-store.ts` reads and writes the file; handlers call a domain helper and write the result. `withProjectDefaults` fills fields an older file lacks, and boot writes the result back once.
+
+A map's grid is a `TileMap` (`domain/map.ts`): `width` and `height` in cells, a `tilesetId`, `layers: TileLayer[]` back to front (each a dense row-major `MetatileId[]` with `kind: 'ground' | 'overhead'`), and `attributes` (`collision[]`, `elevation[]` on the same index). A `Tileset` (`domain/tileset.ts`) maps ids to a `sheetId` plus a pixel rectangle and the defaults `solid`, `elevation`, `ledge`. Id 0 is the empty cell and is never solid. `isBlocked(map, tileset, to, from?)` is the movement rule: outside, painted collision, or any solid metatile blocks; with `from`, a change between two non-zero elevations blocks. Nothing paints or draws tile maps yet (T-017, T-019, T-020).
 
 A layer is:
 

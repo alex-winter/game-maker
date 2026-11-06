@@ -1,15 +1,18 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { activeMapId, urlForMap } from './active-map'
+import { Project } from '../../domain/project'
 
+/** Only `maps[].id` matters here; the grids are irrelevant to the rule. */
 const project = {
     id: 'p',
     name: 'Game',
+    tilesets: [],
     maps: [
-        { id: 'town', name: 'Town', layers: [] },
-        { id: 'house', name: 'House', layers: [] },
+        { id: 'town', name: 'Town' },
+        { id: 'house', name: 'House' },
     ],
-}
+} as unknown as Project
 
 test('a requested map that exists wins', () => {
     assert.equal(activeMapId('?map=house', project), 'house')
