@@ -1,7 +1,7 @@
 ---
 id: T-056
 title: Run wild encounters through the battle scene
-status: backlog
+status: ready
 priority: P1
 phase: 9
 type: feat

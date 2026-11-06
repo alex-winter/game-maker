@@ -1,7 +1,7 @@
 ---
 id: T-054
 title: Award experience and levels
-status: backlog
+status: ready
 priority: P2
 phase: 9
 type: feat

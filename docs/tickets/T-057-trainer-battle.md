@@ -1,7 +1,7 @@
 ---
 id: T-057
 title: Run trainer battles through the battle scene
-status: backlog
+status: ready
 priority: P1
 phase: 9
 type: feat

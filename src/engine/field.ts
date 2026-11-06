@@ -144,15 +144,15 @@ export function afterSave(state: FieldState): FieldState {
     return { ...state, menu: null, menuChoice: undefined, message: openMessage([newPage('Saved the game.')]) }
 }
 
-/** What the placeholder battle says for each way out. T-056 replaces the placeholder, not this message's place in the flow. */
-export function battleOutcomeText(outcome: BattleResult['outcome']): string {
+/** What the field says for each way out of a battle; the placeholder's flight is the one no scene was shown for. */
+export function battleOutcomeText(outcome: BattleResult['outcome'], shown = false): string {
     switch (outcome) {
         case 'won':
-            return 'You won! (The battle scene arrives in phase 9.)'
+            return shown ? 'You won!' : 'You won! (The battle scene arrives in phase 9.)'
         case 'lost':
             return 'You lost...'
         case 'fled':
-            return 'With nobody able to fight, you ran away.'
+            return shown ? 'You got away.' : 'With nobody able to fight, you ran away.'
     }
 }
 
@@ -161,7 +161,7 @@ export function battleOutcomeText(outcome: BattleResult['outcome']): string {
  * whatever the battle left, a win is counted in memory, and the box tells
  * the story — who appeared, then how it ended.
  */
-export function afterBattle(state: FieldState, result: BattleResult, speciesName: string | undefined): FieldState {
+export function afterBattle(state: FieldState, result: BattleResult, speciesName: string | undefined, shown = false): FieldState {
     const trainer = state.battle?.trainer ?? null
     const won = result.outcome === 'won'
     const counted = won ? addToVariable(state.memory, 'battles-won', 1) : state.memory
@@ -175,7 +175,8 @@ export function afterBattle(state: FieldState, result: BattleResult, speciesName
         party: result.party,
         // A beaten trainer's flag is set, so they never challenge again. A loss leaves it clear (T-057 keeps this).
         memory: won && trainer !== null ? setFlag(counted, trainer.defeatedFlagId) : counted,
-        message: openMessage([newPage(opening), newPage(battleOutcomeText(result.outcome))]),
+        // After a scene the player watched, only the ending is left to tell; the placeholder has to tell the whole thing.
+        message: openMessage(shown ? [newPage(battleOutcomeText(result.outcome, true))] : [newPage(opening), newPage(battleOutcomeText(result.outcome))]),
     }
 }
 

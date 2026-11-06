@@ -1,7 +1,7 @@
 ---
 id: T-053
 title: Resolve a single-creature battle
-status: ready
+status: done
 priority: P1
 phase: 9
 type: feat
@@ -48,11 +48,18 @@ Out:
 
 ## Acceptance
 
-- [ ] A test where a high-power move faints the opponent produces a win.
-- [ ] A test where accuracy is 0 never deals damage.
-- [ ] A faster opponent acts first.
-- [ ] Manual: the scene appears from the grass placeholder once T-056 lands. Until then a debug entry can start a battle.
+- [x] A test where a high-power move faints the opponent produces a win.
+- [x] A test where accuracy is 0 never deals damage.
+- [x] A faster opponent acts first.
+- [x] Manual: the scene appears from the grass placeholder once T-056 lands. Until then a debug entry can start a battle.
 
 ## Test plan
 
 - Domain tests with a fixed RNG. Manual scene.
+
+## Result
+
+- `domain/battle.ts`: `Combatant`, `BattleState`, `BattleChoice`, `newBattle`, `battleStep` (one whole turn: run, speed order, accuracy, damage, faint, outcome), `damageDealt` with the formula documented in the module and worked by hand in the test (STAB ×1.5 included and tested; power 0 refused; immune 0; min 1), `hits`, `damageRoll`, `playerFirst`, `foeChoice`, `playerMoves`, `battleResult`.
+- `engine/battle-scene.ts`: panels intro → main (FIGHT/RUN) → moves → log → done; `drawBattleScene` with status panels, HP bars, stand-in rectangles (species have no pictures yet), and the message box carrying the menu as choices.
+- `play.ts` opens the scene for any `FieldState.battle` — grass and trainers alike — and falls back to the placeholder only when `newBattle` cannot open (unknown species, nobody standing); `afterBattle(…, shown)` then tells only the ending. No debug entry was needed: a trainer walk-up or grass step starts it.
+- Tests: formula values, accuracy 0 never damages, high-power move wins, faster opponent first (and a tie goes to the player), trading blows, running wild vs trainer, newBattle refusals; scene flow and drawing. Checked in Chrome: Ace walked up, the scene opened, FIGHT → TACKLE through four turns, the HP bars fell, the scene closed on “You won!”, the flag and `battles-won` 1 and the party's 22/28 HP were in the save.

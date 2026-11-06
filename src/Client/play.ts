@@ -35,6 +35,8 @@ import { npcActor, SpriteLookup } from 'engine/npc-actor'
 import { npcsOn } from 'domain/warp'
 import { starterParty } from 'domain/creature'
 import { placeholderBattle } from 'engine/battle-placeholder'
+import { BattleData, battleResult, newBattle } from 'domain/battle'
+import { advanceBattleScene, BattleSceneState, drawBattleScene, isBattleOver, newBattleScene } from 'engine/battle-scene'
 import { View } from 'engine/view'
 
 const held = new HeldDirections()
@@ -45,6 +47,9 @@ let running = false
 /** Set on the interact key's keydown and consumed by the next frame, so one press is one look. */
 let interactPressed = false
 let menuPressed = false
+
+/** The direction key pressed this frame (an edge, unlike `held`), for menus that step one row per press. */
+let directionPressed: Direction | null = null
 
 const directionByCode: { readonly [code: string]: Direction | undefined } = {
     ArrowUp: 'up',
@@ -303,15 +308,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     // The session clock animated tiles follow: it runs on through fades and menus so water never stutters.
     let clockMs = 0
 
+    const battleData: BattleData = { moves: project.moves, typeChart: project.typeChart }
+    const speciesOf = (speciesId: Id) => findSpecies(project, speciesId)
+
+    // The battle scene the field handed off to (T-053), or undefined while the field runs.
+    let battleScene: BattleSceneState | undefined
+
     startLoop(deltaSeconds => {
         clockMs += deltaSeconds * 1000
+
+        if (battleScene !== undefined) {
+            // The scene owns the frame until the result is read; then the field tells the end of the story.
+            battleScene = advanceBattleScene(battleScene, { up: directionPressed === 'up', down: directionPressed === 'down', interact: interactPressed, cancel: menuPressed }, battleData, Math.random)
+            interactPressed = false
+            menuPressed = false
+            directionPressed = null
+
+            if (isBattleOver(battleScene)) {
+                field = afterBattle(field, battleResult(battleScene.battle), world.speciesName(field.battle?.speciesId ?? ''), true)
+                battleScene = undefined
+            } else {
+                drawBattleScene(port, battleScene, battleData, GBA_VIEW, zoom)
+                return
+            }
+        }
+
         field = advanceField(field, { direction: held.latest(), running, interact: interactPressed, menu: menuPressed }, deltaSeconds * 1000, world)
         interactPressed = false
         menuPressed = false
+        directionPressed = null
 
-        // The grass rustled: run the battle through the seam and tell the story before this frame draws (T-048).
+        // The grass rustled or a trainer walked up: open the scene (T-053). A request the scene cannot open — unknown species, nobody standing — falls to the placeholder.
         if (field.battle !== undefined) {
-            field = afterBattle(field, placeholderBattle(field.battle), world.speciesName(field.battle.speciesId))
+            const battle = newBattle(field.battle, speciesOf)
+
+            if (battle === undefined) {
+                field = afterBattle(field, placeholderBattle(field.battle), world.speciesName(field.battle.speciesId))
+            } else {
+                battleScene = newBattleScene(battle, field.battle.trainer)
+            }
         }
 
         if (field.menuChoice === 'save') {
@@ -360,6 +395,10 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
     if (direction) {
         event.preventDefault()
         held.press(direction)
+
+        if (!event.repeat) {
+            directionPressed = direction
+        }
     }
 
     if (RUN_CODES.includes(event.code)) {
