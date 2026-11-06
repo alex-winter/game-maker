@@ -1,7 +1,7 @@
 ---
 id: T-040
 title: Store story flags and variables
-status: backlog
+status: done
 priority: P1
 phase: 6
 type: feat
@@ -46,9 +46,17 @@ Out:
 
 ## Acceptance
 
-- [ ] Tests for set, clear, and unknown.
-- [ ] A flag created in the editor is present in the project file.
+- [x] Tests for set, clear, and unknown.
+- [x] A flag created in the editor is present in the project file.
 
 ## Test plan
 
 - Domain tests. Reload the editor.
+
+## Result
+
+- `domain/flags.ts`: `Flag { id, name }`, `Memory { flags, variables }`, `newMemory`, `hasFlag`/`setFlag`/`clearFlag` (unknown reads false; set and clear are no-ops when already so), `variable`/`withVariable`/`addToVariable` (unknown reads 0; a separate map, never overloaded), `isFlagInput`, `isMemory`.
+- Project: `flags: Flag[]` with `findFlag/addFlag/withFlag/removeFlag`; `withProjectDefaults` fills an empty list. Routes `POST/PUT/DELETE /project/flags[/:flagId]`; `projectRepository.createFlag/renameFlag/deleteFlag`.
+- Session: `FieldState.memory`, `newField(mapId, spawn, facing, memory = newMemory())` so T-041 can hand a loaded memory in.
+- Editor: `FlagsEditor` window from the side menu's flag button — add (prompt), rename inline (saved on change), delete with a confirm that says events will point at nothing.
+- Verified in headless Chrome: a flag created and renamed in the editor is in `data/project.json` and lists again after reload.

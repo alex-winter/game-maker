@@ -3,7 +3,8 @@ import { Connections } from 'domain/connection'
 import { Id } from 'domain/id'
 import { GridSize, TileMap } from 'domain/map'
 import { Dialog } from 'domain/dialog'
-import { addDialog, addSprite, GameMap, removeDialog, withDialog, Project, removeMap, removeSprite, withMapConnections, withMapEvents, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withStartMap, withTileset } from 'domain/project'
+import { Flag } from 'domain/flags'
+import { addDialog, addFlag, addSprite, GameMap, removeDialog, removeFlag, withDialog, withFlag, Project, removeMap, removeSprite, withMapConnections, withMapEvents, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withStartMap, withTileset } from 'domain/project'
 import { SpriteDefinition } from 'domain/sprite'
 import { MapEvent } from 'domain/warp'
 import { Metatile, MetatileAttributes, MetatileId, Tileset, withMetatileAttributes } from 'domain/tileset'
@@ -140,6 +141,36 @@ class ProjectRepository extends Repository {
 
         if (this.project) {
             this.project = removeDialog(this.project, dialogId)
+        }
+    }
+
+    public async createFlag(name: string): Promise<Flag> {
+        const response = await this.post(this.API_PATH + '/flags', { name })
+        const flag: Flag = await response.json()
+
+        if (this.project) {
+            this.project = addFlag(this.project, flag)
+        }
+
+        return flag
+    }
+
+    public async renameFlag(flagId: Id, name: string): Promise<Flag> {
+        const response = await this.put(this.API_PATH + '/flags/' + flagId, { name })
+        const flag: Flag = await response.json()
+
+        if (this.project) {
+            this.project = withFlag(this.project, flag)
+        }
+
+        return flag
+    }
+
+    public async deleteFlag(flagId: Id): Promise<void> {
+        await this.delete(this.API_PATH + '/flags/' + flagId)
+
+        if (this.project) {
+            this.project = removeFlag(this.project, flagId)
         }
     }
 

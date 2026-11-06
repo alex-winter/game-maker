@@ -14,6 +14,7 @@ import { SpriteEditor } from 'Client/Component/Sprite/SpriteEditor'
 import { WorldEditor } from 'Client/Component/WorldEditor'
 import { Ide } from 'Client/Component/Ide'
 import { DialogEditor } from 'Client/Component/Dialog/DialogEditor'
+import { FlagsEditor } from 'Client/Component/Flags/FlagsEditor'
 import { SignForm } from 'Client/Component/Events/SignForm'
 import { EventKindPicker } from 'Client/Component/Events/EventKindPicker'
 import { MapSelect } from 'Client/Component/MapSelect/MapSelect'
@@ -41,6 +42,7 @@ export const COMPONENTS = new Map<ComponentConstructor, string>([
   [CanvasTools, 'canvas-tools'],
   [SpriteEditor, 'sprite-editor'],
   [DialogEditor, 'dialog-editor'],
+  [FlagsEditor, 'flags-editor'],
   [SignForm, 'sign-form'],
   [EventKindPicker, 'event-kind-picker'],
   [MapSelect, 'map-select'],

@@ -7,6 +7,7 @@ import { Interaction, resolveInteraction } from '../domain/interact'
 import { MapEvent, stepFinished, warpTaken } from '../domain/warp'
 import { advanceFade, Fade, startFade } from './fade'
 import { DialogPage } from '../domain/dialog'
+import { Memory, newMemory } from '../domain/flags'
 import { advanceMessage, MessageState, missingDialogPages, moveHighlight, openMessage } from './message'
 
 /** Where the player will be once the screen is black. */
@@ -36,6 +37,9 @@ export type FieldState = {
 
     /** Last frame's held direction, so menus react to a press rather than to holding. */
     readonly lastDirection: Direction | null
+
+    /** Story flags and variables for this session (T-040). Items and gates read and write it. */
+    readonly memory: Memory
 }
 
 /** Movement plus whether the interact key was pressed this frame (edge, not level). */
@@ -61,8 +65,8 @@ export type FieldWorld = {
     pagesOf(dialogId: Id): readonly DialogPage[] | undefined
 }
 
-export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down'): FieldState {
-    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null }
+export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down', memory: Memory = newMemory()): FieldState {
+    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory }
 }
 
 /** True while a fade runs: the player does not move and input is ignored. */

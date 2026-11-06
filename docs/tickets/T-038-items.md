@@ -1,7 +1,7 @@
 ---
 id: T-038
 title: Define items and pick them up once
-status: backlog
+status: ready
 priority: P1
 phase: 6
 type: feat

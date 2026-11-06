@@ -6,6 +6,7 @@ import { emptyTileMap, GridSize, isInside, TileMap, withTileMapDefaults } from '
 import { SpriteDefinition } from './sprite'
 import type { MapEvent } from './warp'
 import { Dialog, withDialogDefaults } from './dialog'
+import type { Flag } from './flags'
 import { Tileset } from './tileset'
 
 /** Cells in a new map. A gen 3 town is about this size. */
@@ -54,6 +55,9 @@ export type Project = {
     /** What signs and people say (T-035). Referenced by id from events. */
     dialogs: Dialog[]
 
+    /** The story's named switches (T-040). A play session remembers which are set. */
+    flags: Flag[]
+
     /** Where play begins (T-030). Null until the author picks; `startMap` falls back to the first map. */
     startMapId: Id | null
 }
@@ -68,7 +72,7 @@ export function newMap(name: string, layers: Layer[] = [], size: GridSize = DEFA
 }
 
 export function newProject(name: string, maps: GameMap[] = []): Project {
-    return { id: newId(), name, tilesets: [], maps, sprites: [], playerSpriteId: null, dialogs: [], startMapId: null }
+    return { id: newId(), name, tilesets: [], maps, sprites: [], playerSpriteId: null, dialogs: [], flags: [], startMapId: null }
 }
 
 /**
@@ -83,6 +87,7 @@ export function withProjectDefaults(stored: Partial<Project> & Pick<Project, 'id
         sprites: stored.sprites ?? [],
         playerSpriteId: stored.playerSpriteId ?? null,
         dialogs: (stored.dialogs ?? []).map(withDialogDefaults),
+        flags: stored.flags ?? [],
         startMapId: stored.startMapId ?? null,
         maps: stored.maps.map(map => {
             const tileMap = withTileMapDefaults(map.tileMap ?? emptyTileMap(DEFAULT_MAP_SIZE))
@@ -276,4 +281,20 @@ export function withDialog(project: Project, dialog: Dialog): Project {
 
 export function removeDialog(project: Project, dialogId: Id): Project {
     return { ...project, dialogs: project.dialogs.filter(dialog => dialog.id !== dialogId) }
+}
+
+export function findFlag(project: Project, flagId: Id): Flag | undefined {
+    return project.flags.find(flag => flag.id === flagId)
+}
+
+export function addFlag(project: Project, flag: Flag): Project {
+    return { ...project, flags: [...project.flags, flag] }
+}
+
+export function withFlag(project: Project, flag: Flag): Project {
+    return { ...project, flags: project.flags.map(existing => existing.id === flag.id ? flag : existing) }
+}
+
+export function removeFlag(project: Project, flagId: Id): Project {
+    return { ...project, flags: project.flags.filter(flag => flag.id !== flagId) }
 }

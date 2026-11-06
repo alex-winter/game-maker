@@ -18,6 +18,9 @@ export class SideMenu extends Component {
         '.open-dialog-editor:click': () => {
             Events.emit('open-dialog-editor', undefined)
         },
+        '.open-flags-editor:click': () => {
+            Events.emit('open-flags-editor', undefined)
+        },
     }
 
     protected css(): string {
@@ -98,7 +101,11 @@ export class SideMenu extends Component {
         dialogButton.title = 'Dialogs'
         dialogButton.appendChild(Dom.i('fa-solid', 'fa-comment-dots'))
 
-        floatingWrapper.append(importButton, paletteButton, spriteButton, dialogButton)
+        const flagsButton = Dom.button('', 'open-flags-editor')
+        flagsButton.title = 'Story flags'
+        flagsButton.appendChild(Dom.i('fa-solid', 'fa-flag'))
+
+        floatingWrapper.append(importButton, paletteButton, spriteButton, dialogButton, flagsButton)
 
         container.appendChild(floatingWrapper)
 

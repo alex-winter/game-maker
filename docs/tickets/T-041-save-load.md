@@ -1,7 +1,7 @@
 ---
 id: T-041
 title: Save and load a play session
-status: backlog
+status: ready
 priority: P1
 phase: 6
 type: feat
