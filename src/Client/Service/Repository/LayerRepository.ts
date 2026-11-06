@@ -2,6 +2,14 @@ import { Events } from 'Client/Service/Events'
 import { Repository } from 'Client/Service/Repository/Repository'
 import { Layer } from 'Model/Layer'
 
+export type LayerChangeKind = 'active' | 'visibility' | 'order' | 'name' | 'placements'
+
+export type LayerChange = {
+    readonly uuid: string
+
+    readonly changed: LayerChangeKind
+}
+
 class LayerRepository extends Repository {
     private readonly API_PATH = '/layers'
 
@@ -31,22 +39,18 @@ class LayerRepository extends Repository {
         Events.emit('layers-created', layers)
     }
 
-    public update(layer: Layer): void {
+    /** Copies `layer` over the stored one and persists that one layer. */
+    public update(layer: Layer, changed: LayerChangeKind): Promise<void> {
         const found = this.layers.find(l => l.uuid === layer.uuid)
 
-        if (found) {
+        if (found && found !== layer) {
             Object.assign(
                 found,
                 layer,
             )
         }
 
-        this.patch(
-            this.API_PATH,
-            layer,
-        )
-
-        Events.emit('layers-update', undefined)
+        return this.persist(found ?? layer, changed)
     }
 
     public async getAll(): Promise<Layer[]> {
@@ -65,24 +69,41 @@ class LayerRepository extends Repository {
         await this.delete(this.API_PATH + '/' + uuid)
     }
 
-    public setActive(uuid: string) {
+    public setActive(uuid: string): void {
         for (const layer of this.layers) {
-            layer.is_active = layer.uuid === uuid
-            this.update(layer)
+            const isActive = layer.uuid === uuid
+
+            if (layer.is_active !== isActive) {
+                layer.is_active = isActive
+                this.persist(layer, 'active')
+            }
         }
     }
 
     public toggleVisible(uuid: string): void {
-        for (const layer of this.layers) {
-            if (layer.uuid === uuid) {
-                layer.is_visible = !layer.is_visible
-            }
-            this.update(layer)
+        const layer = this.getByUuid(uuid)
+
+        if (layer === undefined) {
+            return
         }
+
+        layer.is_visible = !layer.is_visible
+        this.persist(layer, 'visibility')
     }
 
-    public getByUuid(uuid: string): Layer {
-        return this.layers.find(layer => layer.uuid === uuid)!
+    public getByUuid(uuid: string): Layer | undefined {
+        return this.layers.find(layer => layer.uuid === uuid)
+    }
+
+    private async persist(layer: Layer, changed: LayerChangeKind): Promise<void> {
+        const change: LayerChange = { uuid: layer.uuid, changed }
+
+        Events.emit('layer-changed', change)
+
+        await this.patch(
+            this.API_PATH,
+            layer,
+        )
     }
 }
 

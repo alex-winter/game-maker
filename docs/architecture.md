@@ -9,10 +9,10 @@ src/
   Server/     Express routes and JSON files
 public/       index.html, play.html, built bundles in dist/
 data/         created at runtime: layers, placement images, user data, sprite models
-uploads/      sprite sheet files, stored under their original filename
+uploads/      sprite sheet files, stored as <uuid><ext>, plus index.json with the original names
 ```
 
-`npm` scripts only watch-compile. Nothing starts Express, typechecks, or tests. See ticket T-011.
+`npm run build` compiles both bundles, `npm start` runs Express, `npm run typecheck` runs `tsc --noEmit`, and `npm test` runs `node --test` over `src/**/*.test.ts`. See the root README.
 
 ## Boot
 
@@ -28,9 +28,9 @@ Play (`public/play.html` → `src/Client/play.ts`):
 
 1. Load every layer and every placement image.
 2. Draw them in one canvas from a camera offset.
-3. Arrow keys nudge that offset on `keydown` only. There is no held-key loop, no player, and no collision.
+3. Held arrow keys pan that offset every frame at 120 px/s. There is no player and no collision.
 
-The two draw paths do not share a function. Their layer order is reversed. See [problems.md](problems.md).
+The two draw paths do not share a function (T-017), but both order layers with `Model/draw-order.ts`.
 
 ## UI model
 
@@ -41,8 +41,8 @@ Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names a
 | Event | Emitter | Listener | Payload |
 | --- | --- | --- | --- |
 | `window-resize` | `index.ts` | `Canvas2D` | none |
-| `upload-files-submission` | `FileUploader` | `WorldEditor`, `FileListing` | `File[]` |
-| `open-sheet` | `FileListing` | `WorldEditor` | sheet name |
+| `upload-files-submission` | `FileUploader` | `FileListing` | `File[]` |
+| `open-sheet` | `FileListing` | `WorldEditor` | sheet id |
 | `window-destroyed` | `WindowBox` | `WorldEditor` | title string |
 | `mouse-down-window-box` | `WindowBox` | `WorldEditor` | the window element |
 | `open-sheet-importer` | `SideMenu` | `WorldEditor` | none |
@@ -63,10 +63,9 @@ Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names a
 | `placement-removed` | `WorldEditor` | none | uuid |
 | `layer-order-up` / `layer-order-down` | `LayerItem` | `WorldEditor` | uuid |
 | `layers-created` | `LayerRepository` | `LayerListing` | `Layer[]` |
-| `layers-update` | `LayerRepository` | `CanvasLayer`, `LayerItem` | none |
+| `layer-changed` | `LayerRepository` | `CanvasLayer`, `LayerItem` | `{ uuid, changed }` |
 | `sheet-selection-made` | `SheetViewer` | every `CanvasLayer` | `HTMLImageElement` |
 | `tool-selection` | `CanvasTools` | every `CanvasLayer` | tool name |
-| `moving-in-canvas` | active `CanvasLayer` | other `CanvasLayer`s | movement snapshot |
 | `request-focus-on-placement` | `PlacementHistory` | every `CanvasLayer` | uuid |
 | `placement-added` | `CanvasLayer` | `PlacementHistory` | none |
 | `close-modal` | `NewLayerForm` | `BasicModal` | the form element |
@@ -81,7 +80,8 @@ Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names a
 | `data/placement-images.json` | placement-image route | `{ uuid, src }[]` where `src` is a data URL |
 | `data/user-data.json` | user-data route | camera, tool name, window rects |
 | `data/sprite-models.json` | sprite-model route | unused by the client |
-| `uploads/<original filename>` | `multer` | the sheet bytes |
+| `uploads/<uuid><ext>` | `multer` | the sheet bytes |
+| `uploads/index.json` | upload route | `{ id, originalName, file }[]` |
 
 `config.projectsDir` points at `data/projects.json` and is never read. `Project` is an unused type.
 
@@ -96,7 +96,7 @@ A layer is:
 
 `type` is `image`, `collision`, or `player_controlled`. Collision is still an image placement (a translucent red square). The `CollisionsLayer` type is unused. `player_controlled` is a blue circle the user stamps by hand. Play mode reads `type` and ignores it.
 
-Images live inline in JSON. A fill merges a region into one new data URL, so the cell stops being a tile. That is why the placement model gets retired rather than extended. See [decisions/0001-tile-grid.md](decisions/0001-tile-grid.md) and [decisions/0003-assets-on-disk.md](decisions/0003-assets-on-disk.md).
+Images live inline in JSON. Until T-008 a fill merged a region into one new data URL; it now writes one placement per cell, but the model is still retired rather than extended. See [decisions/0001-tile-grid.md](decisions/0001-tile-grid.md) and [decisions/0003-assets-on-disk.md](decisions/0003-assets-on-disk.md).
 
 ## Draw path in the editor
 
@@ -114,12 +114,12 @@ Painting uses `event.clientX` / `clientY` as if the canvas origin were the viewp
 | --- | --- | --- |
 | GET | `/` | editor HTML |
 | GET | `/play` | play HTML |
-| GET | `/sheets` | every upload, read synchronously, returned as base64 |
+| GET | `/sheets` | every upload, read asynchronously, returned as base64 with a mapped MIME type |
 | GET/POST/PATCH | `/layers` | the one map |
 | DELETE | `/layers/:uuid` | remove a layer |
 | GET/PATCH | `/user-data` | camera, tool, windows |
 | GET/POST | `/placement-images` | data URLs |
-| POST | `/upload-files` | `multer`, filename = original name |
+| POST | `/upload-files` | `multer`, filename = uuid + allow-listed extension |
 | POST | `/sprite-model` | append to a file the client never reads |
 
 JSON reads and writes are synchronous and not atomic. Two overlapping `PATCH /layers` can lose a placement.

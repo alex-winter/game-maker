@@ -13,6 +13,8 @@ export const config = {
 
     uploadsDir: path.join(projectRootDir, 'uploads'),
 
+    uploadsIndexFileDir: path.join(projectRootDir, 'uploads', 'index.json'),
+
     projectsDir: path.join(dataDir, 'projects.json'),
 
     layersJsonFileDir: path.join(dataDir, 'layers.json'),
@@ -23,7 +25,7 @@ export const config = {
 
     userDataFileDir: path.join(dataDir, 'user-data.json'),
 
-    allowedExtensions: ['.png', '.jpg', '.jpeg', '.webp', '.svg'],
+    allowedExtensions: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'],
 
     fileUploadSizeLimit: '50mb',
 

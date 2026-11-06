@@ -14,7 +14,8 @@ import { Component } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 import { LAYERS } from 'Client/Constants/layers'
-import { FileUpload } from 'Client/Service/FileUpload'
+import { camera } from 'Client/Service/camera'
+import { loadPlacement } from 'Client/Service/load-placement'
 import { layerRepository } from 'Client/Service/Repository/LayerRepository'
 import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
@@ -29,13 +30,11 @@ import { UserData, WindowConfiguration } from 'Model/UserData'
 import { DialogCreator } from './Dialog/DialogCreator'
 
 export class WorldEditor extends Component {
-    private openSheets: string[] = []
     private windowBoxes: { [key: string]: WindowBox } = {}
     private layers: Layer[] = []
     private userData!: UserData
 
     protected externalListeners: ExternalListeners = {
-        'upload-files-submission': this.handleUploadFilesSubmission,
         'open-sheet': this.handleOpenSheet,
         'window-destroyed': this.handleWindowDestroyed,
         'mouse-down-window-box': this.handleMouseDownWindowBox,
@@ -70,6 +69,7 @@ export class WorldEditor extends Component {
 
             .canvas-container {
                 flex-grow: 1;
+                position: relative;
             }
         `
     }
@@ -78,26 +78,14 @@ export class WorldEditor extends Component {
         this.userData = await userDataRepository.getAll()
         this.layers = await layerRepository.getAll()
 
+        camera.set(this.userData.lastViewPosition)
+
         await sheetRepository.getAll()
         await placementImageRepository.getAll()
 
         for (const layer of this.layers) {
             for (const placement of layer.placements) {
-                const placementImage = await placementImageRepository.getByUuid(placement.imageUuid)
-
-                if (placementImage) {
-                    const image = await Dom.image(placementImage.src)
-
-                    loadedPlacementRepository.add({
-                        uuid: placement.uuid,
-                        layerUuid: layer.uuid,
-                        image,
-                        x: placement.coordinate.x,
-                        y: placement.coordinate.y,
-                        width: image.width,
-                        height: image.height,
-                    })
-                }
+                await loadPlacement(placement, layer.uuid)
             }
         }
     }
@@ -123,7 +111,7 @@ export class WorldEditor extends Component {
         sideMenu.append(layerListing)
 
         const layerElements = this.layers.map(
-            layer => Dom.makeComponent(CanvasLayer, { layer, userData: this.userData })
+            layer => Dom.makeComponent(CanvasLayer, { layer })
         )
 
         const tools = Dom.makeComponent(CanvasTools, { currentTool: this.userData.currentTool })
@@ -141,16 +129,20 @@ export class WorldEditor extends Component {
         return container
     }
 
-    private handleUploadFilesSubmission(files: File[]): void {
-        FileUpload.uploadMultiple(files)
-    }
+    private handleOpenSheet(sheetId: string): void {
+        const sheet = sheetRepository.getById(sheetId)
 
-    private handleOpenSheet(sheetName: string): void {
-        const sheet = sheetRepository.getByName(sheetName)
-        if (this.openSheets.includes(sheet.name)) {
-            this.windowBoxes[sheet.name].flash()
+        if (sheet === undefined) {
             return
         }
+
+        const openWindow = this.windowBoxes[sheet.id]
+
+        if (openWindow && openWindow.isConnected) {
+            openWindow.flash()
+            return
+        }
+
         const sheetViewerDataset = { imageSrc: sheet.imageSrc }
         const component = Dom.makeComponent(SheetViewer, sheetViewerDataset)
 
@@ -161,19 +153,19 @@ export class WorldEditor extends Component {
         })
 
         if (windowBox) {
-            this.openSheets.push(sheet.name)
-            this.windowBoxes[sheet.name] = windowBox
+            // Keyed by sheet id, since two uploads may share a display name.
+            this.windowBoxes[sheet.id] = windowBox
 
             this.shadowRoot?.append(windowBox)
         }
     }
 
-    private handleWindowDestroyed(name: string): void {
-        if (this.openSheets.includes(name)) {
-            this.openSheets = this.openSheets.filter(item => item !== name)
-        }
-        if (this.windowBoxes[name]) {
-            delete this.windowBoxes[name]
+    /** The event carries a title, not a key, so prune by connection instead. */
+    private handleWindowDestroyed(): void {
+        for (const [key, windowBox] of Object.entries(this.windowBoxes)) {
+            if (!windowBox.isConnected) {
+                delete this.windowBoxes[key]
+            }
         }
     }
 
@@ -211,19 +203,20 @@ export class WorldEditor extends Component {
         )
     }
 
-    private handleNewLayerSubmit(input: LayerInput): void {
+    private async handleNewLayerSubmit(input: LayerInput): Promise<void> {
         const layer = Object.assign(
             LayerFactory.make(),
             input
         )
 
-        Events.emit('new-layer-mapped', [layer])
+        // create assigns the order the canvas needs for its z-index
+        await layerRepository.create(layer)
 
-        layerRepository.create(layer)
+        Events.emit('new-layer-mapped', [layer])
     }
 
     private handleNewLayerMapped(layers: Layer[]): void {
-        this.shadowRoot?.append(
+        this.findOne('.canvas-container')?.append(
             ...layers
                 .sort((a, b) => b.order - a.order)
                 .map(layer => Dom.makeComponent(CanvasLayer, { layer }))
@@ -240,9 +233,9 @@ export class WorldEditor extends Component {
             }
         ) as Layer
 
-        Events.emit('new-layer-mapped', [layer])
-
         await layerRepository.create(layer)
+
+        Events.emit('new-layer-mapped', [layer])
 
         // small delay to ensure the CanvasLayer is mounted
         setTimeout(async () => {
@@ -267,7 +260,7 @@ export class WorldEditor extends Component {
     }
 
     private handleLayerPlacementMade(layer: Layer): void {
-        layerRepository.update(layer)
+        layerRepository.update(layer, 'placements')
     }
 
     private handleLayerActive(layer: Layer): void {
@@ -326,7 +319,7 @@ export class WorldEditor extends Component {
             const index = layer.placements.findIndex(p => p.uuid === placementUuid)
             if (index !== -1) {
                 layer.placements.splice(index, 1)
-                layerRepository.update(layer)
+                layerRepository.update(layer, 'placements')
                 Events.emit('placement-removed', placementUuid)
                 break
             }
@@ -334,46 +327,37 @@ export class WorldEditor extends Component {
     }
 
     private async handleLayerOrderUp(layerUuid: string): Promise<void> {
-        const layer = await layerRepository.getByUuid(layerUuid)
         const layers: Layer[] = await layerRepository.getAll()
 
         layers.sort((a, b) => a.order - b.order)
 
-        const index = layers.findIndex(l => l.uuid === layer.uuid)
+        const index = layers.findIndex(l => l.uuid === layerUuid)
 
         if (index <= 0) return
 
-        const above = layers[index - 1]
-
-        const tempOrder = layer.order
-        layer.order = above.order
-        above.order = tempOrder
-
-        await Promise.all([
-            layerRepository.update(layer),
-            layerRepository.update(above),
-        ])
+        await this.swapOrder(layers[index], layers[index - 1])
     }
 
     private async handleLayerOrderDown(layerUuid: string): Promise<void> {
-        const layer = await layerRepository.getByUuid(layerUuid)
         const layers: Layer[] = await layerRepository.getAll()
 
         layers.sort((a, b) => a.order - b.order)
 
-        const index = layers.findIndex(l => l.uuid === layer.uuid)
+        const index = layers.findIndex(l => l.uuid === layerUuid)
 
-        if (index === -1 || index >= layers.length - 1) return // Already at the bottom or not found
+        if (index === -1 || index >= layers.length - 1) return
 
-        const below = layers[index + 1]
+        await this.swapOrder(layers[index], layers[index + 1])
+    }
 
-        const tempOrder = layer.order
-        layer.order = below.order
-        below.order = tempOrder
+    private async swapOrder(a: Layer, b: Layer): Promise<void> {
+        const tempOrder = a.order
+        a.order = b.order
+        b.order = tempOrder
 
         await Promise.all([
-            layerRepository.update(layer),
-            layerRepository.update(below),
+            layerRepository.update(a, 'order'),
+            layerRepository.update(b, 'order'),
         ])
     }
 

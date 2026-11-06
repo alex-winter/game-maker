@@ -1,7 +1,7 @@
 ---
 id: T-007
 title: Make sprite sheet import open the file that was uploaded
-status: backlog
+status: done
 priority: P0
 phase: 0
 type: bug
@@ -15,6 +15,8 @@ blocks: [T-019]
 ## Outcome
 
 Dropping a PNG into the importer uploads it, lists it, and Open shows that image. A second open uses the server copy. JPEG opens as `image/jpeg`.
+
+Done in commit `fix(editor): open the sheet that was uploaded (T-007)`. `FileListing` owns the upload gesture: it awaits `FileUpload.uploadMultiple` (which rejects on a non-ok response), calls `sheetRepository.refresh()`, and re-renders from the server list; a failed upload shows the server's message in the list. `open-sheet` carries the sheet id and `WorldEditor` uses `getById`, which returns `undefined` and opens nothing. `GET /sheets` reads files asynchronously and takes the MIME type from `imageMimeType` (`src/Server/services/image-mime.ts`, with a node test). Uploads with a disallowed extension are refused by a multer `fileFilter` and answered 400; a zero-byte file discards the batch with a 400. `.gif` joined the allow list.
 
 ## Why
 
@@ -51,10 +53,10 @@ Out:
 
 ## Acceptance
 
-- [ ] Upload a PNG, click Open, the sheet window shows that picture.
-- [ ] Reload the editor, Open still shows it.
-- [ ] A `.jpg` response uses `image/jpeg`.
-- [ ] Uploading a `.txt` is rejected and does not appear in the list.
+- [x] Upload a PNG, click Open, the sheet window shows that picture.
+- [x] Reload the editor, Open still shows it.
+- [x] A `.jpg` response uses `image/jpeg`.
+- [x] Uploading a `.txt` is rejected and does not appear in the list.
 
 ## Test plan
 

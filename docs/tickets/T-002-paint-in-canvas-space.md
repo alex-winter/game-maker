@@ -1,7 +1,7 @@
 ---
 id: T-002
 title: Paint and preview in canvas space
-status: ready
+status: done
 priority: P0
 phase: 0
 type: bug
@@ -15,6 +15,8 @@ blocks: [T-008]
 ## Outcome
 
 A stamped tile lands on the cell under the cursor, including when the side menu takes space on the left and when the page is scrolled.
+
+Done in commit `fix(editor): paint and preview in canvas space (T-002)`. `pointerToWorld` lives in `src/Client/Service/pointer-to-world.ts` with a node test. `CanvasLayer.snappedWorldPointAt(event)` is the one place that turns a mouse event into a cell; mousedown and mousemove both go through it.
 
 ## Why
 
@@ -43,12 +45,13 @@ Out:
 - World x = camera.x + (clientX - rect.left). Same for y. Snap that world point.
 - Draw the ghost at (snappedWorld - camera) relative to the canvas, not relative to the viewport. An element inside the layer with `position: absolute` does this. The layer already fills the canvas area.
 - Use the same helper on mousedown, mousemove, and the fill start so T-008 can call it.
+- Found while implementing: the layers were not actually stacked. `canvas-layer` hosts were static blocks of 100% height, so the second layer rendered below the viewport and `z-index` had no effect. The host is now `position: absolute` inside a `position: relative` `.canvas-container`, which is what the ghost positioning and the z-index rule already assumed.
 
 ## Acceptance
 
-- [ ] With the side menu open, a pencil click leaves a tile whose drawn top-left is the snapped cell under the cursor.
-- [ ] Panning and then painting still hits the cell under the cursor.
-- [ ] The ghost's top-left matches the next stamp.
+- [x] With the side menu open, a pencil click leaves a tile whose drawn top-left is the snapped cell under the cursor.
+- [x] Panning and then painting still hits the cell under the cursor.
+- [x] The ghost's top-left matches the next stamp.
 
 ## Test plan
 

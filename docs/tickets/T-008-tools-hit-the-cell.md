@@ -1,7 +1,7 @@
 ---
 id: T-008
 title: Make pencil, fill, and eraser hit the cell under the cursor
-status: backlog
+status: done
 priority: P0
 phase: 0
 type: bug
@@ -15,6 +15,8 @@ blocks: [T-020]
 ## Outcome
 
 The first click of a stroke stamps the cell under the pointer. Fill replaces every matching cell in the visible map with the current image, one placement per cell. Eraser removes the placement covering the cell under the pointer, including a cell that was filled.
+
+Done in commit `fix(editor): make pencil, fill, and eraser hit the cell under the cursor (T-008)`. `CanvasLayer.runStroke` turns each mouse event into a cell through `snappedWorldPointAt` and awaits every pending stamp before it emits `layer-placement-made`, so the first stamp of a new image is persisted with its stroke. `stamp(cell, imageUuid)` is the one writer for pencil and fill. The flood region is the pure `floodFillCells` in `src/Client/Service/flood-fill-cells.ts`; cover tests are `rectContainsPoint` in `src/Model/rect-contains.ts`; `GRID_SIZE` lives in `src/Model/grid-size.ts`. `SheetViewer` selects the cells that contain both drag corners using the same `snap` (floor).
 
 ## Why
 
@@ -49,9 +51,9 @@ Out:
 
 ## Acceptance
 
-- [ ] Clicking without a prior move on that layer stamps the cell under the cursor, not `{0,0}` and not the previous cell.
-- [ ] Fill of an empty 4×4 area creates 16 placements. Erasing one of the middle cells removes one of them and leaves the rest.
-- [ ] A sheet selection edge that sits on a half-tile snaps to the same coordinate the map would.
+- [x] Clicking without a prior move on that layer stamps the cell under the cursor, not `{0,0}` and not the previous cell.
+- [x] Fill of an empty 4×4 area creates 16 placements. Erasing one of the middle cells removes one of them and leaves the rest.
+- [x] A sheet selection edge that sits on a half-tile snaps to the same coordinate the map would.
 
 ## Test plan
 

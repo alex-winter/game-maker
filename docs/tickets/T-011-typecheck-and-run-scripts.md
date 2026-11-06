@@ -1,7 +1,7 @@
 ---
 id: T-011
 title: Add typecheck and a documented way to run
-status: ready
+status: done
 priority: P1
 phase: 0
 type: chore
@@ -15,6 +15,8 @@ blocks: [T-012, T-016]
 ## Outcome
 
 `npm run typecheck` runs `tsc --noEmit` and passes. `npm start` serves the editor. The root README says the two commands and points at `docs/README.md`.
+
+Done in commit `chore(repo): add typecheck, build, start, and test scripts (T-011)`. Scripts: `typecheck` (`tsc --noEmit --pretty false`), `build` (`build:client` + `build:server`, both webpack configs once), `start` (`node dist/server.js`), `test` (`tsc -p tsconfig.test.json` into `dist/test`, then `node --test "dist/test/**/*.test.js"`), and `watch:client` / `watch:server` (the old `start:*` watchers). `tsconfig.test.json` includes only `src/**/*.test.ts`; tested modules import their subject relatively and stay free of `baseUrl` imports at runtime. `tslint` is removed; nothing referenced it.
 
 ## Why
 
@@ -49,9 +51,9 @@ Out:
 
 ## Acceptance
 
-- [ ] `npm run typecheck` exits 0 on the commit that adds it.
-- [ ] `npm run build && npm start` serves `/` and `/play`.
-- [ ] The root README states those commands in order.
+- [x] `npm run typecheck` exits 0 on the commit that adds it.
+- [x] `npm run build && npm start` serves `/` and `/play`.
+- [x] The root README states those commands in order.
 
 ## Test plan
 

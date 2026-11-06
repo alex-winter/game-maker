@@ -12,6 +12,7 @@ export const requestHandlerDeleteLayers: RequestHandler = (request: Request, res
 
     if (index === -1) {
         response.status(404).json({ error: 'Layer not found' })
+        return
     }
 
     layers.splice(index, 1)

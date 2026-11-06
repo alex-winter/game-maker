@@ -1,7 +1,7 @@
 ---
 id: T-003
 title: Load each placement once
-status: ready
+status: done
 priority: P0
 phase: 0
 type: bug
@@ -15,6 +15,8 @@ blocks: [T-008]
 ## Outcome
 
 Each placement uuid appears once in the loaded-placement list, once in history, and once on the canvas.
+
+Done in commit `fix(editor): load each placement once (T-003)`. `WorldEditor.setup` is the only loader at boot and calls `loadPlacement`, which now returns a promise. `CanvasLayer.setup` no longer loads. `LoadedPlacementRepository.add` ignores a uuid it already holds.
 
 ## Why
 
@@ -46,9 +48,9 @@ Out:
 
 ## Acceptance
 
-- [ ] After reload, history row count equals the number of placements across layers.
-- [ ] Painting a new tile increases that count by one.
-- [ ] The canvas does not draw the same image twice on top of itself (check by erasing: one rubber click removes the visible tile).
+- [x] After reload, history row count equals the number of placements across layers.
+- [x] Painting a new tile increases that count by one.
+- [x] The canvas does not draw the same image twice on top of itself (check by erasing: one rubber click removes the visible tile).
 
 ## Test plan
 

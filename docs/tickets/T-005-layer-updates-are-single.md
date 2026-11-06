@@ -1,7 +1,7 @@
 ---
 id: T-005
 title: Update only the layer that changed
-status: ready
+status: done
 priority: P0
 phase: 0
 type: bug
@@ -15,6 +15,8 @@ blocks: [T-013]
 ## Outcome
 
 Activating a layer, toggling visibility, or reordering writes the layers that actually changed. The editor does not rebuild every canvas to do it. Draw order stays 'smaller order is in front', matching the z-index already in `CanvasLayer`.
+
+Done in commit `fix(editor): update only the layer that changed (T-005)`. `LayerRepository.update(layer, changed)` and the private `persist` emit `layer-changed` `{ uuid, changed }`; `layers-update` is gone. `setActive` persists only the layers whose flag flipped, `toggleVisible` persists one. `CanvasLayer.applyLayerState` sets visibility, z-index, and the active class in place; the canvas is never rebuilt and `afterPatch` is removed. The rule is `drawOrder` in `src/Model/draw-order.ts` (z-index is `500 + drawOrder(layer)`). New layers are now created before `new-layer-mapped` fires so their z-index reflects the assigned order.
 
 ## Why
 
@@ -49,10 +51,10 @@ Out:
 
 ## Acceptance
 
-- [ ] Clicking a layer in the list sends a PATCH only for layers whose `is_active` flipped.
-- [ ] The eye button sends one PATCH.
-- [ ] After either action the canvases are still the same elements (no flicker from a full rebuild) and the active layer receives the pencil.
-- [ ] Moving a layer up paints it in front of the layer that was previously above it, without a reload.
+- [x] Clicking a layer in the list sends a PATCH only for layers whose `is_active` flipped.
+- [x] The eye button sends one PATCH.
+- [x] After either action the canvases are still the same elements (no flicker from a full rebuild) and the active layer receives the pencil.
+- [x] Moving a layer up paints it in front of the layer that was previously above it, without a reload.
 
 ## Test plan
 

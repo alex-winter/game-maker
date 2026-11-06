@@ -22,17 +22,17 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 | Id | Phase | Priority | Status | Area | Title |
 | --- | --- | --- | --- | --- | --- |
-| [T-001](T-001-stop-handlers-after-errors.md) | 0 | P0 | ready | server | Stop request handlers after an error response |
-| [T-002](T-002-paint-in-canvas-space.md) | 0 | P0 | ready | editor | Paint and preview in canvas space |
-| [T-003](T-003-load-placements-once.md) | 0 | P0 | ready | editor | Load each placement once |
-| [T-004](T-004-one-camera.md) | 0 | P0 | ready | editor | Share one camera across layers |
-| [T-005](T-005-layer-updates-are-single.md) | 0 | P0 | ready | editor | Update only the layer that changed |
-| [T-006](T-006-play-mode-camera-loop.md) | 0 | P0 | ready | play | Make play mode a frame loop with the editor's draw order |
-| [T-007](T-007-sheet-import-round-trip.md) | 0 | P0 | backlog | editor | Make sprite sheet import open the file that was uploaded |
-| [T-008](T-008-tools-hit-the-cell.md) | 0 | P0 | backlog | editor | Make pencil, fill, and eraser hit the cell under the cursor |
-| [T-009](T-009-safe-upload-names.md) | 0 | P0 | ready | server | Store uploads under a generated name |
-| [T-010](T-010-fix-frame-delay.md) | 0 | P1 | ready | editor | Fix the canvas frame delay |
-| [T-011](T-011-typecheck-and-run-scripts.md) | 0 | P1 | ready | repo | Add typecheck and a documented way to run |
+| [T-001](T-001-stop-handlers-after-errors.md) | 0 | P0 | done | server | Stop request handlers after an error response |
+| [T-002](T-002-paint-in-canvas-space.md) | 0 | P0 | done | editor | Paint and preview in canvas space |
+| [T-003](T-003-load-placements-once.md) | 0 | P0 | done | editor | Load each placement once |
+| [T-004](T-004-one-camera.md) | 0 | P0 | done | editor | Share one camera across layers |
+| [T-005](T-005-layer-updates-are-single.md) | 0 | P0 | done | editor | Update only the layer that changed |
+| [T-006](T-006-play-mode-camera-loop.md) | 0 | P0 | done | play | Make play mode a frame loop with the editor's draw order |
+| [T-007](T-007-sheet-import-round-trip.md) | 0 | P0 | done | editor | Make sprite sheet import open the file that was uploaded |
+| [T-008](T-008-tools-hit-the-cell.md) | 0 | P0 | done | editor | Make pencil, fill, and eraser hit the cell under the cursor |
+| [T-009](T-009-safe-upload-names.md) | 0 | P0 | done | server | Store uploads under a generated name |
+| [T-010](T-010-fix-frame-delay.md) | 0 | P1 | done | editor | Fix the canvas frame delay |
+| [T-011](T-011-typecheck-and-run-scripts.md) | 0 | P1 | done | repo | Add typecheck and a documented way to run |
 | [T-012](T-012-domain-boundary.md) | 1 | P1 | backlog | domain | Cut a pure domain layer out of the UI |
 | [T-013](T-013-project-of-maps.md) | 1 | P1 | backlog | server | Store a project that contains many maps |
 | [T-014](T-014-metatile-model.md) | 1 | P1 | backlog | domain | Add a metatile map and tileset model |
@@ -82,8 +82,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 ## Counts
 
-- ready: 9
+- ready: 0
 - in_progress: 0
-- backlog: 48
-- done: 0
+- backlog: 46
+- done: 11
 - total: 57

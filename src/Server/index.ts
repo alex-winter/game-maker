@@ -1,6 +1,8 @@
+import crypto from 'crypto'
 import express from 'express'
 import multer from 'multer'
 import { config } from 'Server/config'
+import { allowedExtension } from 'Server/services/allowed-extension'
 import { UserDataFactory } from 'Model/Factory/UserDataFactory'
 import { requestHandlerPlay } from 'Server/RequestHandlers/play'
 import { requestHandlerIndex } from 'Server/RequestHandlers'
@@ -16,6 +18,7 @@ import { requestHandlerDeleteLayers } from 'Server/RequestHandlers/delete-layers
 import { createDataFile } from 'Server/services/create-data-file'
 import { requestHandlerPostFiles } from 'Server/RequestHandlers/post-files'
 import { requestHandlerPostSpriteModel } from 'Server/RequestHandlers/post-sprite-model'
+import { RequestHandler } from 'Server/types'
 
 const app = express()
 const port = config.port
@@ -24,12 +27,43 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, config.uploadsDir)
   },
+  // The original name is display-only. The path is an id plus an allow-listed extension.
   filename: (req, file, cb) => {
-    cb(null, file.originalname)
+    const extension = allowedExtension(file.originalname, config.allowedExtensions)
+
+    if (extension === undefined) {
+      cb(new Error(`Unsupported file type: ${file.originalname}`), '')
+      return
+    }
+
+    cb(null, crypto.randomUUID() + extension)
   }
 })
-const upload = multer({ storage })
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    if (allowedExtension(file.originalname, config.allowedExtensions) === undefined) {
+      cb(new Error(`Unsupported file type: ${file.originalname}`))
+      return
+    }
 
+    cb(null, true)
+  },
+})
+
+/** multer reports a rejected file as an error; answer it with a 400 instead of the default 500. */
+const uploadSheets: RequestHandler = (request, response, next) => {
+  upload.array('files[]')(request, response, (error: unknown) => {
+    if (error instanceof Error) {
+      response.status(400).json({ error: error.message })
+      return
+    }
+
+    next()
+  })
+}
+
+createDataFile(config.uploadsIndexFileDir)
 createDataFile(config.layersJsonFileDir)
 createDataFile(config.placementImagesJsonFileDir)
 createDataFile(config.spriteModelsJsonFileDir)
@@ -49,7 +83,7 @@ app.post('/layers', requestHandlerPostLayers)
 app.patch('/layers', requestHandlerPatchLayers)
 app.delete('/layers/:uuid', requestHandlerDeleteLayers)
 
-app.post('/upload-files', upload.array('files[]'), requestHandlerPostFiles)
+app.post('/upload-files', uploadSheets, requestHandlerPostFiles)
 
 app.get('/user-data', requestHandlerGetUserData)
 app.patch('/user-data', requestHandlerPatchUserData)

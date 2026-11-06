@@ -1,7 +1,7 @@
 ---
 id: T-001
 title: Stop request handlers after an error response
-status: ready
+status: done
 priority: P0
 phase: 0
 type: bug
@@ -15,6 +15,8 @@ blocks: [T-013]
 ## Outcome
 
 A missing layer delete returns 404 and leaves every layer in place. A non-array layer POST returns 400 and leaves the file unchanged.
+
+Done in commit `fix(server): stop request handlers after an error response (T-001)`. The body check is `isLayerList` in `src/Server/services/is-layer-list.ts`, with a `node:test` file beside it that `npm test` runs once T-011 lands.
 
 ## Why
 
@@ -46,10 +48,10 @@ Out:
 
 ## Acceptance
 
-- [ ] DELETE `/layers/<unknown>` responds 404 and `layers.json` is byte-for-byte unchanged.
-- [ ] POST `/layers` with `{}` responds 400 and the file is unchanged.
-- [ ] POST of a valid one-element array still appends that layer.
-- [ ] DELETE of a real uuid still removes only that layer.
+- [x] DELETE `/layers/<unknown>` responds 404 and `layers.json` is byte-for-byte unchanged.
+- [x] POST `/layers` with `{}` responds 400 and the file is unchanged.
+- [x] POST of a valid one-element array still appends that layer.
+- [x] DELETE of a real uuid still removes only that layer.
 
 ## Test plan
 

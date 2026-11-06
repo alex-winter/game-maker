@@ -2,6 +2,7 @@ import { Sheet } from 'Client/Model/Sheet'
 import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
+import { FileUpload } from 'Client/Service/FileUpload'
 import { sheetRepository } from 'Client/Service/Repository/SheetRepository'
 
 export class FileListing extends Component {
@@ -13,7 +14,8 @@ export class FileListing extends Component {
         '.open-sheet-button:click': this.handleOpenSheetButtonClick
     }
 
-    private sheets!: Sheet[]
+    private sheets: Sheet[] = []
+    private uploadError: string | undefined
 
     protected css(): string {
         return /*css*/`
@@ -30,6 +32,10 @@ export class FileListing extends Component {
             .file div {
                 flex: 1;
             }
+            .upload-error {
+                padding: 10px;
+                color: #b00020;
+            }
         `
     }
 
@@ -40,6 +46,12 @@ export class FileListing extends Component {
     protected build(): HTMLElement {
         const container = Dom.div('container')
 
+        if (this.uploadError !== undefined) {
+            const error = Dom.div('upload-error')
+            error.innerText = this.uploadError
+            container.append(error)
+        }
+
         container.append(
             ...this.sheets.map(this.buildSheet.bind(this))
         )
@@ -47,38 +59,17 @@ export class FileListing extends Component {
         return container
     }
 
-    private getContainer(): HTMLDivElement {
-        return this.findOne('.container')!
-    }
+    /** Uploads, then lists what the server has, so Open always finds a server copy. */
+    private async handleFilesUploadSubmitted(files: File[]): Promise<void> {
+        try {
+            await FileUpload.uploadMultiple(files)
+            this.uploadError = undefined
+        } catch (error) {
+            this.uploadError = error instanceof Error ? error.message : 'Upload failed'
+        }
 
-    private handleFilesUploadSubmitted(files: File[]): void {
-        Promise.all(
-            files.map(this.mapToSheet.bind(this))
-        ).then(sheets => {
-            this.getContainer().append(
-                ...sheets.map(this.buildSheet.bind(this))
-            )
-        })
-    }
-
-    private mapToSheet(file: File): Promise<Sheet> {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader()
-
-            reader.onload = () => {
-                const base64 = reader.result as string
-                resolve({
-                    name: file.name,
-                    imageSrc: base64,
-                })
-            }
-
-            reader.onerror = () => {
-                reject(new Error('Failed to read file'))
-            }
-
-            reader.readAsDataURL(file)
-        })
+        this.sheets = await sheetRepository.refresh()
+        this.patch()
     }
 
     private buildSheet(sheet: Sheet): HTMLElement {
@@ -89,7 +80,7 @@ export class FileListing extends Component {
 
         name.innerText = sheet.name
 
-        openButton.dataset.sheetName = sheet.name
+        openButton.dataset.sheetId = sheet.id
 
         options.append(openButton)
 
@@ -100,6 +91,10 @@ export class FileListing extends Component {
 
     private handleOpenSheetButtonClick(event: Event): void {
         const button = event.target as HTMLButtonElement
-        Events.emit('open-sheet', button.dataset.sheetName as string)
+        const sheetId = button.dataset.sheetId
+
+        if (sheetId !== undefined) {
+            Events.emit('open-sheet', sheetId)
+        }
     }
 }
