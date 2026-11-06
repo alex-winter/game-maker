@@ -1,7 +1,7 @@
 ---
 id: T-049
 title: Let a trainer notice the player
-status: backlog
+status: ready
 priority: P2
 phase: 8
 type: feat

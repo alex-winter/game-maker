@@ -33,6 +33,9 @@ export type AttributeLayer = {
 
     /** A one-way edge, or null. Stored since T-022; movement enforces it in T-028. */
     ledge: (LedgeDirection | null)[]
+
+    /** 1 marks tall grass (T-048): a step onto it may start an encounter from the map's table. */
+    grass: number[]
 }
 
 /** One cell's attributes as the editor shows and paints them. */
@@ -42,6 +45,8 @@ export type CellAttributes = {
     readonly elevation: number
 
     readonly ledge: LedgeDirection | null
+
+    readonly grass: boolean
 }
 
 /** The largest elevation the editor offers. Gen 3 maps use a handful of levels. */
@@ -72,19 +77,22 @@ export function emptyAttributeLayer(size: GridSize): AttributeLayer {
         collision: new Array<number>(cells).fill(0),
         elevation: new Array<number>(cells).fill(0),
         ledge: new Array<LedgeDirection | null>(cells).fill(null),
+        grass: new Array<number>(cells).fill(0),
     }
 }
 
 /** Fills attribute arrays an older file lacks; the grid itself is untouched. */
 export function withTileMapDefaults(map: TileMap): TileMap {
     const cells = map.width * map.height
-    const ledge = map.attributes.ledge
+    const stored: Partial<AttributeLayer> = map.attributes
+    const ledge = Array.isArray(stored.ledge) && stored.ledge.length === cells ? stored.ledge : new Array<LedgeDirection | null>(cells).fill(null)
+    const grass = Array.isArray(stored.grass) && stored.grass.length === cells ? stored.grass : new Array<number>(cells).fill(0)
 
-    if (Array.isArray(ledge) && ledge.length === cells) {
+    if (ledge === stored.ledge && grass === stored.grass) {
         return map
     }
 
-    return { ...map, attributes: { ...map.attributes, ledge: new Array<LedgeDirection | null>(cells).fill(null) } }
+    return { ...map, attributes: { ...map.attributes, ledge, grass } }
 }
 
 /** A map with one ground layer and one overhead layer, nothing painted. */
@@ -279,6 +287,7 @@ export function resizeTileMap(map: TileMap, to: GridSize): TileMap {
             collision: resizeGrid(map, map.attributes.collision, to, 0),
             elevation: resizeGrid(map, map.attributes.elevation, to, 0),
             ledge: resizeGrid<LedgeDirection | null>(map, map.attributes.ledge, to, null),
+            grass: resizeGrid(map, map.attributes.grass, to, 0),
         },
     }
 }
@@ -304,14 +313,20 @@ export function attributesAt(map: TileMap, cell: Cell): CellAttributes {
     const index = cellIndex(map, cell)
 
     if (index === undefined) {
-        return { solid: false, elevation: 0, ledge: null }
+        return { solid: false, elevation: 0, ledge: null, grass: false }
     }
 
     return {
         solid: (map.attributes.collision[index] ?? 0) !== 0,
         elevation: map.attributes.elevation[index] ?? 0,
         ledge: map.attributes.ledge[index] ?? null,
+        grass: (map.attributes.grass[index] ?? 0) !== 0,
     }
+}
+
+/** Whether a step onto `cell` lands in tall grass. */
+export function isGrassAt(map: TileMap, cell: Cell): boolean {
+    return attributesAt(map, cell).grass
 }
 
 /** A new map with the painted collision replaced. The picture layers are untouched. */
@@ -325,6 +340,10 @@ export function withElevation(map: TileMap, elevation: number[]): TileMap {
 
 export function withLedge(map: TileMap, ledge: (LedgeDirection | null)[]): TileMap {
     return { ...map, attributes: { ...map.attributes, ledge } }
+}
+
+export function withGrass(map: TileMap, grass: number[]): TileMap {
+    return { ...map, attributes: { ...map.attributes, grass } }
 }
 
 export function findTileLayer(map: TileMap, layerId: Id): TileLayer | undefined {
@@ -427,6 +446,9 @@ export function isTileMap(value: unknown): value is TileMap {
         && Array.isArray(attributes.ledge)
         && attributes.ledge.length === cells
         && attributes.ledge.every(isLedgeValue)
+        && Array.isArray(attributes.grass)
+        && attributes.grass.length === cells
+        && attributes.grass.every(isNonNegativeInteger)
 }
 
 /** Every metatile stacked at `cell`, back to front, skipping empty cells. */

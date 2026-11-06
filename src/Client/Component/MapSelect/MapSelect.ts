@@ -2,6 +2,8 @@ import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 import { ConfirmDialog } from 'Client/Component/MapSelect/ConfirmDialog'
 import { MapSizeForm } from 'Client/Component/MapSelect/MapSizeForm'
 import { MapConnectionsForm } from 'Client/Component/MapSelect/MapConnectionsForm'
+import { EncounterForm, ENCOUNTERS_SUBMIT } from 'Client/Component/MapSelect/EncounterForm'
+import { EncounterTable } from 'domain/encounter'
 import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { urlForMap } from 'Client/Service/active-map'
@@ -31,12 +33,14 @@ export class MapSelect extends Component<{ activeMapId: Id | null }> {
         '.delete-map:click': this.handleDeleteMap,
         '.start-map:click': this.handleStartMap,
         '.connect-map:click': this.handleConnectMap,
+        '.encounters-map:click': this.handleEncountersMap,
     }
 
     protected externalListeners: ExternalListeners = {
         'confirmed': this.handleConfirmed,
         'map-size-submit': this.handleSizeSubmit,
         'map-connections-submit': this.handleConnectionsSubmit,
+        [ENCOUNTERS_SUBMIT]: this.handleEncountersSubmit,
     }
 
     protected css(): string {
@@ -149,6 +153,7 @@ export class MapSelect extends Component<{ activeMapId: Id | null }> {
             const rename = Dom.button('', 'rename-map')
             const resize = Dom.button('', 'resize-map')
             const connect = Dom.button('', 'connect-map')
+            const encounters = Dom.button('', 'encounters-map')
             const remove = Dom.button('', 'delete-map')
             const isStart = active.id === this.startMapId
             const connected = Object.keys(active.connections).length
@@ -169,7 +174,9 @@ export class MapSelect extends Component<{ activeMapId: Id | null }> {
             rename.append(Dom.i('fa-solid', 'fa-pen'))
             resize.append(Dom.i('fa-solid', 'fa-up-right-and-down-left-from-center'))
             remove.append(Dom.i('fa-solid', 'fa-trash'))
-            actions.append(start, rename, resize, connect, remove)
+            encounters.title = active.encounters.entries.length === 0 ? 'Tall grass encounters (nothing lives here yet)' : `${active.encounters.entries.length} species in the tall grass`
+            encounters.append(Dom.i('fa-solid', 'fa-seedling'))
+            actions.append(start, rename, resize, connect, encounters, remove)
 
             bottom.append(
                 Dom.span(`${active.tileMap.width} × ${active.tileMap.height} cells`, 'details'),
@@ -260,6 +267,32 @@ export class MapSelect extends Component<{ activeMapId: Id | null }> {
             connections: active.connections,
             maps: this.maps.filter(map => map.id !== active.id).map(map => ({ id: map.id, name: map.name })),
         }))
+    }
+
+    private handleEncountersMap(): void {
+        const active = this.activeMap()
+        const project = projectRepository.cachedProject
+
+        if (active === undefined || project === undefined) {
+            return
+        }
+
+        this.openModal(Dom.makeComponent(EncounterForm, {
+            encounters: active.encounters,
+            species: project.species.map(species => ({ id: species.id, name: species.name })),
+        }))
+    }
+
+    private async handleEncountersSubmit(encounters: EncounterTable): Promise<void> {
+        const active = this.activeMap()
+
+        if (active === undefined) {
+            return
+        }
+
+        await projectRepository.saveEncounters(active.id, encounters)
+        active.encounters = encounters
+        this.patch()
     }
 
     private async handleConnectionsSubmit(connections: Connections): Promise<void> {

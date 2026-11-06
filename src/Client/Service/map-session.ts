@@ -14,10 +14,11 @@ export type PaintTarget =
     | { readonly kind: 'layer'; readonly layerId: Id }
     | { readonly kind: 'collision' }
     | { readonly kind: 'elevation' }
+    | { readonly kind: 'grass' }
     | { readonly kind: 'events' }
 
 /** The keys `isHidden`/`toggleHidden` accept: a tile layer id, an attribute overlay, or the events overlay. */
-export type OverlayKey = Id | 'collision' | 'elevation' | 'events'
+export type OverlayKey = Id | 'collision' | 'elevation' | 'grass' | 'events'
 
 /**
  * The map the editor has open, plus the editor-only state around it: what
@@ -46,6 +47,7 @@ class MapSession {
         // Attribute overlays start hidden; picking one as the target shows it. Events stay visible: a warp is part of the map's meaning.
         this.hidden.add('collision')
         this.hidden.add('elevation')
+        this.hidden.add('grass')
 
         Events.emit(MAP_SESSION_CHANGED, undefined)
     }

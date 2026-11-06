@@ -30,7 +30,7 @@ import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { Cell, Coordinates } from 'domain/coordinates'
 import { GRID_SIZE, pixelToCell } from 'domain/grid'
 import { Id } from 'domain/id'
-import { floodFill, floodFillCells, TileLayer, TileMap, withCell, withCellsRect, withCollision, withElevation, withRect, withTile, withTileLayer } from 'domain/map'
+import { TileLayer, TileMap, floodFill, floodFillCells, withCell, withCellsRect, withCollision, withElevation, withGrass, withRect, withTile, withTileLayer } from 'domain/map'
 import { GameMap } from 'domain/project'
 import { EMPTY_METATILE_ID, metatileById, MetatileId } from 'domain/tileset'
 import { DrawPort } from 'engine/draw-port'
@@ -346,6 +346,7 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         drawAttributes(ctx, view, tileMap, projectRepository.cachedTileset(tileMap.tilesetId), {
             collision: !mapSession.isHidden('collision'),
             elevation: !mapSession.isHidden('elevation'),
+            grass: !mapSession.isHidden('grass'),
         })
 
         if (!mapSession.isHidden('events')) {
@@ -443,6 +444,16 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
                 one: (m, cell) => withCollision(m, withCell(m, m.attributes.collision, cell, value)),
                 rect: (m, a, b) => withCollision(m, withCellsRect(m, m.attributes.collision, a, b, value)),
                 fill: (m, start) => withCollision(m, floodFillCells(m, m.attributes.collision, start, value, 0)),
+            }
+        }
+
+        if (target.kind === 'grass') {
+            const value = tool === 'rubber' ? 0 : 1
+
+            return {
+                one: (m, cell) => withGrass(m, withCell(m, m.attributes.grass, cell, value)),
+                rect: (m, a, b) => withGrass(m, withCellsRect(m, m.attributes.grass, a, b, value)),
+                fill: (m, start) => withGrass(m, floodFillCells(m, m.attributes.grass, start, value, 0)),
             }
         }
 

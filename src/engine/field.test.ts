@@ -8,7 +8,7 @@ import { newItemEvent, newNpcEvent, newSign, newWarp } from '../domain/warp'
 import { bagCount } from '../domain/item'
 import { hasFlag } from '../domain/flags'
 import { FADE_MS, fadeOpacity } from './fade'
-import { advanceField, afterSave, FieldInput, FieldState, FieldWorld, isTransitioning, liveEvents, newField, npcMover, restoreField, snapshotField } from './field'
+import { advanceField, afterBattle, afterSave, FieldInput, FieldState, FieldWorld, isTransitioning, liveEvents, newField, npcMover, restoreField, snapshotField } from './field'
 
 const town = { width: 10, height: 10 }
 const house = { width: 6, height: 6 }
@@ -26,6 +26,9 @@ const world: FieldWorld = {
         : undefined),
     itemOf: id => (id === 'potion' ? { name: 'Potion', description: 'Heals 20 HP.' } : undefined),
     random: () => 0,
+    isGrassAt: () => false,
+    encountersOf: () => undefined,
+    speciesName: id => (id === 'sprout' ? 'Sprout' : undefined),
 }
 
 const right = { direction: 'right' as const, running: false, interact: false, menu: false }
@@ -478,4 +481,38 @@ test('a new game carries the starter at the authored level with full HP, and a s
     assert.equal(state.party[0].level, 5)
     assert.equal(state.party[0].hp, maxHpAt(sprout, 5))
     assert.deepEqual(restoreField(snapshotField(state)).party, party)
+})
+
+test('a step that finishes in tall grass rolls on the map\'s table and hands the host a battle request; the player stops there', () => {
+    const sprout = newSpecies('sprout', 'Sprout')
+    const party = starterParty({ speciesId: 'sprout', level: 5 }, [sprout])
+    const table = { rate: 100, entries: [{ speciesId: 'sprout', minLevel: 3, maxLevel: 3, weight: 1 }] }
+    const wild: FieldWorld = { ...world, isGrassAt: (_map, cell) => cell.x === 6 && cell.y === 5, encountersOf: () => table, random: () => 0 }
+    let state = newField('town', { x: 5, y: 5 }, 'right', undefined, undefined, party)
+
+    for (let t = 0; t < WALK_MS_PER_CELL + 16; t += 16) {
+        state = advanceField(state, right, 16, wild)
+    }
+
+    assert.deepEqual(state.battle, { party, speciesId: 'sprout', level: 3 })
+    assert.deepEqual(state.player, { cell: { x: 6, y: 5 }, facing: 'right', step: null }, 'stopped in the grass though the key is held')
+
+    const result = afterBattle(state, { outcome: 'won', party }, 'Sprout')
+
+    assert.equal(result.battle, undefined)
+    assert.equal(result.message?.pages[0]?.text, 'A wild SPROUT appeared!')
+    assert.match(result.message?.pages[1]?.text ?? '', /You won/)
+    assert.equal(result.memory.variables['battles-won'], 1)
+    assert.deepEqual(result.party, party)
+
+    // Walking on from plain ground rolls nothing, and a quiet table rolls nothing in the grass either.
+    const quiet: FieldWorld = { ...wild, encountersOf: () => ({ rate: 0, entries: table.entries }) }
+    let calm = newField('town', { x: 5, y: 5 }, 'right', undefined, undefined, party)
+
+    for (let t = 0; t < WALK_MS_PER_CELL * 3; t += 16) {
+        calm = advanceField(calm, right, 16, quiet)
+        assert.equal(calm.battle, undefined)
+    }
+
+    assert.ok(calm.player.cell.x >= 7, 'walked straight through')
 })

@@ -8,9 +8,10 @@ import { faceToward, Interaction, resolveInteraction } from '../domain/interact'
 import { ItemEvent, MapEvent, NpcEvent, npcsOn, stepFinished, warpTaken } from '../domain/warp'
 import { advanceFade, Fade, startFade } from './fade'
 import { DialogPage, newPage } from '../domain/dialog'
-import { Memory, newMemory } from '../domain/flags'
+import { addToVariable, Memory, newMemory } from '../domain/flags'
 import { Bag, isTaken, newBag, pickUp } from '../domain/item'
 import { Party } from '../domain/creature'
+import { BattleRequest, BattleResult, EncounterTable, rollEncounter, wildAppearedText } from '../domain/encounter'
 import { advanceMessage, MessageState, missingDialogPages, moveHighlight, openMessage } from './message'
 import { MenuEntry, MenuState, moveMenu, openMenu, selectedEntry } from './menu'
 import { SavedSession } from '../domain/save'
@@ -65,8 +66,11 @@ export type FieldState = {
     /** Where each person on this map is right now (T-044), seeded from the events the first frame they are seen. */
     readonly people: readonly NpcMotion[]
 
-    /** The creatures the player carries (T-047). Nothing on the field changes it yet. */
+    /** The creatures the player carries (T-047). Battles change it through `afterBattle`. */
     readonly party: Party
+
+    /** A wild encounter the last step started (T-048), for the host to run through its `BattleRunner`. Cleared by `afterBattle`. */
+    readonly battle: BattleRequest | undefined
 }
 
 /** Movement plus whether the interact and menu keys were pressed this frame (edges, not levels). */
@@ -97,12 +101,20 @@ export type FieldWorld = {
     /** The item's name and description, or undefined when the catalog has no such item. */
     itemOf(itemId: Id): { readonly name: string; readonly description: string } | undefined
 
-    /** Numbers in [0, 1) for people who look around or wander. */
+    /** Numbers in [0, 1) for people who look around or wander, and for the grass. */
     random: Random
+
+    /** Whether a cell is tall grass. */
+    isGrassAt(mapId: Id, cell: Cell): boolean
+
+    /** The map's encounter table, or undefined when the map is gone. */
+    encountersOf(mapId: Id): EncounterTable | undefined
+
+    speciesName(speciesId: Id): string | undefined
 }
 
 export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down', memory: Memory = newMemory(), bag: Bag = newBag(), party: Party = []): FieldState {
-    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined, bagScreen: null, talkingTo: null, people: [], party }
+    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined, bagScreen: null, talkingTo: null, people: [], party, battle: undefined }
 }
 
 /** What a save keeps of the session (T-041): the standing cell, never a half-finished step. */
@@ -118,6 +130,33 @@ export function restoreField(session: SavedSession): FieldState {
 /** After the host has written the save: the menu closes and the box says so. */
 export function afterSave(state: FieldState): FieldState {
     return { ...state, menu: null, menuChoice: undefined, message: openMessage([newPage('Saved the game.')]) }
+}
+
+/** What the placeholder battle says for each way out. T-056 replaces the placeholder, not this message's place in the flow. */
+export function battleOutcomeText(outcome: BattleResult['outcome']): string {
+    switch (outcome) {
+        case 'won':
+            return 'You won! (The battle scene arrives in phase 9.)'
+        case 'lost':
+            return 'You lost...'
+        case 'fled':
+            return 'With nobody able to fight, you ran away.'
+    }
+}
+
+/**
+ * After the host has run the battle: the request is consumed, the party is
+ * whatever the battle left, a win is counted in memory, and the box tells
+ * the story — who appeared, then how it ended.
+ */
+export function afterBattle(state: FieldState, result: BattleResult, speciesName: string | undefined): FieldState {
+    return {
+        ...state,
+        battle: undefined,
+        party: result.party,
+        memory: result.outcome === 'won' ? addToVariable(state.memory, 'battles-won', 1) : state.memory,
+        message: openMessage([newPage(wildAppearedText(speciesName)), newPage(battleOutcomeText(result.outcome))]),
+    }
 }
 
 /** Where a person is and how they face this frame, for the host to draw: their motion, turned toward the player while they talk. */
@@ -299,7 +338,25 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
         return { ...state, player: { ...player, step: null }, fade: startFade(), pending: transition, interaction: undefined, lastDirection: input.direction, menuChoice: undefined, people: [] }
     }
 
+    const battle = grassRoll(state, player, world)
+
+    if (battle !== undefined) {
+        // Stop where the grass rustled; the host runs the battle before the next frame.
+        return { ...state, player: { ...player, step: null }, battle, interaction: undefined, lastDirection: input.direction, menuChoice: undefined, people }
+    }
+
     return { ...state, player, interaction: undefined, lastDirection: input.direction, menuChoice: undefined, people }
+}
+
+/** A step that just finished in tall grass rolls on the map's table. A step that did not finish, or finished elsewhere, rolls nothing. */
+function grassRoll(before: FieldState, after: Player, world: FieldWorld): BattleRequest | undefined {
+    if (!stepFinished(before.player, after) || !world.isGrassAt(before.mapId, after.cell)) {
+        return undefined
+    }
+
+    const table = world.encountersOf(before.mapId)
+
+    return table === undefined ? undefined : rollEncounter(table, before.party, world.random) ?? undefined
 }
 
 /** One frame of every person's behavior. Nobody steps onto an item, another person's cells, or the player's; the map edge is a wall to them. */

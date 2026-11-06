@@ -1,6 +1,7 @@
 import { isConnections } from 'domain/connection'
 import { isValidGridSize, resizeTileMap } from 'domain/map'
-import { findMap, removeMap, withMapConnections, withMapEvents, withMapTileMap, withStartMap } from 'domain/project'
+import { findMap, findSpecies, removeMap, withMapConnections, withMapEncounters, withMapEvents, withMapTileMap, withStartMap } from 'domain/project'
+import { isEncounterTable } from 'domain/encounter'
 import { isMapEvents } from 'domain/warp'
 import { isInside } from 'domain/map'
 import { readProject, writeProject } from 'Server/services/project-store'
@@ -131,6 +132,37 @@ export const requestHandlerPutMapEvents: RequestHandler = (request: Request, res
     }
 
     const updated = withMapEvents(project, mapId, body)
+
+    writeProject(updated)
+
+    response.json(findMap(updated, mapId))
+}
+
+/** Body: the map's encounter table `{ rate, entries: [{ speciesId, minLevel, maxLevel, weight }] }`. Every species must exist. Answers the map. */
+export const requestHandlerPutMapEncounters: RequestHandler = (request: Request, response: Response): void => {
+    const { mapId } = request.params
+    const body: unknown = request.body
+
+    if (!isEncounterTable(body)) {
+        response.status(400).json({ error: 'An encounter table is { rate 0–100, entries: [{ speciesId, minLevel, maxLevel, weight }] }' })
+        return
+    }
+
+    const project = readProject()
+
+    if (findMap(project, mapId) === undefined) {
+        response.status(404).json({ error: 'Map not found' })
+        return
+    }
+
+    const missing = body.entries.find(entry => findSpecies(project, entry.speciesId) === undefined)
+
+    if (missing !== undefined) {
+        response.status(404).json({ error: 'Species not found: ' + missing.speciesId })
+        return
+    }
+
+    const updated = withMapEncounters(project, mapId, body)
 
     writeProject(updated)
 

@@ -7,17 +7,20 @@ export type AttributeOverlays = {
     readonly collision: boolean
 
     readonly elevation: boolean
+
+    readonly grass: boolean
 }
 
 const PAINTED_SOLID = 'rgba(231, 76, 60, 0.45)'
 const METATILE_SOLID = 'rgba(230, 126, 34, 0.3)'
 const ELEVATION_TINT = 'rgba(52, 152, 219, 0.25)'
 const ELEVATION_TEXT = 'rgba(255, 255, 255, 0.95)'
+const GRASS_TINT = 'rgba(39, 174, 96, 0.4)'
 
 /**
  * Draws the attribute grids over the frame: painted collision in red, cells a
  * solid metatile blocks in orange, and non-zero elevation as a tinted cell
- * with its number. Reads the data only; hiding an overlay changes nothing.
+ * with its number, tall grass in green. Reads the data only; hiding an overlay changes nothing.
  */
 export function drawAttributes(
     ctx: CanvasRenderingContext2D,
@@ -26,7 +29,7 @@ export function drawAttributes(
     tileset: Tileset | undefined,
     overlays: AttributeOverlays,
 ): void {
-    if (!overlays.collision && !overlays.elevation) {
+    if (!overlays.collision && !overlays.elevation && !overlays.grass) {
         return
     }
 
@@ -57,6 +60,11 @@ export function drawAttributes(
                     ctx.fillStyle = METATILE_SOLID
                     ctx.fillRect(screen.x, screen.y, cellSize, cellSize)
                 }
+            }
+
+            if (overlays.grass && attributes.grass) {
+                ctx.fillStyle = GRASS_TINT
+                ctx.fillRect(screen.x, screen.y, cellSize, cellSize)
             }
 
             if (overlays.elevation && attributes.elevation !== 0) {

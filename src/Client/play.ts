@@ -7,8 +7,8 @@ import { MAP_QUERY_PARAM } from 'Client/Service/active-map'
 import { buildScene } from 'Client/Service/build-scene'
 import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
 import { HeldDirections } from 'Client/Service/held-directions'
-import { findDialog, findItem, findMap, findSprite, GameMap, playerSprite, Project, startMap } from 'domain/project'
-import { isSolid } from 'domain/map'
+import { GameMap, Project, findDialog, findItem, findMap, findSpecies, findSprite, playerSprite, startMap } from 'domain/project'
+import { isGrassAt, isSolid } from 'domain/map'
 import { Scene } from 'engine/scene'
 import { DrawPort, PortSize } from 'engine/draw-port'
 import { CanEnter } from 'domain/movement'
@@ -19,7 +19,7 @@ import { Direction, insideMap, Player, playerPixel } from 'domain/movement'
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { cameraFor, GBA_VIEW, integerScale } from 'engine/camera'
 import { fadeOpacity } from 'engine/fade'
-import { advanceField, afterSave, FieldState, FieldWorld, itemsOnMap, newField, npcMover, restoreField, snapshotField } from 'engine/field'
+import { advanceField, afterBattle, afterSave, FieldState, FieldWorld, itemsOnMap, newField, npcMover, restoreField, snapshotField } from 'engine/field'
 import { startLoop } from 'engine/loop'
 import { playerActor } from 'engine/player-actor'
 import { renderFrame } from 'engine/render'
@@ -33,6 +33,7 @@ import { itemActor } from 'engine/item-actor'
 import { npcActor, SpriteLookup } from 'engine/npc-actor'
 import { npcsOn } from 'domain/warp'
 import { starterParty } from 'domain/creature'
+import { placeholderBattle } from 'engine/battle-placeholder'
 import { View } from 'engine/view'
 
 const held = new HeldDirections()
@@ -159,6 +160,13 @@ function worldOf(project: Project): FieldWorld {
         pagesOf: dialogId => findDialog(project, dialogId)?.pages,
         itemOf: itemId => findItem(project, itemId),
         random: Math.random,
+        isGrassAt: (mapId, cell) => {
+            const map = findMap(project, mapId)
+
+            return map !== undefined && isGrassAt(map.tileMap, cell)
+        },
+        encountersOf: mapId => findMap(project, mapId)?.encounters,
+        speciesName: speciesId => findSpecies(project, speciesId)?.name,
     }
 }
 
@@ -295,6 +303,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         field = advanceField(field, { direction: held.latest(), running, interact: interactPressed, menu: menuPressed }, deltaSeconds * 1000, world)
         interactPressed = false
         menuPressed = false
+
+        // The grass rustled: run the battle through the seam and tell the story before this frame draws (T-048).
+        if (field.battle !== undefined) {
+            field = afterBattle(field, placeholderBattle(field.battle), world.speciesName(field.battle.speciesId))
+        }
 
         if (field.menuChoice === 'save') {
             void saveRepository.save(snapshotField(field))

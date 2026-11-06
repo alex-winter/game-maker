@@ -1,10 +1,10 @@
 import { Cell } from './coordinates'
 import { Id } from './id'
 import { advanceStep, beginStep, CanEnter, Direction, newPlayer, Player, WALK_MS_PER_CELL } from './movement'
+import { Random } from './random'
 import { NpcBehavior, NpcEvent } from './warp'
 
-/** A source of numbers in [0, 1). Hosts pass `Math.random`; tests pass a fixed sequence. */
-export type Random = () => number
+export type { Random } from './random'
 
 /** How long a person waits between turns or steps, at the shortest and the longest. */
 export const MIN_PAUSE_MS = 1000

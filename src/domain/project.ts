@@ -7,6 +7,7 @@ import { SpriteDefinition } from './sprite'
 import { MapEvent, withEventDefaults } from './warp'
 import { Dialog, withDialogDefaults } from './dialog'
 import { isStarter, Move, Species, Starter } from './creature'
+import { emptyEncounterTable, EncounterTable, isEncounterTable } from './encounter'
 import type { Flag } from './flags'
 import type { Item } from './item'
 import { Tileset } from './tileset'
@@ -35,6 +36,9 @@ export type GameMap = {
 
     /** Warps and, later, other things placed on cells (T-032). */
     events: MapEvent[]
+
+    /** What the tall grass on this map holds (T-048). */
+    encounters: EncounterTable
 
     layers: Layer[]
 }
@@ -82,7 +86,7 @@ export function centreCell(size: GridSize): Cell {
 }
 
 export function newMap(name: string, layers: Layer[] = [], size: GridSize = DEFAULT_MAP_SIZE): GameMap {
-    return { id: newId(), name, tileMap: emptyTileMap(size), spawn: centreCell(size), connections: {}, events: [], layers }
+    return { id: newId(), name, tileMap: emptyTileMap(size), spawn: centreCell(size), connections: {}, events: [], encounters: emptyEncounterTable(), layers }
 }
 
 export function newProject(name: string, maps: GameMap[] = []): Project {
@@ -116,6 +120,7 @@ export function withProjectDefaults(stored: Partial<Project> & Pick<Project, 'id
                 spawn: isCell(map.spawn) && isInside(tileMap, map.spawn) ? map.spawn : centreCell(tileMap),
                 connections: map.connections ?? {},
                 events: (map.events ?? []).map(withEventDefaults),
+                encounters: isEncounterTable(map.encounters) ? map.encounters : emptyEncounterTable(),
                 layers: map.layers ?? [],
             }
         }),
@@ -218,6 +223,13 @@ export function withMapConnections(project: Project, mapId: Id, connections: Con
 }
 
 /** A new project with one map's event list replaced. */
+export function withMapEncounters(project: Project, mapId: Id, encounters: EncounterTable): Project {
+    return {
+        ...project,
+        maps: project.maps.map(map => map.id === mapId ? { ...map, encounters } : map),
+    }
+}
+
 export function withMapEvents(project: Project, mapId: Id, events: MapEvent[]): Project {
     return {
         ...project,

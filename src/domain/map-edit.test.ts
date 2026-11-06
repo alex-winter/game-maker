@@ -141,8 +141,8 @@ test('attribute painting: collision and elevation are separate from the picture'
 
     assert.deepEqual(walled.attributes.collision, [0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0])
     assert.equal(walled.layers[0].tiles.every(id => id === 0), true, 'no picture changed')
-    assert.deepEqual(attributesAt(walled, { x: 1, y: 1 }), { solid: true, elevation: 0, ledge: null })
-    assert.deepEqual(attributesAt(walled, { x: 0, y: 1 }), { solid: false, elevation: 0, ledge: null })
+    assert.deepEqual(attributesAt(walled, { x: 1, y: 1 }), { solid: true, elevation: 0, ledge: null, grass: false })
+    assert.deepEqual(attributesAt(walled, { x: 0, y: 1 }), { solid: false, elevation: 0, ledge: null, grass: false })
 
     const raised = withElevation(walled, withCell(walled, walled.attributes.elevation, { x: 3, y: 2 }, 4))
 
