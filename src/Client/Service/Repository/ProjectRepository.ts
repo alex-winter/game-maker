@@ -7,8 +7,9 @@ import { Dialog } from 'domain/dialog'
 import { Flag } from 'domain/flags'
 import { Item } from 'domain/item'
 import { Move, Species, Starter } from 'domain/creature'
+import { TypeChart } from 'domain/battle-data'
 import { EncounterTable } from 'domain/encounter'
-import { withMapEncounters, addMove, addSpecies, removeMove, removeSpecies, withMove, withSpecies, withStarter, addDialog, addFlag, addItem, addSprite, GameMap, removeDialog, removeFlag, removeItem, withDialog, withFlag, withItem, Project, removeMap, removeSprite, withMapConnections, withMapEvents, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withStartMap, withTileset } from 'domain/project'
+import { withMapEncounters, addMove, addSpecies, removeMove, removeSpecies, withMove, withSpecies, withStarter, withTypeChart, addDialog, addFlag, addItem, addSprite, GameMap, removeDialog, removeFlag, removeItem, withDialog, withFlag, withItem, Project, removeMap, removeSprite, withMapConnections, withMapEvents, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withStartMap, withTileset } from 'domain/project'
 import { SpriteDefinition } from 'domain/sprite'
 import { MapEvent } from 'domain/warp'
 import { Metatile, MetatileAttributes, MetatileId, Tileset, withMetatileAttributes } from 'domain/tileset'
@@ -275,6 +276,14 @@ class ProjectRepository extends Repository {
 
         if (this.project) {
             this.project = removeMove(this.project, moveId)
+        }
+    }
+
+    public async saveTypeChart(typeChart: TypeChart): Promise<void> {
+        await this.put(this.API_PATH + '/type-chart', { typeChart })
+
+        if (this.project) {
+            this.project = withTypeChart(this.project, typeChart)
         }
     }
 

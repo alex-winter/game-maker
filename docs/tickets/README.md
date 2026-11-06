@@ -73,8 +73,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-049](T-049-trainer-sight.md) | 8 | P2 | done | engine | Let a trainer notice the player |
 | [T-050](T-050-field-gates.md) | 8 | P2 | done | domain | Open a field gate with a flag |
 | [T-051](T-051-vertical-slice.md) | 8 | P1 | backlog | content | Build the Gate A and Gate B town in the editor |
-| [T-052](T-052-move-catalog.md) | 9 | P1 | ready | domain | Define moves and a type chart |
-| [T-053](T-053-battle-scene.md) | 9 | P1 | backlog | engine | Resolve a single-creature battle |
+| [T-052](T-052-move-catalog.md) | 9 | P1 | done | domain | Define moves and a type chart |
+| [T-053](T-053-battle-scene.md) | 9 | P1 | ready | engine | Resolve a single-creature battle |
 | [T-054](T-054-experience.md) | 9 | P2 | backlog | domain | Award experience and levels |
 | [T-055](T-055-party-screen.md) | 9 | P2 | ready | play | Show the party screen |
 | [T-056](T-056-wild-battle.md) | 9 | P1 | backlog | engine | Run wild encounters through the battle scene |
@@ -84,6 +84,6 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 - ready: 2
 - in_progress: 0
-- backlog: 5
-- done: 50
+- backlog: 4
+- done: 51
 - total: 57

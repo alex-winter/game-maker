@@ -1,9 +1,9 @@
 import { Id } from './id'
 
 /**
- * A move in the minimal form this ticket (T-047) owns: enough to list on a
- * learnset and show on a screen. T-052 extends this record — damage class,
- * the type chart — rather than replacing the id.
+ * A move (T-047), extended in place by T-052 with the stat it hits with.
+ * Power 0 is a status move: it exists, and the damage function refuses it
+ * until a later ticket gives it something to do.
  */
 export type Move = {
     readonly id: Id
@@ -15,8 +15,11 @@ export type Move = {
     /** Percent, 0–100. */
     accuracy: number
 
-    /** A type name the author chose, matched against the chart in T-052. */
+    /** A type name the author chose, matched against the project's type chart (T-052). */
     type: string
+
+    /** Physical hits with attack against defense; special with the special pair (T-052). */
+    damageClass: 'physical' | 'special'
 }
 
 /** The six numbers the author enters per species. No real game's formula is imported. */
@@ -89,8 +92,8 @@ export type Starter = {
     readonly level: number
 }
 
-export function newMove(id: Id, name: string, power = 40, accuracy = 100, type = 'normal'): Move {
-    return { id, name, power, accuracy, type }
+export function newMove(id: Id, name: string, power = 40, accuracy = 100, type = 'normal', damageClass: Move['damageClass'] = 'physical'): Move {
+    return { id, name, power, accuracy, type, damageClass }
 }
 
 export const DEFAULT_BASE_STATS: BaseStats = { hp: 45, attack: 45, defense: 45, specialAttack: 45, specialDefense: 45, speed: 45 }
@@ -213,7 +216,7 @@ export function isSpeciesInput(value: unknown): value is Omit<Species, 'id'> {
 }
 
 /** True for a move body as the editor sends it. */
-export function isMoveInput(value: unknown): value is Omit<Move, 'id'> {
+export function isMoveInput(value: unknown): value is Omit<Move, 'id' | 'damageClass'> & Partial<Pick<Move, 'damageClass'>> {
     if (typeof value !== 'object' || value === null) {
         return false
     }
@@ -224,6 +227,7 @@ export function isMoveInput(value: unknown): value is Omit<Move, 'id'> {
         && isNonNegativeNumber(record.power) && Number.isInteger(record.power)
         && isNonNegativeNumber(record.accuracy) && Number.isInteger(record.accuracy) && record.accuracy <= 100
         && typeof record.type === 'string' && record.type.trim() !== ''
+        && (record.damageClass === undefined || record.damageClass === 'physical' || record.damageClass === 'special')
 }
 
 export function isStarter(value: unknown): value is Starter {

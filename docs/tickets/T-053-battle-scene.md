@@ -1,7 +1,7 @@
 ---
 id: T-053
 title: Resolve a single-creature battle
-status: backlog
+status: ready
 priority: P1
 phase: 9
 type: feat

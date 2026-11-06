@@ -23,7 +23,7 @@ import { ensureProjectFile } from 'Server/services/project-store'
 import { requestHandlerPatchMetatile, requestHandlerPostTilesets, requestHandlerPutMapTileset } from 'Server/RequestHandlers/tilesets'
 import { requestHandlerDeleteSave, requestHandlerGetSave, requestHandlerPutSave } from 'Server/RequestHandlers/save'
 import { requestHandlerDeleteItem, requestHandlerPostItems, requestHandlerPutItem } from 'Server/RequestHandlers/items'
-import { requestHandlerDeleteMove, requestHandlerDeleteSpecies, requestHandlerPostMoves, requestHandlerPostSpecies, requestHandlerPutMove, requestHandlerPutSpecies, requestHandlerPutStarter } from 'Server/RequestHandlers/creatures'
+import { requestHandlerDeleteMove, requestHandlerDeleteSpecies, requestHandlerPostMoves, requestHandlerPostSpecies, requestHandlerPutMove, requestHandlerPutSpecies, requestHandlerPutStarter, requestHandlerPutTypeChart } from 'Server/RequestHandlers/creatures'
 import { requestHandlerDeleteFlag, requestHandlerPostFlags, requestHandlerPutFlag } from 'Server/RequestHandlers/flags'
 import { requestHandlerDeleteDialog, requestHandlerPostDialogs, requestHandlerPutDialog } from 'Server/RequestHandlers/dialogs'
 import { requestHandlerDeleteSprite, requestHandlerPostSprites, requestHandlerPutPlayerSprite, requestHandlerPutSprite } from 'Server/RequestHandlers/sprites'
@@ -120,6 +120,7 @@ app.post('/project/moves', requestHandlerPostMoves)
 app.put('/project/moves/:moveId', requestHandlerPutMove)
 app.delete('/project/moves/:moveId', requestHandlerDeleteMove)
 app.put('/project/starter', requestHandlerPutStarter)
+app.put('/project/type-chart', requestHandlerPutTypeChart)
 
 
 app.post('/upload-files', uploadSheets, requestHandlerPostFiles)

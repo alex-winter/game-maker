@@ -2,6 +2,8 @@ import { Component, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
 import { BaseStats, DEFAULT_BASE_STATS, MAX_LEVEL, MIN_LEVEL, Move, Species, Starter, STAT_NAMES } from 'domain/creature'
+import { DAMAGE_CLASSES, isDamageClass, matchup, MULTIPLIERS, TypeChart, withMatchup } from 'domain/battle-data'
+import { typeNames } from 'domain/project'
 import { Id } from 'domain/id'
 
 const STAT_LABELS: { readonly [K in keyof BaseStats]: string } = {
@@ -23,6 +25,8 @@ export class SpeciesEditor extends Component {
     private species: Species[] = []
     private moves: Move[] = []
     private starter: Starter | null = null
+    private typeChart: TypeChart = {}
+    private types: string[] = []
     private selectedId: Id | undefined
 
     protected listeners: Listeners = {
@@ -35,6 +39,9 @@ export class SpeciesEditor extends Component {
         '.remove-learn:click': this.handleRemoveLearn,
         '.new-move:click': this.handleNewMove,
         '.move-row input:change': this.handleMoveChange,
+        '.move-row select:change': this.handleMoveChange,
+        '.matchup:change': this.handleMatchupChange,
+        '.new-type:click': this.handleNewType,
         '.delete-move:click': this.handleDeleteMove,
         '.starter-species:change': this.handleStarterChange,
         '.starter-level:change': this.handleStarterChange,
@@ -133,6 +140,34 @@ export class SpeciesEditor extends Component {
                 width: 80px;
             }
 
+            .chart {
+                border-collapse: collapse;
+                font-size: 12px;
+            }
+
+            .chart th, .chart td {
+                padding: 2px 4px;
+                text-align: center;
+            }
+
+            .chart th {
+                font-weight: 600;
+                color: #555;
+            }
+
+            .chart th.attacking {
+                text-align: right;
+            }
+
+            .chart select {
+                padding: 2px 4px;
+                font-size: 12px;
+            }
+
+            .chart select.x0 { color: #999; }
+            .chart select.x05 { color: #c0392b; }
+            .chart select.x2 { color: #27ae60; font-weight: 600; }
+
             .hint, .empty {
                 color: #666;
             }
@@ -171,7 +206,7 @@ export class SpeciesEditor extends Component {
             container.append(this.buildSpeciesForm(selected))
         }
 
-        container.append(this.buildMoves(), this.buildStarter())
+        container.append(this.buildMoves(), this.buildTypeChart(), this.buildStarter())
 
         return container
     }
@@ -321,11 +356,20 @@ export class SpeciesEditor extends Component {
             type.value = move.type
             type.placeholder = 'type'
 
-            for (const control of [name, power, accuracy, type, remove]) {
+            const damageClass = document.createElement('select')
+
+            damageClass.className = 'move-class'
+            damageClass.title = 'Physical hits with attack against defense; special with the special pair'
+
+            for (const each of DAMAGE_CLASSES) {
+                damageClass.append(new Option(each, each, false, each === move.damageClass))
+            }
+
+            for (const control of [name, power, accuracy, type, damageClass, remove]) {
                 control.dataset.id = move.id
             }
 
-            row.append(name, Dom.span('Pow', 'hint'), power, Dom.span('Acc', 'hint'), accuracy, type, remove)
+            row.append(name, Dom.span('Pow', 'hint'), power, Dom.span('Acc', 'hint'), accuracy, type, damageClass, remove)
             section.append(row)
         }
 
@@ -381,6 +425,8 @@ export class SpeciesEditor extends Component {
         this.species = project.species
         this.moves = project.moves
         this.starter = project.starter
+        this.typeChart = project.typeChart
+        this.types = typeNames(project)
     }
 
     private async refresh(): Promise<void> {
@@ -510,7 +556,108 @@ export class SpeciesEditor extends Component {
             return
         }
 
-        await projectRepository.createMove({ name: name.trim(), power: 40, accuracy: 100, type: 'normal' })
+        await projectRepository.createMove({ name: name.trim(), power: 40, accuracy: 100, type: 'normal', damageClass: 'physical' })
+        await this.refresh()
+    }
+
+    /** The chart as a grid: attacking types down, defending across, a multiplier in every cell. Only exceptions to ×1 are stored. */
+    private buildTypeChart(): HTMLElement {
+        const section = Dom.div('type-chart')
+        const title = document.createElement('h4')
+        const hint = Dom.span('Attacking type down the side, defending type across the top. Types come from species and moves; "+ Type" adds one to the chart first.', 'hint')
+
+        title.textContent = 'Type chart'
+        section.append(title, hint)
+
+        if (this.types.length > 0) {
+            const table = document.createElement('table')
+            const head = document.createElement('tr')
+
+            table.className = 'chart'
+            head.append(document.createElement('th'))
+
+            for (const defending of this.types) {
+                const th = document.createElement('th')
+
+                th.textContent = defending
+                head.append(th)
+            }
+
+            table.append(head)
+
+            for (const attacking of this.types) {
+                const row = document.createElement('tr')
+                const label = document.createElement('th')
+
+                label.className = 'attacking'
+                label.textContent = attacking + ' →'
+                row.append(label)
+
+                for (const defending of this.types) {
+                    const cell = document.createElement('td')
+                    const select = document.createElement('select')
+                    const current = matchup(this.typeChart, attacking, defending)
+
+                    select.className = 'matchup ' + this.multiplierClass(current)
+                    select.dataset.attacking = attacking
+                    select.dataset.defending = defending
+
+                    for (const multiplier of MULTIPLIERS) {
+                        select.append(new Option('×' + (multiplier === 0.5 ? '½' : String(multiplier)), String(multiplier), false, multiplier === current))
+                    }
+
+                    cell.append(select)
+                    row.append(cell)
+                }
+
+                table.append(row)
+            }
+
+            section.append(table)
+        }
+
+        section.append(Dom.button('+ Type', 'new-type'))
+
+        return section
+    }
+
+    private multiplierClass(multiplier: number): string {
+        return multiplier === 0 ? 'x0' : multiplier === 0.5 ? 'x05' : multiplier === 2 ? 'x2' : 'x1'
+    }
+
+    private async handleMatchupChange(event: Event): Promise<void> {
+        const select = event.target
+
+        if (!(select instanceof HTMLSelectElement)) {
+            return
+        }
+
+        const { attacking, defending } = select.dataset
+        const multiplier = Number(select.value)
+
+        if (attacking === undefined || defending === undefined || !MULTIPLIERS.includes(multiplier)) {
+            return
+        }
+
+        await projectRepository.saveTypeChart(withMatchup(this.typeChart, attacking, defending, multiplier))
+        await this.refresh()
+    }
+
+    /** A type not yet on any species or move enters the chart as a row with a ×1 placeholder against itself, which stores nothing until a matchup is set — so the name is kept by a ×½ self-matchup the author can change. */
+    private async handleNewType(): Promise<void> {
+        const name = window.prompt('Type name', '')
+
+        if (name === null || name.trim() === '') {
+            return
+        }
+
+        const type = name.trim().toLowerCase()
+
+        if (this.types.includes(type)) {
+            return
+        }
+
+        await projectRepository.saveTypeChart(withMatchup(this.typeChart, type, type, 0.5))
         await this.refresh()
     }
 
@@ -521,9 +668,10 @@ export class SpeciesEditor extends Component {
         const power = row?.querySelector('.move-power')
         const accuracy = row?.querySelector('.move-accuracy')
         const type = row?.querySelector('.move-type')
+        const damageClass = row?.querySelector('.move-class')
 
         if (moveId === undefined || !(name instanceof HTMLInputElement) || !(power instanceof HTMLInputElement)
-            || !(accuracy instanceof HTMLInputElement) || !(type instanceof HTMLInputElement)) {
+            || !(accuracy instanceof HTMLInputElement) || !(type instanceof HTMLInputElement) || !(damageClass instanceof HTMLSelectElement)) {
             return
         }
 
@@ -533,6 +681,7 @@ export class SpeciesEditor extends Component {
             power: Math.max(0, Math.floor(Number(power.value)) || 0),
             accuracy: Math.min(100, Math.max(0, Math.floor(Number(accuracy.value)) || 0)),
             type: type.value.trim(),
+            damageClass: isDamageClass(damageClass.value) ? damageClass.value : 'physical',
         }
 
         if (edited.name === '' || edited.type === '') {

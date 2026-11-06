@@ -8,6 +8,7 @@ import { MapEvent, withEventDefaults } from './warp'
 import { Dialog, withDialogDefaults } from './dialog'
 import { isStarter, Move, Species, Starter } from './creature'
 import { emptyEncounterTable, EncounterTable, isEncounterTable } from './encounter'
+import { chartTypes, EMPTY_TYPE_CHART, isTypeChart, TypeChart, withMoveDefaults } from './battle-data'
 import type { Flag } from './flags'
 import type { Item } from './item'
 import { Tileset } from './tileset'
@@ -78,6 +79,9 @@ export type Project = {
 
     /** What a new game puts in the party, or null until the author picks. */
     starter: Starter | null
+
+    /** How types match up (T-052): attacking type, then defending type, to a multiplier. Missing is ×1. */
+    typeChart: TypeChart
 }
 
 /** The middle of the grid: where a map starts the player until someone moves the spawn. */
@@ -90,7 +94,7 @@ export function newMap(name: string, layers: Layer[] = [], size: GridSize = DEFA
 }
 
 export function newProject(name: string, maps: GameMap[] = []): Project {
-    return { id: newId(), name, tilesets: [], maps, sprites: [], playerSpriteId: null, dialogs: [], flags: [], items: [], startMapId: null, species: [], moves: [], starter: null }
+    return { id: newId(), name, tilesets: [], maps, sprites: [], playerSpriteId: null, dialogs: [], flags: [], items: [], startMapId: null, species: [], moves: [], starter: null, typeChart: EMPTY_TYPE_CHART }
 }
 
 /**
@@ -109,8 +113,9 @@ export function withProjectDefaults(stored: Partial<Project> & Pick<Project, 'id
         items: stored.items ?? [],
         startMapId: stored.startMapId ?? null,
         species: stored.species ?? [],
-        moves: stored.moves ?? [],
+        moves: (stored.moves ?? []).map(withMoveDefaults),
         starter: isStarter(stored.starter) ? stored.starter : null,
+        typeChart: isTypeChart(stored.typeChart) ? stored.typeChart : EMPTY_TYPE_CHART,
         maps: stored.maps.map(map => {
             const tileMap = withTileMapDefaults(map.tileMap ?? emptyTileMap(DEFAULT_MAP_SIZE))
 
@@ -385,6 +390,25 @@ export function removeMove(project: Project, moveId: Id): Project {
         moves: project.moves.filter(move => move.id !== moveId),
         species: project.species.map(species => ({ ...species, learnset: species.learnset.filter(entry => entry.moveId !== moveId) })),
     }
+}
+
+export function withTypeChart(project: Project, typeChart: TypeChart): Project {
+    return { ...project, typeChart }
+}
+
+/** Every type name the project uses — on species, on moves, in the chart — sorted, for the chart's grid. */
+export function typeNames(project: Project): string[] {
+    const names = new Set<string>(chartTypes(project.typeChart))
+
+    for (const species of project.species) {
+        species.types.forEach(type => names.add(type))
+    }
+
+    for (const move of project.moves) {
+        names.add(move.type)
+    }
+
+    return [...names].sort()
 }
 
 export function withStarter(project: Project, starter: Starter | null): Project {

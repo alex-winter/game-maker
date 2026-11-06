@@ -1,7 +1,7 @@
 ---
 id: T-052
 title: Define moves and a type chart
-status: ready
+status: done
 priority: P1
 phase: 9
 type: feat
@@ -45,9 +45,17 @@ Out:
 
 ## Acceptance
 
-- [ ] Tests for super effective, resisted, immune, and missing entry (missing means 1).
-- [ ] A move authored in the editor reloads.
+- [x] Tests for super effective, resisted, immune, and missing entry (missing means 1).
+- [x] A move authored in the editor reloads.
 
 ## Test plan
 
 - Domain tests.
+
+## Result
+
+- `Move.damageClass: 'physical' | 'special'` extends T-047's record in place; `newMove` takes it, `isMoveInput` accepts it missing, `withMoveDefaults` (in `withProjectDefaults` and the server's `cleanedMove`) reads older moves as physical.
+- `domain/battle-data.ts`: `TypeChart` keyed attacking → defending → multiplier from `MULTIPLIERS` 0, 0.5, 1, 2; `matchup` (missing = 1), `effectiveness` across one or two defending types, `withMatchup` (×1 removes the entry and an emptied row), `chartTypes`, `isTypeChart`. `Project.typeChart` with `withTypeChart`, `typeNames(project)`.
+- `PUT /project/type-chart`; `projectRepository.saveTypeChart`.
+- Species editor: a class select per move row; a **Type chart** grid of selects (attacking down, defending across, coloured by multiplier) and “+ Type”.
+- Tests: super effective, resisted, immune, missing attacking and defending entries, two-type products, set/remove, validation, defaults. Checked in Chrome: authored “Ember” fire/special through the editor, set fire→grass ×2 and grass→fire ×½ in the grid, reloaded the page — the class and both matchups came back; a cell the chart does not mention shows ×1.
