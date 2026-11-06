@@ -3,24 +3,25 @@ import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlace
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { ImagePlacement } from 'Model/Placement'
 
-export function loadPlacement(
+export async function loadPlacement(
     placement: ImagePlacement,
     layerUuid: string,
-): void {
-    placementImageRepository.getByUuid(placement.imageUuid)
-        .then(image => {
-            if (image) {
-                Dom.image(image.src).then(htmlImage => {
-                    loadedPlacementRepository.add({
-                        uuid: placement.uuid,
-                        layerUuid,
-                        image: htmlImage,
-                        x: placement.coordinate.x,
-                        y: placement.coordinate.y,
-                        width: htmlImage.width,
-                        height: htmlImage.height,
-                    })
-                })
-            }
-        })
+): Promise<void> {
+    const image = await placementImageRepository.getByUuid(placement.imageUuid)
+
+    if (!image) {
+        return
+    }
+
+    const htmlImage = await Dom.image(image.src)
+
+    loadedPlacementRepository.add({
+        uuid: placement.uuid,
+        layerUuid,
+        image: htmlImage,
+        x: placement.coordinate.x,
+        y: placement.coordinate.y,
+        width: htmlImage.width,
+        height: htmlImage.height,
+    })
 }

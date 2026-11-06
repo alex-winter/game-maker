@@ -108,10 +108,6 @@ export class CanvasLayer extends Component {
                 : CanvasLayer.DEFAULT_IMAGE
         )
 
-        for (const placement of this.layer.placements) {
-            loadPlacement(placement, this.layer.uuid)
-        }
-
         this.viewCoordinates.x = this.parsedDataset.userData?.lastViewPosition?.x || 0
         this.viewCoordinates.y = this.parsedDataset.userData?.lastViewPosition?.y || 0
     }

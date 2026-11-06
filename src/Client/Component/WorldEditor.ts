@@ -15,6 +15,7 @@ import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 import { LAYERS } from 'Client/Constants/layers'
 import { FileUpload } from 'Client/Service/FileUpload'
+import { loadPlacement } from 'Client/Service/load-placement'
 import { layerRepository } from 'Client/Service/Repository/LayerRepository'
 import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
@@ -84,21 +85,7 @@ export class WorldEditor extends Component {
 
         for (const layer of this.layers) {
             for (const placement of layer.placements) {
-                const placementImage = await placementImageRepository.getByUuid(placement.imageUuid)
-
-                if (placementImage) {
-                    const image = await Dom.image(placementImage.src)
-
-                    loadedPlacementRepository.add({
-                        uuid: placement.uuid,
-                        layerUuid: layer.uuid,
-                        image,
-                        x: placement.coordinate.x,
-                        y: placement.coordinate.y,
-                        width: image.width,
-                        height: image.height,
-                    })
-                }
+                await loadPlacement(placement, layer.uuid)
             }
         }
     }

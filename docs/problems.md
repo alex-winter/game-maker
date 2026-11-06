@@ -22,7 +22,7 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 8. **Cameras drift apart.** Each `CanvasLayer` copies `viewCoordinates`. Pan applies a delta to the others, which works only while they started equal. Layers created from `new-layer-mapped` are constructed without `userData`, so they start at `{0,0}`. Ticket T-004.
 
-9. **Placements are decoded twice.** `WorldEditor.setup` pushes a loaded placement, then `loadPlacement` in `CanvasLayer.setup` pushes another with the same uuid. The history lists both. The canvas draws both. Ticket T-003.
+9. **Fixed (T-003).** **Placements are decoded twice.** `WorldEditor.setup` pushes a loaded placement, then `loadPlacement` in `CanvasLayer.setup` pushes another with the same uuid. The history lists both. The canvas draws both. Ticket T-003.
 
 10. **Layer visibility and selection restart every canvas.** `layers-update` calls `patch()`, which rebuilds the layer DOM and starts another animation loop. `setActive` emits that once per layer. Ticket T-005.
 

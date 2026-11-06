@@ -5,8 +5,12 @@ import { Coordinates } from 'Model/Coordinates'
 class LoadedPlacementRepository {
     private readonly data: LoadedPlacement[] = []
 
-    public add(...loadedPlacement: LoadedPlacement[]): void {
-        this.data.push(...loadedPlacement)
+    public add(...loadedPlacements: LoadedPlacement[]): void {
+        for (const loadedPlacement of loadedPlacements) {
+            if (this.getByUuid(loadedPlacement.uuid) === undefined) {
+                this.data.push(loadedPlacement)
+            }
+        }
     }
 
     public get(): LoadedPlacement[] {
