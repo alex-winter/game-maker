@@ -3,7 +3,7 @@ import { Dom } from 'Client/Service/Dom'
 import { Coordinates, Rect } from 'domain/coordinates'
 import { frameDelayMs } from 'Client/Component/Canvas/frame-delay'
 
-export class Canvas2D extends Component {
+export class Canvas2D extends Component<{ fps: number }> {
     private animationTimeout!: number
     private frameFunction!: Function
     private msPerFrame: number = frameDelayMs(undefined)

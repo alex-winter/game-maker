@@ -10,9 +10,6 @@ import { NewLayerForm } from 'Client/Component/NewLayerForm/NewLayerForm'
 import { MapCanvas } from 'Client/Component/Canvas/MapCanvas'
 import { LayerItem } from 'Client/Component/LayerListing/LayerItem'
 import { Canvas2D } from 'Client/Component/Canvas/Canvas'
-import {
-  v5 as uuidv5
-} from 'uuid'
 import { CanvasTools } from 'Client/Component/Canvas/CanvasTools'
 import { PlacementHistory } from 'Client/Component/PlacementHistory/PlacementHistory'
 import { AnimationMaker } from 'Client/Component/Animation/AnimationMaker'
@@ -20,10 +17,9 @@ import { WorldEditor } from 'Client/Component/WorldEditor'
 import { Ide } from 'Client/Component/Ide'
 import { DialogCreator } from 'Client/Component/Dialog/DialogCreator'
 import { MapSelect } from 'Client/Component/MapSelect/MapSelect'
+import { ComponentConstructor } from 'Client/Service/Dom'
 
-const UUID_NAMESPACE = '6fa459ea-ee8a-3ca4-894e-db77e160355e'
-
-export const COMPONENTS = new Map<CustomElementConstructor, string>([
+export const COMPONENTS = new Map<ComponentConstructor, string>([
   [Ide, 'ide-wrapper'],
   [WorldEditor, 'world-editor'],
   [SideMenu, 'side-menu'],
@@ -45,16 +41,13 @@ export const COMPONENTS = new Map<CustomElementConstructor, string>([
   [MapSelect, 'map-select'],
 ])
 
-export const COMPONENT_UUID_LOOKUP = new Map<string, CustomElementConstructor>(
-  Array.from(COMPONENTS).map(([component, tag]) => [
-    uuidv5(tag, UUID_NAMESPACE),
-    component,
-  ])
-)
+/** A stable id for a component kind, used to key saved window rectangles. The tag is already unique. */
+export function componentId(component: ComponentConstructor): string {
+  const tag = COMPONENTS.get(component)
 
-export const COMPONENT_UUIDS_CONSTRUCT_LOOKUP = new Map<CustomElementConstructor, string>(
-  Array.from(COMPONENTS).map(([component, tag]) => [
-    component,
-    uuidv5(tag, UUID_NAMESPACE),
-  ])
-)
+  if (tag === undefined) {
+    throw new Error(`Component not found in COMPONENTS map: ${component.name}`)
+  }
+
+  return tag
+}

@@ -5,7 +5,7 @@ import { LayerChange, layerRepository } from 'Client/Service/Repository/LayerRep
 import { Layer } from 'Model/Layer'
 import { LAYERS } from 'Client/Constants/layers'
 
-export class LayerItem extends Component {
+export class LayerItem extends Component<{ layer: Layer }> {
     private layer!: Layer
 
     protected externalListeners: ExternalListeners = {

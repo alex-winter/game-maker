@@ -1,7 +1,6 @@
-import { Component } from 'Client/Service/Component'
+import { Component, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
-import { Listeners } from 'event-driven-web-components/dist/types/Listeners'
 
 export class SideMenu extends Component {
     public isSingleton: boolean = true

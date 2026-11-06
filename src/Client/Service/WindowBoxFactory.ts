@@ -11,7 +11,7 @@ export class WindowBoxFactory {
         title: string,
         configuration: WindowConfiguration
     ): WindowBox | null {
-        const windowBox: WindowBox = Dom.makeComponent(WindowBox, { configuration }) as WindowBox
+        const windowBox = Dom.makeComponent(WindowBox, { configuration })
 
         if (component.isSingleton && singletonInstances.includes(component)) {
             return windowBox

@@ -10,7 +10,7 @@ import { GameMap } from 'domain/project'
  * create. Switching reloads the page on the chosen map. Rename, resize, and
  * delete arrive with T-025.
  */
-export class MapSelect extends Component {
+export class MapSelect extends Component<{ activeMapId: Id }> {
     private maps: GameMap[] = []
     private activeMapId!: Id
 

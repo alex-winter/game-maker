@@ -75,7 +75,7 @@ export class Ide extends Component {
         const content = Dom.div()
         content.className = 'content'
 
-        const gameMaker = Dom.makeComponent(WorldEditor) as unknown as Node
+        const gameMaker = Dom.makeComponent(WorldEditor)
 
         content.appendChild(gameMaker)
         container.appendChild(menu)

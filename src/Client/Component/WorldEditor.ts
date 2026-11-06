@@ -9,9 +9,9 @@ import { SideMenu } from 'Client/Component/SideMenu/SideMenu'
 import { SheetImporter } from 'Client/Component/SpriteSheets/SheetImporter/SheetImporter'
 import { SheetViewer } from 'Client/Component/SpriteSheets/SheetViewer/SheetViewer'
 import { WindowBox } from 'Client/Component/WindowBox/WindowBox'
-import { COMPONENT_UUIDS_CONSTRUCT_LOOKUP } from 'Client/Constants/components'
+import { componentId } from 'Client/Constants/components'
 import { LayerInput } from 'Client/Model/LayerInput'
-import { Component } from 'Client/Service/Component'
+import { Component, ExternalListeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 import { LAYERS } from 'Client/Constants/layers'
@@ -27,7 +27,6 @@ import { placementImageRepository } from 'Client/Service/Repository/PlacementIma
 import { sheetRepository } from 'Client/Service/Repository/SheetRepository'
 import { userDataRepository } from 'Client/Service/Repository/UserDataRepository'
 import { WindowBoxFactory } from 'Client/Service/WindowBoxFactory'
-import { ExternalListeners } from 'event-driven-web-components/dist/types/ExternalListeners'
 import { Coordinates } from 'domain/coordinates'
 import { LayerFactory } from 'Model/Factory/LayerFactory'
 import { Layer } from 'Model/Layer'
@@ -118,7 +117,7 @@ export class WorldEditor extends Component {
         const dialogCreator = Dom.makeComponent(DialogCreator)
 
         const dialog = WindowBoxFactory.make(dialogCreator, 'dialog', {
-            uuid: COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(DialogCreator)!,
+            uuid: componentId(DialogCreator),
             componentConfigration: { dataset: {} },
             title: 'Dialog',
         })
@@ -174,7 +173,7 @@ export class WorldEditor extends Component {
         const component = Dom.makeComponent(SheetViewer, sheetViewerDataset)
 
         const windowBox = WindowBoxFactory.make(component, sheet.name, {
-            uuid: COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetViewer)!,
+            uuid: componentId(SheetViewer),
             componentConfigration: { dataset: sheetViewerDataset },
             title: sheet.name,
         })
@@ -209,7 +208,7 @@ export class WorldEditor extends Component {
     private handleOpenSheetImporter(): void {
         const component = Dom.makeComponent(SheetImporter)
         const windowBox = WindowBoxFactory.make(component, 'Import Sheets', {
-            uuid: COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(SheetImporter)!,
+            uuid: componentId(SheetImporter),
             componentConfigration: { dataset: {} },
             title: 'Import Sheets',
         })
@@ -316,7 +315,7 @@ export class WorldEditor extends Component {
             Dom.makeComponent(PlacementHistory),
             'Placement History',
             {
-                uuid: COMPONENT_UUIDS_CONSTRUCT_LOOKUP.get(PlacementHistory)!,
+                uuid: componentId(PlacementHistory),
                 componentConfigration: { dataset: {} },
                 title: 'Placement History',
             }

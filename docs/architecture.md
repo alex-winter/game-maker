@@ -34,7 +34,7 @@ Play (`public/play.html` → `src/Client/play.ts`):
 
 ## UI model
 
-`Client/Service/Component.ts` subclasses `event-driven-web-components`. Components implement `setup`, `build`, and `css`. `Dom.makeComponent` JSON-encodes a dataset onto the element. The library parses it back as `parsedDataset`.
+`Client/Service/Component.ts` is the in-repo element base (T-018). Components implement `setup`, `build`, `css`, and optionally `afterBuild`; `listeners` maps `'selector:event'` to handlers inside the shadow root and `externalListeners` maps bus event names to handlers, which are removed when the element disconnects. `patch()` replaces the built tree and rebinds local listeners. `Dom.makeComponent(Ctor, dataset)` encodes non-string values as JSON onto the element; `parsedDataset` (`Client/Service/parse-dataset.ts`) decodes them back, typed by the component's `Component<TDataset>` parameter. `componentId(Ctor)` is the tag name and keys the saved window rectangles.
 
 Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names are not catalogued in code. The ones in use:
 

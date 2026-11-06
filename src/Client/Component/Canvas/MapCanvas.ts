@@ -30,7 +30,7 @@ import { Layer } from 'Model/Layer'
  * `renderFrame`. It also owns the pointer: pencil, fill, and rubber act on
  * the active layer; the middle button pans the shared camera.
  */
-export class MapCanvas extends Component {
+export class MapCanvas extends Component<{ map: GameMap }> {
     private static readonly COLLISION_IMAGE: string = generateImageDataURL(
         GRID_SIZE,
         GRID_SIZE,

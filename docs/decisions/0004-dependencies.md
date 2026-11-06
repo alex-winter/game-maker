@@ -17,7 +17,7 @@ Allowed at the edge, until a ticket removes them:
 | `multer` | multipart upload, behind a handler that does not trust filenames |
 | `@types/*` | types only |
 
-`event-driven-web-components` and `uuid` are current dependencies and are scheduled for removal in T-018. Do not build new abstractions on top of them. New elements use the in-house base as soon as that ticket's base exists; the ticket itself migrates the old elements.
+`event-driven-web-components` and `uuid` were removed in T-018. Every element extends `Client/Service/Component.ts`; ids come from `crypto.randomUUID()`.
 
 ## Why
 

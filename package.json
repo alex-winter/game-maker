@@ -11,10 +11,8 @@
     "watch:server": "webpack --config webpack.server.config.js --watch"
   },
   "dependencies": {
-    "event-driven-web-components": "^3.5.2",
     "express": "^4.21.2",
-    "multer": "^1.4.5-lts.2",
-    "uuid": "^11.1.0"
+    "multer": "^1.4.5-lts.2"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",

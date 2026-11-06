@@ -1,7 +1,7 @@
 ---
 id: T-018
 title: Replace the third-party element base
-status: ready
+status: done
 priority: P2
 phase: 1
 type: refactor
@@ -15,6 +15,10 @@ blocks: []
 ## Outcome
 
 Custom elements extend an in-repo base class. `event-driven-web-components` and the `uuid` package are gone from `package.json`. Behavior of the editor is unchanged.
+
+## Result
+
+`Client/Service/Component.ts` is a ~200-line base supporting exactly what the elements use: shadow root, global stylesheet links, `setup`, `css` as an adopted sheet, `build`, `afterBuild`, `patch` (replace the root and rebind), `findOne`/`findAll`, `listeners`, and `externalListeners` that are unlistened on disconnect (the library leaked them). `Client/Service/Events.ts` is the bus. `parse-dataset.ts` decodes datasets in one tested function and `Component<TDataset>` types them per element. `Dom.makeComponent` is generic and returns the concrete element, so the `as WindowBox` casts went. `componentId(Ctor)` returns the tag and replaces uuid v5. `event-driven-web-components` and `uuid` are uninstalled. Verified with headless Chrome: open a sheet, paint, hide/show, rubber, add a layer through the modal, and activate it.
 
 ## Why
 
@@ -48,9 +52,9 @@ Out:
 
 ## Acceptance
 
-- [ ] `package.json` no longer depends on `event-driven-web-components` or `uuid`.
-- [ ] `npm run typecheck` passes.
-- [ ] The editor still loads, paints, and opens a sheet window.
+- [x] `package.json` no longer depends on `event-driven-web-components` or `uuid`.
+- [x] `npm run typecheck` passes.
+- [x] The editor still loads, paints, and opens a sheet window.
 
 ## Test plan
 

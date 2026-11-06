@@ -2,7 +2,7 @@ import { Component, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 
-export class CanvasTools extends Component {
+export class CanvasTools extends Component<{ currentTool: string }> {
     private currentTool: string = 'pencil'
     public isSingleton: boolean = true
     protected readonly listeners: Listeners = {

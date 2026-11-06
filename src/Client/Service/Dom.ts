@@ -1,6 +1,8 @@
 import { COMPONENTS } from 'Client/Constants/components'
 import { Component } from 'Client/Service/Component'
 
+export type ComponentConstructor<T extends Component<unknown> = Component<unknown>> = new () => T
+
 export class Dom {
     constructor() {
         throw new Error('Can not construct')
@@ -109,42 +111,40 @@ export class Dom {
         return element
     }
 
-    public static makeComponent(
-        component: CustomElementConstructor,
-        dataset: { [key: string]: string | any[] | Object } = {},
-    ): Component {
+    /**
+     * Creates the element registered for `component` and encodes `dataset`
+     * onto it: strings as they are, everything else as JSON. A connected
+     * singleton is returned instead of a second instance.
+     */
+    public static makeComponent<T extends Component<unknown>>(
+        component: ComponentConstructor<T>,
+        dataset: { readonly [key: string]: unknown } = {},
+    ): T {
         const tag = this.findComponentTag(component)
         const existing = Dom.queryAllDeep(tag)
+        const found = existing[0]
 
-        if (existing.length) {
-            const found = existing[0] as Component
-            if (found.isSingleton) {
-                return found
-            }
+        if (found instanceof component && found.isSingleton) {
+            return found
         }
 
         const element = document.createElement(tag)
 
-        Object.entries(dataset).forEach(([key, value]) => {
-            if (value instanceof Object || Array.isArray(value)) {
-                dataset[key] = JSON.stringify(value)
-            }
-        })
+        if (!(element instanceof component)) {
+            throw new Error(`Tag ${tag} is not registered as ${component.name}`)
+        }
 
-        Object.assign(
-            element.dataset,
-            dataset
-        )
+        for (const [key, value] of Object.entries(dataset)) {
+            element.dataset[key] = typeof value === 'string' ? value : JSON.stringify(value)
+        }
 
-        return element as Component
+        return element
     }
 
-    public static getAllOfComponent<T = CustomElementConstructor>(component: CustomElementConstructor): T[] {
+    public static getAllOfComponent<T extends Component<unknown>>(component: ComponentConstructor<T>): T[] {
         const tag = this.findComponentTag(component)
 
-        return Array.from(
-            Dom.queryAllDeep(tag)
-        ) as T[]
+        return Dom.queryAllDeep(tag).filter((element): element is T => element instanceof component)
     }
 
     private static queryAllDeep(selector: string, root: ParentNode = document): Element[] {
@@ -172,7 +172,7 @@ export class Dom {
         return result
     }
 
-    private static findComponentTag(component: CustomElementConstructor): string {
+    private static findComponentTag(component: ComponentConstructor): string {
         const tag = COMPONENTS.get(component)
 
         if (!tag) {

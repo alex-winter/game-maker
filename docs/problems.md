@@ -52,7 +52,7 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 21. **Domain types are mixed into UI modules, and UI types leak the other way.** `Dataset` is `{ [key: string]: any }`. Field names mix `created_at` with `lastViewPosition`. `componentConfigration` is misspelled and stored that way on disk. Ticket T-012 sets the boundary; do not rename persisted fields until that ticket's migration runs.
 
-22. **The component base is a runtime dependency of every view.** `event-driven-web-components` owns the lifecycle. `uuid` exists to make stable ids for those tags. Neither is a game concept. Ticket T-018.
+22. **Fixed (T-018).** **The component base is a runtime dependency of every view.** `event-driven-web-components` owns the lifecycle. `uuid` exists to make stable ids for those tags. Neither is a game concept. Ticket T-018.
 
 23. **Fixed (T-011).** **Nothing checks the types.** `typescript`, `typescript-eslint`, and a deprecated `tslint` are installed. `package.json` has no `typecheck` or `lint` script, and no tests. Ticket T-011.
 

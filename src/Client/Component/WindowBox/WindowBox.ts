@@ -4,7 +4,7 @@ import { Dom } from 'Client/Service/Dom'
 import { Events } from 'Client/Service/Events'
 import { WindowConfiguration } from 'Model/UserData'
 
-export class WindowBox extends Component implements DraggableHTMLElement {
+export class WindowBox extends Component<{ configuration: WindowConfiguration }> implements DraggableHTMLElement {
     isDragging = false
     offsetX = 0
     offsetY = 0
