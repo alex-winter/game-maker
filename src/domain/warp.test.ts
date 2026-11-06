@@ -54,4 +54,6 @@ test('the event list is checked on the way in', () => {
     assert.equal(isMapEvents([{ ...door, facing: 'north' }]), false)
     assert.equal(isMapEvents([{ ...door, toCell: { x: 1.5, y: 0 } }]), false)
     assert.equal(isMapEvents([{ kind: 'npc', id: 'n' }]), false)
+    assert.equal(isMapEvents([{ kind: 'sign', id: 's', cell: { x: 1, y: 1 }, dialogId: 'd' }]), true)
+    assert.equal(isMapEvents([{ kind: 'sign', id: 's', cell: { x: 1, y: 1 } }]), false)
 })

@@ -1,7 +1,7 @@
 ---
 id: T-035
 title: Show paging messages
-status: backlog
+status: ready
 priority: P1
 phase: 5
 type: feat

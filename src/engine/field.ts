@@ -3,6 +3,7 @@ import { Cell } from '../domain/coordinates'
 import { Id } from '../domain/id'
 import { GridSize, isInside } from '../domain/map'
 import { CanEnter, Direction, MovementInput, newPlayer, Player, stepPlayer } from '../domain/movement'
+import { Interaction, resolveInteraction } from '../domain/interact'
 import { MapEvent, stepFinished, warpTaken } from '../domain/warp'
 import { advanceFade, Fade, startFade } from './fade'
 
@@ -24,6 +25,14 @@ export type FieldState = {
     readonly fade: Fade | null
 
     readonly pending: Transition | undefined
+
+    /** What the interact key found this frame, for the host to act on. Cleared the next frame. */
+    readonly interaction: Interaction | undefined
+}
+
+/** Movement plus whether the interact key was pressed this frame (edge, not level). */
+export type FieldInput = MovementInput & {
+    readonly interact: boolean
 }
 
 /** What the session asks about the world. Hosts answer from the project; tests from fixtures. */
@@ -42,7 +51,7 @@ export type FieldWorld = {
 }
 
 export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down'): FieldState {
-    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined }
+    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined }
 }
 
 /** True while a fade runs: the player does not move and input is ignored. */
@@ -56,21 +65,26 @@ export function isTransitioning(state: FieldState): boolean {
  * player on the new map. Otherwise the player steps, and a warp or a seam
  * reached by that step starts a fade with the destination pending.
  */
-export function advanceField(state: FieldState, input: MovementInput, deltaMs: number, world: FieldWorld): FieldState {
+export function advanceField(state: FieldState, input: FieldInput, deltaMs: number, world: FieldWorld): FieldState {
     if (state.fade !== null) {
         const { fade, swap } = advanceFade(state.fade, deltaMs)
 
         if (swap && state.pending !== undefined) {
-            return { mapId: state.pending.mapId, player: newPlayer(state.pending.cell, state.pending.facing), fade, pending: undefined }
+            return { mapId: state.pending.mapId, player: newPlayer(state.pending.cell, state.pending.facing), fade, pending: undefined, interaction: undefined }
         }
 
-        return { ...state, fade }
+        return { ...state, fade, interaction: undefined }
     }
 
     const size = world.sizeOf(state.mapId)
 
     if (size === undefined) {
-        return state
+        return { ...state, interaction: undefined }
+    }
+
+    // The interact key looks, it does not move: a standing player stays put this frame.
+    if (input.interact && state.player.step === null) {
+        return { ...state, interaction: resolveInteraction(state.player, world.eventsOf(state.mapId)) }
     }
 
     const player = stepPlayer(state.player, input, deltaMs, seamAwareRule(state.mapId, size, world))
@@ -78,10 +92,10 @@ export function advanceField(state: FieldState, input: MovementInput, deltaMs: n
 
     if (transition !== undefined) {
         // Freeze where the step landed; a held key must not walk on while the screen fades.
-        return { ...state, player: { ...player, step: null }, fade: startFade(), pending: transition }
+        return { ...state, player: { ...player, step: null }, fade: startFade(), pending: transition, interaction: undefined }
     }
 
-    return { ...state, player }
+    return { ...state, player, interaction: undefined }
 }
 
 /** Inside the map the collision rule decides; beyond an edge a seam may let the step through onto open ground. */

@@ -123,10 +123,10 @@ export const requestHandlerPutMapEvents: RequestHandler = (request: Request, res
         return
     }
 
-    const missing = body.find(event => findMap(project, event.toMapId) === undefined)
+    const missing = body.find(event => event.kind === 'warp' && findMap(project, event.toMapId) === undefined)
 
     if (missing !== undefined) {
-        response.status(404).json({ error: 'Warp destination map not found: ' + missing.toMapId })
+        response.status(404).json({ error: 'Warp destination map not found: ' + (missing.kind === 'warp' ? missing.toMapId : '') })
         return
     }
 

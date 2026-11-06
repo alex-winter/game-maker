@@ -55,8 +55,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-031](T-031-map-connections.md) | 4 | P1 | done | domain | Connect maps along an edge |
 | [T-032](T-032-warps.md) | 4 | P1 | done | domain | Warp through doors and stairs |
 | [T-033](T-033-map-fade.md) | 4 | P2 | done | engine | Fade between maps |
-| [T-034](T-034-interact.md) | 5 | P1 | ready | engine | Interact with the cell the player faces |
-| [T-035](T-035-message-box.md) | 5 | P1 | backlog | engine | Show paging messages |
+| [T-034](T-034-interact.md) | 5 | P1 | done | engine | Interact with the cell the player faces |
+| [T-035](T-035-message-box.md) | 5 | P1 | ready | engine | Show paging messages |
 | [T-036](T-036-author-dialog.md) | 5 | P1 | ready | editor | Author dialog in the project |
 | [T-037](T-037-dialog-choices.md) | 5 | P1 | backlog | domain | Branch dialog with choices |
 | [T-038](T-038-items.md) | 6 | P1 | backlog | domain | Define items and pick them up once |
@@ -84,6 +84,6 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 - ready: 2
 - in_progress: 0
-- backlog: 23
-- done: 33
+- backlog: 22
+- done: 34
 - total: 57

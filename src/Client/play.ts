@@ -30,6 +30,9 @@ const held = new HeldDirections()
 /** Held while a direction is held, like B on the GBA, to run instead of walk. */
 let running = false
 
+/** Set on the interact key's keydown and consumed by the next frame, so one press is one look. */
+let interactPressed = false
+
 const directionByCode: { readonly [code: string]: Direction | undefined } = {
     ArrowUp: 'up',
     ArrowDown: 'down',
@@ -43,9 +46,13 @@ const directionByCode: { readonly [code: string]: Direction | undefined } = {
 
 const RUN_CODES: readonly string[] = ['ShiftLeft', 'ShiftRight', 'KeyX']
 
+/** A, like the GBA: Z, Enter, or Space. */
+const INTERACT_CODES: readonly string[] = ['KeyZ', 'Enter', 'Space']
+
 function releaseAllKeys(): void {
     held.clear()
     running = false
+    interactPressed = false
 }
 
 /**
@@ -198,7 +205,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     let field = newField(map.id, map.spawn)
 
     startLoop(deltaSeconds => {
-        field = advanceField(field, { direction: held.latest(), running }, deltaSeconds * 1000, world)
+        field = advanceField(field, { direction: held.latest(), running, interact: interactPressed }, deltaSeconds * 1000, world)
+        interactPressed = false
+
+        if (field.interaction !== undefined) {
+            // T-035 opens the message box here; until then the look is only reported.
+            console.info('interact', field.interaction)
+        }
 
         // The session changed map at the black point of a fade: draw the new one from now on.
         if (field.mapId !== open.map.id) {
@@ -231,6 +244,11 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
 
     if (RUN_CODES.includes(event.code)) {
         running = true
+    }
+
+    if (INTERACT_CODES.includes(event.code) && !event.repeat) {
+        event.preventDefault()
+        interactPressed = true
     }
 })
 

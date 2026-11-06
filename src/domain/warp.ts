@@ -20,8 +20,45 @@ export type Warp = {
     facing: Direction
 }
 
-/** Something placed on a map cell that is not a tile. Warps now; NPCs join in T-042. */
-export type MapEvent = Warp
+/** A readable sign: interacting with it (T-034) shows the dialog `dialogId` (authored in T-036). */
+export type Sign = {
+    readonly kind: 'sign'
+
+    readonly id: Id
+
+    cell: Cell
+
+    dialogId: Id
+}
+
+/** An item lying on a cell. The item model and pickup arrive in T-038; this is the shape the resolver needs. */
+export type ItemEvent = {
+    readonly kind: 'item'
+
+    readonly id: Id
+
+    cell: Cell
+
+    itemId: Id
+}
+
+/** A person standing on a cell. Placement, sprites, and movement arrive in T-042; this is the shape the resolver needs. */
+export type NpcEvent = {
+    readonly kind: 'npc'
+
+    readonly id: Id
+
+    cell: Cell
+
+    npcId: Id
+}
+
+/** Something placed on a map cell that is not a tile. */
+export type MapEvent = Warp | Sign | ItemEvent | NpcEvent
+
+export function newSign(id: Id, cell: Cell, dialogId: Id): Sign {
+    return { kind: 'sign', id, cell, dialogId }
+}
 
 export function newWarp(id: Id, cell: Cell, toMapId: Id, toCell: Cell, facing: Direction): Warp {
     return { kind: 'warp', id, cell, toMapId, toCell, facing }
@@ -36,11 +73,16 @@ export function warpAt(events: readonly MapEvent[], cell: Cell): Warp | undefine
     return events.find((event): event is Warp => event.kind === 'warp' && sameCell(event.cell, cell))
 }
 
-/** The events with one added or, when `event.id` already exists, replaced. One warp per cell: another warp on the same cell is dropped. */
+/** The events with one added or, when `event.id` already exists, replaced. One event of a kind per cell: a same-kind event on that cell is dropped. */
 export function withEvent(events: readonly MapEvent[], event: MapEvent): MapEvent[] {
-    const kept = events.filter(existing => existing.id !== event.id && !(existing.kind === 'warp' && sameCell(existing.cell, event.cell)))
+    const kept = events.filter(existing => existing.id !== event.id && !(existing.kind === event.kind && sameCell(existing.cell, event.cell)))
 
     return [...kept, event]
+}
+
+/** Every event on a cell, in list order. */
+export function eventsAt(events: readonly MapEvent[], cell: Cell): MapEvent[] {
+    return events.filter(event => sameCell(event.cell, cell))
 }
 
 export function withoutEvent(events: readonly MapEvent[], eventId: Id): MapEvent[] {
@@ -80,7 +122,38 @@ function isWarp(value: unknown): value is Warp {
         && isDirection(warp.facing)
 }
 
+function isPlaced(value: unknown): value is { kind: unknown; id: string; cell: Cell } {
+    if (typeof value !== 'object' || value === null) {
+        return false
+    }
+
+    const event = value as { id?: unknown; cell?: unknown }
+
+    return typeof event.id === 'string' && isCell(event.cell)
+}
+
+function isMapEvent(value: unknown): value is MapEvent {
+    if (!isPlaced(value)) {
+        return false
+    }
+
+    const event = value as { kind: unknown; dialogId?: unknown; itemId?: unknown; npcId?: unknown }
+
+    switch (event.kind) {
+        case 'warp':
+            return isWarp(value)
+        case 'sign':
+            return typeof event.dialogId === 'string'
+        case 'item':
+            return typeof event.itemId === 'string'
+        case 'npc':
+            return typeof event.npcId === 'string'
+        default:
+            return false
+    }
+}
+
 /** Structural check for a map's whole event list as the editor sends it. */
 export function isMapEvents(value: unknown): value is MapEvent[] {
-    return Array.isArray(value) && value.every(isWarp)
+    return Array.isArray(value) && value.every(isMapEvent)
 }

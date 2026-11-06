@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { insideMap, WALK_MS_PER_CELL } from '../domain/movement'
-import { newWarp } from '../domain/warp'
+import { newSign, newWarp } from '../domain/warp'
 import { FADE_MS, fadeOpacity } from './fade'
 import { advanceField, FieldState, FieldWorld, isTransitioning, newField } from './field'
 
@@ -14,14 +14,14 @@ const world: FieldWorld = {
     canEnter: id => insideMap(id === 'town' ? town : house),
     isSolidAt: () => false,
     connectionsOf: id => (id === 'town' ? { south: { mapId: 'house', offset: -2 } } : {}),
-    eventsOf: id => (id === 'town' ? [door] : []),
+    eventsOf: id => (id === 'town' ? [door, newSign('sign', { x: 6, y: 5 }, 'welcome')] : []),
 }
 
-const right = { direction: 'right' as const, running: false }
-const up = { direction: 'up' as const, running: false }
-const none = { direction: null, running: false }
+const right = { direction: 'right' as const, running: false, interact: false }
+const up = { direction: 'up' as const, running: false, interact: false }
+const none = { direction: null, running: false, interact: false }
 
-function run(state: FieldState, input: { direction: 'up' | 'down' | 'left' | 'right' | null; running: boolean }, ms: number, step = 16): FieldState {
+function run(state: FieldState, input: { direction: 'up' | 'down' | 'left' | 'right' | null; running: boolean; interact: boolean }, ms: number, step = 16): FieldState {
     for (let t = 0; t < ms; t += step) {
         state = advanceField(state, input, step, world)
     }
@@ -66,7 +66,7 @@ test('input is refused mid-fade and accepted after it', () => {
 test('walking off a connected edge fades too and lands on the neighbour with the offset applied', () => {
     let state = newField('town', { x: 4, y: 9 }, 'down')
 
-    state = run(state, { direction: 'down', running: false }, WALK_MS_PER_CELL + 16)
+    state = run(state, { direction: 'down', running: false, interact: false }, WALK_MS_PER_CELL + 16)
     assert.equal(isTransitioning(state), true)
 
     state = run(state, none, FADE_MS + 16)
@@ -80,4 +80,21 @@ test('arriving on a warp cell does not fire it again', () => {
     const next = advanceField(arrived, none, 16, world)
 
     assert.equal(isTransitioning(next), false)
+})
+
+test('the interact key reports the sign in front and does not move the player, even with a direction held', () => {
+    const facing = newField('town', { x: 5, y: 5 }, 'right')
+    const pressed = advanceField(facing, { ...right, interact: true }, 16, world)
+
+    assert.deepEqual(pressed.interaction, { kind: 'sign', eventId: 'sign', dialogId: 'welcome' })
+    assert.equal(pressed.player.step, null)
+    assert.deepEqual(pressed.player.cell, { x: 5, y: 5 })
+
+    const next = advanceField(pressed, none, 16, world)
+
+    assert.equal(next.interaction, undefined, 'cleared the next frame')
+
+    const nothing = advanceField(newField('town', { x: 5, y: 5 }, 'left'), { ...none, interact: true }, 16, world)
+
+    assert.equal(nothing.interaction, undefined)
 })
