@@ -140,7 +140,7 @@ Painting uses `event.clientX` / `clientY` as if the canvas origin were the viewp
 | POST | `/upload-files` | `multer`, filename = uuid + allow-listed extension |
 | POST | `/sprite-model` | append to a file the client never reads |
 
-JSON reads and writes are synchronous and not atomic. Two overlapping `PATCH /layers` can lose a placement.
+JSON reads and writes are synchronous. `writeJson` writes a `.tmp` sibling and renames it over the target, so a reader never sees a torn document. It does not lock: two overlapping PATCHes still race on read-modify-write (last write wins), which one server process and one editor tab keep rare.
 
 ## Sketches that are not features
 

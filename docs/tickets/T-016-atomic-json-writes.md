@@ -1,7 +1,7 @@
 ---
 id: T-016
 title: Write JSON by rename
-status: ready
+status: done
 priority: P1
 phase: 1
 type: fix
@@ -15,6 +15,10 @@ blocks: []
 ## Outcome
 
 A crash during a save cannot leave a half-written project file. Readers never see a partial JSON document.
+
+## Result
+
+`writeAtomically(path, content, io)` takes `{ write, rename, remove }` so the failure path is tested with a fake disk; `writeJson` passes the `fs` versions. Every writer already went through `writeJson` (`rg writeFileSync` finds only this file). Verified with a rename through the editor's PATCH route: the file parses and no `.tmp` is left.
 
 ## Why
 
@@ -43,8 +47,8 @@ Out:
 
 ## Acceptance
 
-- [ ] A unit test of a small wrapper can simulate a throw before rename and show the original file remains. If the real `fs` module is awkward to fake, extract the sequence as a function that takes `write` and `rename`.
-- [ ] The project file after a normal save still parses.
+- [x] A unit test of a small wrapper can simulate a throw before rename and show the original file remains. If the real `fs` module is awkward to fake, extract the sequence as a function that takes `write` and `rename`.
+- [x] The project file after a normal save still parses.
 
 ## Test plan
 
