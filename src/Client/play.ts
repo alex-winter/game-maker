@@ -9,6 +9,7 @@ import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
 import { HeldDirections } from 'Client/Service/held-directions'
 import { findMap, playerSprite } from 'domain/project'
 import { Id } from 'domain/id'
+import { stepRule } from 'domain/collision'
 import { Direction, insideMap, newPlayer, stepPlayer } from 'domain/movement'
 import { PortSize } from 'engine/draw-port'
 import { startLoop } from 'engine/loop'
@@ -83,17 +84,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const sheetById = await loadSheets()
+    const tileset = projectRepository.cachedTileset(map.tileMap.tilesetId)
     const sprite = playerSprite(project)
     const spriteSheet = sprite === undefined ? undefined : sheetById.get(sprite.sheetId)
     const scene = buildScene({
         tileMap: map.tileMap,
-        tileset: projectRepository.cachedTileset(map.tileMap.tilesetId),
+        tileset,
         sheetById,
         layers: map.layers,
         loadedPlacements: await loadLegacyPlacements(map.layers),
     })
     const port = canvasDrawPort(ctx)
-    const canEnter = insideMap(map.tileMap)
+    // Without a tileset there are no metatile attributes to consult; only the edge blocks.
+    const canEnter = tileset === undefined ? insideMap(map.tileMap) : stepRule(map.tileMap, tileset)
     let player = newPlayer(map.spawn)
 
     startLoop(deltaSeconds => {

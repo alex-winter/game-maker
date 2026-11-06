@@ -430,7 +430,7 @@ export function isTileMap(value: unknown): value is TileMap {
 }
 
 /** Every metatile stacked at `cell`, back to front, skipping empty cells. */
-function metatilesAt(map: TileMap, tileset: Tileset, cell: Cell): Metatile[] {
+export function metatilesAt(map: TileMap, tileset: Tileset, cell: Cell): Metatile[] {
     const stacked: Metatile[] = []
 
     for (const layer of map.layers) {

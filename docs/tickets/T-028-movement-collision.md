@@ -1,7 +1,7 @@
 ---
 id: T-028
 title: Block steps into solid cells
-status: ready
+status: done
 priority: P1
 phase: 3
 type: feat
@@ -45,9 +45,15 @@ Out:
 
 ## Acceptance
 
-- [ ] Tests cover each ledge direction and a flat solid wall.
-- [ ] In play, the player slides along a wall instead of entering it, and can hop a ledge only one way.
+- [x] Tests cover each ledge direction and a flat solid wall.
+- [x] In play, the player slides along a wall instead of entering it, and can hop a ledge only one way.
 
 ## Test plan
 
 - Domain tests. Manual wall and ledge on a sample map.
+
+## Result
+
+- `domain/collision.ts`: `canStep(map, tileset, from, to)`, `stepRule(map, tileset): CanEnter`, `ledgeAt`, `directionBetween`, `OPPOSITE`. Rules, as the test names say: edge and solid cells block; two non-zero elevations that differ block, 0 means any; a ledge is entered only while moving in its direction and cannot be climbed back; a ledge taken the right way crosses an elevation change. `metatilesAt` is exported from `domain/map.ts` for it.
+- `play.ts` passes `stepRule` to `stepPlayer` (edge-only when the map has no tileset). Facing already updates on a refused step (T-026), so the player turns to face the wall.
+- Verified in headless Chrome on a map with a painted wall and a down ledge: the wall blocks, sliding along it works, the ledge hops down, and the way back up is refused.
