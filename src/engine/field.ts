@@ -6,7 +6,8 @@ import { CanEnter, Direction, MovementInput, newPlayer, Player, stepPlayer } fro
 import { Interaction, resolveInteraction } from '../domain/interact'
 import { MapEvent, stepFinished, warpTaken } from '../domain/warp'
 import { advanceFade, Fade, startFade } from './fade'
-import { advanceMessage, MessageState, openMessage } from './message'
+import { DialogPage } from '../domain/dialog'
+import { advanceMessage, MessageState, missingDialogPages, moveHighlight, openMessage } from './message'
 
 /** Where the player will be once the screen is black. */
 export type Transition = {
@@ -32,6 +33,9 @@ export type FieldState = {
 
     /** The message box, while one is open. The player stands still and the interact key pages it. */
     readonly message: MessageState | null
+
+    /** Last frame's held direction, so menus react to a press rather than to holding. */
+    readonly lastDirection: Direction | null
 }
 
 /** Movement plus whether the interact key was pressed this frame (edge, not level). */
@@ -54,16 +58,11 @@ export type FieldWorld = {
     eventsOf(mapId: Id): readonly MapEvent[]
 
     /** The pages of a dialog, or undefined when no dialog has that id. */
-    pagesOf(dialogId: Id): readonly string[] | undefined
+    pagesOf(dialogId: Id): readonly DialogPage[] | undefined
 }
 
 export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down'): FieldState {
-    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null }
-}
-
-/** What a sign with no dialog behind it says, so the author sees which id to fix. */
-export function missingDialogPages(dialogId: Id): string[] {
-    return [`(No dialog "${dialogId}" exists yet.)`]
+    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null }
 }
 
 /** True while a fade runs: the player does not move and input is ignored. */
@@ -74,8 +73,9 @@ export function isTransitioning(state: FieldState): boolean {
 /**
  * One frame of the field. During a fade the player stands still and input
  * is dropped; when the fade-out completes the pending transition lands the
- * player on the new map. While a message is open the player stands and
- * the interact key pages it. Otherwise the player steps, and a warp or a
+ * player on the new map. While a message is open the player stands, a
+ * fresh up or down press moves the choice cursor, and the interact key
+ * confirms — the next page, the chosen branch, or closing. Otherwise the player steps, and a warp or a
  * seam reached by that step starts a fade with the destination pending.
  */
 export function advanceField(state: FieldState, input: FieldInput, deltaMs: number, world: FieldWorld): FieldState {
@@ -90,7 +90,11 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
     }
 
     if (state.message !== null) {
-        return { ...state, interaction: undefined, message: input.interact ? advanceMessage(state.message) : state.message }
+        const pressed = input.direction !== null && input.direction !== state.lastDirection ? input.direction : null
+        const moved = pressed === 'up' ? moveHighlight(state.message, -1) : pressed === 'down' ? moveHighlight(state.message, 1) : state.message
+        const message = input.interact ? advanceMessage(moved, id => world.pagesOf(id)) : moved
+
+        return { ...state, interaction: undefined, message, lastDirection: input.direction }
     }
 
     const size = world.sizeOf(state.mapId)
@@ -104,7 +108,7 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
         const interaction = resolveInteraction(state.player, world.eventsOf(state.mapId))
         const message = interaction?.kind === 'sign' ? openMessage(world.pagesOf(interaction.dialogId) ?? missingDialogPages(interaction.dialogId)) : null
 
-        return { ...state, interaction, message }
+        return { ...state, interaction, message, lastDirection: input.direction }
     }
 
     const player = stepPlayer(state.player, input, deltaMs, seamAwareRule(state.mapId, size, world))
@@ -112,10 +116,10 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
 
     if (transition !== undefined) {
         // Freeze where the step landed; a held key must not walk on while the screen fades.
-        return { ...state, player: { ...player, step: null }, fade: startFade(), pending: transition, interaction: undefined }
+        return { ...state, player: { ...player, step: null }, fade: startFade(), pending: transition, interaction: undefined, lastDirection: input.direction }
     }
 
-    return { ...state, player, interaction: undefined }
+    return { ...state, player, interaction: undefined, lastDirection: input.direction }
 }
 
 /** Inside the map the collision rule decides; beyond an edge a seam may let the step through onto open ground. */

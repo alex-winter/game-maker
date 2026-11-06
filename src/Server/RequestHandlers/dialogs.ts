@@ -4,10 +4,14 @@ import { addDialog, findDialog, removeDialog, withDialog } from 'domain/project'
 import { readProject, writeProject } from 'Server/services/project-store'
 import { Request, RequestHandler, Response } from 'Server/types'
 
-const INVALID = 'A dialog needs a name and at least one page of text'
+const INVALID = 'A dialog needs a name and at least one page of text; a page holds at most four choices, each a label and a dialog id or null'
 
 function cleaned(body: Omit<Dialog, 'id'>, id: string): Dialog {
-    return { id, name: body.name.trim(), pages: body.pages.map(page => page.trim()) }
+    return {
+        id,
+        name: body.name.trim(),
+        pages: body.pages.map(page => ({ text: page.text.trim(), choices: page.choices.map(choice => ({ label: choice.label.trim(), nextDialogId: choice.nextDialogId })) })),
+    }
 }
 
 /** Body: `{ name, pages }`. Answers the stored dialog with its new id. */

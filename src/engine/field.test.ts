@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { insideMap, WALK_MS_PER_CELL } from '../domain/movement'
+import { newPage } from '../domain/dialog'
 import { newSign, newWarp } from '../domain/warp'
 import { FADE_MS, fadeOpacity } from './fade'
 import { advanceField, FieldState, FieldWorld, isTransitioning, newField } from './field'
@@ -15,7 +16,10 @@ const world: FieldWorld = {
     isSolidAt: () => false,
     connectionsOf: id => (id === 'town' ? { south: { mapId: 'house', offset: -2 } } : {}),
     eventsOf: id => (id === 'town' ? [door, newSign('sign', { x: 6, y: 5 }, 'welcome')] : []),
-    pagesOf: id => (id === 'welcome' ? ['Welcome!', 'Enjoy your stay.'] : undefined),
+    pagesOf: id => (id === 'welcome' ? [newPage('Welcome!'), newPage('Enjoy your stay.')]
+        : id === 'ask' ? [newPage('Take the boat?', [{ label: 'Yes', nextDialogId: 'boat' }, { label: 'No', nextDialogId: null }])]
+        : id === 'boat' ? [newPage('Off you go.')]
+        : undefined),
 }
 
 const right = { direction: 'right' as const, running: false, interact: false }
@@ -104,7 +108,7 @@ test('a sign opens its dialog; movement does nothing while it is open; the inter
     const facing = newField('town', { x: 5, y: 5 }, 'right')
     const opened = advanceField(facing, { ...none, interact: true }, 16, world)
 
-    assert.deepEqual(opened.message, { pages: ['Welcome!', 'Enjoy your stay.'], index: 0 })
+    assert.deepEqual(opened.message, { pages: [newPage('Welcome!'), newPage('Enjoy your stay.')], index: 0, highlight: 0 })
 
     const walking = advanceField(opened, { direction: 'down', running: true, interact: false }, 500, world)
 
@@ -131,5 +135,34 @@ test('a sign whose dialog does not exist says so instead of opening nothing', ()
     const lost: FieldWorld = { ...world, pagesOf: () => undefined }
     const opened = advanceField(newField('town', { x: 5, y: 5 }, 'right'), { ...none, interact: true }, 16, lost)
 
-    assert.deepEqual(opened.message?.pages, ['(No dialog "welcome" exists yet.)'])
+    assert.deepEqual(opened.message?.pages, [newPage('(No dialog "welcome" exists yet.)')])
+})
+
+test('a held direction moves the choice cursor once; a fresh press moves it again; confirm takes the highlighted branch', () => {
+    const asking: FieldWorld = { ...world, eventsOf: () => [newSign('sign', { x: 6, y: 5 }, 'ask')] }
+    const opened = advanceField(newField('town', { x: 5, y: 5 }, 'right'), { ...none, interact: true }, 16, asking)
+
+    assert.equal(opened.message?.highlight, 0)
+
+    const down = { direction: 'down' as const, running: false, interact: false }
+    const held1 = advanceField(opened, down, 16, asking)
+    const held2 = advanceField(held1, down, 16, asking)
+
+    assert.equal(held1.message?.highlight, 1)
+    assert.equal(held2.message?.highlight, 1, 'holding does not keep moving')
+    assert.deepEqual(held2.player.cell, { x: 5, y: 5 }, 'and never walks')
+
+    const released = advanceField(held2, none, 16, asking)
+    const up = advanceField(released, { ...down, direction: 'up' }, 16, asking)
+
+    assert.equal(up.message?.highlight, 0)
+
+    const second = advanceField(advanceField(up, none, 16, asking), down, 16, asking)
+    const confirmed = advanceField(second, { ...none, interact: true }, 16, asking)
+
+    assert.equal(confirmed.message, null, '"No" ends the conversation')
+
+    const yes = advanceField(opened, { ...none, interact: true }, 16, asking)
+
+    assert.deepEqual(yes.message?.pages, [newPage('Off you go.')], '"Yes" opens the linked dialog')
 })

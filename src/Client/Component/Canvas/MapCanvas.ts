@@ -680,7 +680,7 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         this.openModal(Dom.makeComponent(SignForm, {
             sign,
             cell,
-            dialogs: project.dialogs.map(each => ({ id: each.id, name: each.name, firstPage: each.pages[0] ?? '' })),
+            dialogs: project.dialogs.map(each => ({ id: each.id, name: each.name, firstPage: each.pages[0]?.text ?? '' })),
         }))
     }
 

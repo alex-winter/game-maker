@@ -1,14 +1,16 @@
 import { Component, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
-import { Dialog } from 'domain/dialog'
+import { Choice, Dialog, DialogPage, MAX_CHOICES, newPage } from 'domain/dialog'
 import { Id } from 'domain/id'
 import { MESSAGE_COLUMNS, MESSAGE_LINES, wrapText } from 'engine/message'
 
 /**
  * Authors the project's dialogs: pick one, write its pages, add or remove
- * pages. Every change saves. A page is what the play message box shows at
- * once, so the editor warns when a page needs more than two lines.
+ * pages, and give a page up to four choices that branch to another dialog
+ * or end the conversation. Every change saves. A page is what the play
+ * message box shows at once, so the editor warns when a page needs more
+ * than two lines.
  */
 export class DialogEditor extends Component<{ dialogId: Id | null }> {
     private dialogs: Dialog[] = []
@@ -23,6 +25,10 @@ export class DialogEditor extends Component<{ dialogId: Id | null }> {
         '.page-text:input': this.handlePageInput,
         '.add-page:click': this.handleAddPage,
         '.remove-page:click': this.handleRemovePage,
+        '.add-choice:click': this.handleAddChoice,
+        '.remove-choice:click': this.handleRemoveChoice,
+        '.choice-label:change': this.handleChoiceChange,
+        '.choice-target:change': this.handleChoiceChange,
     }
 
     protected css(): string {
@@ -116,6 +122,37 @@ export class DialogEditor extends Component<{ dialogId: Id | null }> {
                 padding: 4px 8px;
             }
 
+            .choices {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                margin-top: 4px;
+                padding-left: 8px;
+                border-left: 2px solid #d4a017;
+            }
+
+            .choice {
+                display: flex;
+                gap: 6px;
+                align-items: center;
+            }
+
+            .choice-label {
+                flex: 1;
+                padding: 4px 6px;
+                border-radius: 6px;
+                border: 1px solid #ccc;
+            }
+
+            .choice-target {
+                padding: 4px;
+            }
+
+            .add-choice, .remove-choice {
+                padding: 2px 8px;
+                font-size: 12px;
+            }
+
             .hint, .empty {
                 color: #666;
             }
@@ -203,17 +240,17 @@ export class DialogEditor extends Component<{ dialogId: Id | null }> {
         return bar
     }
 
-    private buildPage(text: string, index: number, count: number): HTMLElement {
+    private buildPage(page: DialogPage, index: number, count: number): HTMLElement {
         const row = Dom.div('page')
         const body = Dom.div('page-body')
         const area = Dom.inputTextArea('page-text')
         const fit = Dom.span('', 'fit')
 
-        area.value = text
+        area.value = page.text
         area.dataset.index = String(index)
         area.placeholder = 'What the sign says on this page…'
         this.showFit(area, fit)
-        body.append(area, fit)
+        body.append(area, fit, this.buildChoices(page, index))
 
         const remove = Dom.button('×', 'remove-page')
 
@@ -224,6 +261,60 @@ export class DialogEditor extends Component<{ dialogId: Id | null }> {
         row.append(Dom.span(String(index + 1) + '.', 'page-number'), body, remove)
 
         return row
+    }
+
+    /** The page's choices, each a label and where it leads, plus an add button while there is room. */
+    private buildChoices(page: DialogPage, index: number): HTMLElement {
+        const choices = Dom.div('choices')
+
+        page.choices.forEach((choice, choiceIndex) => {
+            const row = Dom.div('choice')
+            const label = document.createElement('input')
+            const target = document.createElement('select')
+            const remove = Dom.button('×', 'remove-choice')
+
+            label.className = 'choice-label'
+            label.placeholder = 'Choice label'
+            label.value = choice.label
+            label.dataset.index = String(index)
+            label.dataset.choice = String(choiceIndex)
+
+            target.className = 'choice-target'
+            target.dataset.index = String(index)
+            target.dataset.choice = String(choiceIndex)
+
+            const end = document.createElement('option')
+
+            end.value = ''
+            end.textContent = 'ends the conversation'
+            end.selected = choice.nextDialogId === null
+            target.append(end)
+
+            for (const dialog of this.dialogs) {
+                const option = document.createElement('option')
+
+                option.value = dialog.id
+                option.textContent = '→ ' + dialog.name
+                option.selected = dialog.id === choice.nextDialogId
+                target.append(option)
+            }
+
+            remove.title = 'Remove this choice'
+            remove.dataset.index = String(index)
+            remove.dataset.choice = String(choiceIndex)
+            row.append(Dom.span('▶'), label, target, remove)
+            choices.append(row)
+        })
+
+        if (page.choices.length < MAX_CHOICES) {
+            const add = Dom.button(page.choices.length === 0 ? '+ Choice' : '+ Another choice', 'add-choice')
+
+            add.dataset.index = String(index)
+            add.title = 'Offer the player a choice on this page'
+            choices.append(add)
+        }
+
+        return choices
     }
 
     /** Tells the author how the page wraps in play, and flags one that needs more lines than the box has. */
@@ -238,10 +329,14 @@ export class DialogEditor extends Component<{ dialogId: Id | null }> {
         area.classList.toggle('overflow', overflow)
     }
 
-    private indexOf(target: EventTarget | null): number | undefined {
-        const index = target instanceof HTMLElement ? Number(target.dataset.index) : NaN
+    private indexOf(target: EventTarget | null, key: 'index' | 'choice' = 'index'): number | undefined {
+        const index = target instanceof HTMLElement ? Number(target.dataset[key]) : NaN
 
         return Number.isInteger(index) ? index : undefined
+    }
+
+    private withPage(index: number, change: (page: DialogPage) => DialogPage): Dialog | undefined {
+        return this.dialog === undefined ? undefined : { ...this.dialog, pages: this.dialog.pages.map((page, each) => (each === index ? change(page) : page)) }
     }
 
     private async save(dialog: Dialog): Promise<void> {
@@ -270,7 +365,7 @@ export class DialogEditor extends Component<{ dialogId: Id | null }> {
             return
         }
 
-        const created = await projectRepository.createDialog({ name: name.trim(), pages: [''] })
+        const created = await projectRepository.createDialog({ name: name.trim(), pages: [newPage('')] })
 
         this.dialogs = (await projectRepository.load()).dialogs
         this.dialog = created
@@ -325,9 +420,11 @@ export class DialogEditor extends Component<{ dialogId: Id | null }> {
             return
         }
 
-        const pages = this.dialog.pages.map((page, each) => (each === index ? area.value : page))
+        const changed = this.withPage(index, page => ({ ...page, text: area.value }))
 
-        await this.save({ ...this.dialog, pages })
+        if (changed !== undefined) {
+            await this.save(changed)
+        }
     }
 
     private async handleAddPage(): Promise<void> {
@@ -335,7 +432,7 @@ export class DialogEditor extends Component<{ dialogId: Id | null }> {
             return
         }
 
-        await this.save({ ...this.dialog, pages: [...this.dialog.pages, ''] })
+        await this.save({ ...this.dialog, pages: [...this.dialog.pages, newPage('')] })
     }
 
     private async handleRemovePage(event: Event): Promise<void> {
@@ -346,5 +443,49 @@ export class DialogEditor extends Component<{ dialogId: Id | null }> {
         }
 
         await this.save({ ...this.dialog, pages: this.dialog.pages.filter((_page, each) => each !== index) })
+    }
+
+    private async handleAddChoice(event: Event): Promise<void> {
+        const index = this.indexOf(event.target)
+        const changed = index === undefined ? undefined : this.withPage(index, page => (
+            page.choices.length >= MAX_CHOICES ? page : { ...page, choices: [...page.choices, { label: page.choices.length === 0 ? 'Yes' : page.choices.length === 1 ? 'No' : '', nextDialogId: null }] }
+        ))
+
+        if (changed !== undefined) {
+            await this.save(changed)
+        }
+    }
+
+    private async handleRemoveChoice(event: Event): Promise<void> {
+        const index = this.indexOf(event.target)
+        const choiceIndex = this.indexOf(event.target, 'choice')
+        const changed = index === undefined || choiceIndex === undefined ? undefined : this.withPage(index, page => (
+            { ...page, choices: page.choices.filter((_choice, each) => each !== choiceIndex) }
+        ))
+
+        if (changed !== undefined) {
+            await this.save(changed)
+        }
+    }
+
+    /** Reads the whole row the changed control sits in, so label and target save together. */
+    private async handleChoiceChange(event: Event): Promise<void> {
+        const control = event.target
+        const index = this.indexOf(control)
+        const choiceIndex = this.indexOf(control, 'choice')
+        const row = control instanceof HTMLElement ? control.closest('.choice') : null
+        const label = row?.querySelector('.choice-label')
+        const target = row?.querySelector('.choice-target')
+
+        if (index === undefined || choiceIndex === undefined || !(label instanceof HTMLInputElement) || !(target instanceof HTMLSelectElement)) {
+            return
+        }
+
+        const choice: Choice = { label: label.value, nextDialogId: target.value === '' ? null : target.value }
+        const changed = this.withPage(index, page => ({ ...page, choices: page.choices.map((each, at) => (at === choiceIndex ? choice : each)) }))
+
+        if (changed !== undefined) {
+            await this.save(changed)
+        }
     }
 }

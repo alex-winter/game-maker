@@ -5,7 +5,7 @@ import { Id, newId } from './id'
 import { emptyTileMap, GridSize, isInside, TileMap, withTileMapDefaults } from './map'
 import { SpriteDefinition } from './sprite'
 import type { MapEvent } from './warp'
-import type { Dialog } from './dialog'
+import { Dialog, withDialogDefaults } from './dialog'
 import { Tileset } from './tileset'
 
 /** Cells in a new map. A gen 3 town is about this size. */
@@ -82,7 +82,7 @@ export function withProjectDefaults(stored: Partial<Project> & Pick<Project, 'id
         tilesets: stored.tilesets ?? [],
         sprites: stored.sprites ?? [],
         playerSpriteId: stored.playerSpriteId ?? null,
-        dialogs: stored.dialogs ?? [],
+        dialogs: (stored.dialogs ?? []).map(withDialogDefaults),
         startMapId: stored.startMapId ?? null,
         maps: stored.maps.map(map => {
             const tileMap = withTileMapDefaults(map.tileMap ?? emptyTileMap(DEFAULT_MAP_SIZE))
