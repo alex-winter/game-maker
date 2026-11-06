@@ -2,6 +2,7 @@ import { CanvasLayer } from 'Client/Component/Canvas/CanvasLayer'
 import { CanvasTools } from 'Client/Component/Canvas/CanvasTools'
 import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 import { LayerListing } from 'Client/Component/LayerListing/LayerListing'
+import { MapSelect } from 'Client/Component/MapSelect/MapSelect'
 import { NewLayerForm } from 'Client/Component/NewLayerForm/NewLayerForm'
 import { PlacementHistory } from 'Client/Component/PlacementHistory/PlacementHistory'
 import { SideMenu } from 'Client/Component/SideMenu/SideMenu'
@@ -17,6 +18,9 @@ import { LAYERS } from 'Client/Constants/layers'
 import { camera } from 'Client/Service/camera'
 import { loadPlacement } from 'Client/Service/load-placement'
 import { layerRepository } from 'Client/Service/Repository/LayerRepository'
+import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
+import { activeMapId, urlForMap } from 'Client/Service/active-map'
+import { Id } from 'domain/id'
 import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { sheetRepository } from 'Client/Service/Repository/SheetRepository'
@@ -33,6 +37,7 @@ export class WorldEditor extends Component {
     private windowBoxes: { [key: string]: WindowBox } = {}
     private layers: Layer[] = []
     private userData!: UserData
+    private mapId!: Id
 
     protected externalListeners: ExternalListeners = {
         'open-sheet': this.handleOpenSheet,
@@ -75,6 +80,17 @@ export class WorldEditor extends Component {
     }
 
     protected async setup(): Promise<void> {
+        const project = await projectRepository.load()
+        const mapId = activeMapId(window.location.search, project)
+
+        if (mapId === undefined) {
+            throw new Error('The project has no maps')
+        }
+
+        this.mapId = mapId
+        layerRepository.useMap(mapId)
+        this.pointPlayLinkAtMap(mapId)
+
         this.userData = await userDataRepository.getAll()
         this.layers = await layerRepository.getAll()
 
@@ -108,7 +124,10 @@ export class WorldEditor extends Component {
             this.shadowRoot?.append(dialog)
         }
 
-        sideMenu.append(layerListing)
+        sideMenu.append(
+            Dom.makeComponent(MapSelect, { activeMapId: this.mapId }),
+            layerListing,
+        )
 
         const layerElements = this.layers.map(
             layer => Dom.makeComponent(CanvasLayer, { layer })
@@ -127,6 +146,15 @@ export class WorldEditor extends Component {
         )
 
         return container
+    }
+
+    /** The play link lives in the page body, outside any component. */
+    private pointPlayLinkAtMap(mapId: Id): void {
+        const link = document.getElementById('play')
+
+        if (link instanceof HTMLAnchorElement) {
+            link.href = urlForMap('/play', mapId)
+        }
     }
 
     private handleOpenSheet(sheetId: string): void {

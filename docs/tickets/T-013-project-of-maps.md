@@ -1,7 +1,7 @@
 ---
 id: T-013
 title: Store a project that contains many maps
-status: ready
+status: done
 priority: P1
 phase: 1
 type: feat
@@ -15,6 +15,10 @@ blocks: [T-014, T-015, T-025, T-036]
 ## Outcome
 
 The disk has a project with an id, a name, and a list of maps. The editor loads that project instead of a single global layer array. Existing `layers.json` is imported once into a legacy map so current paintings are not thrown away.
+
+## Result
+
+`domain/project.ts` defines `Project { id, name, maps }` and `GameMap { id, name, layers }` (the word `Map` is taken by JavaScript) with pure `addMap`, `renameMap`, `withMapLayers`, `findMap`, `projectFromLegacyLayers`, and `defaultProject`. Maps are embedded in `data/project.json` rather than listed by id, so one read answers "which maps exist" and one write stays consistent; T-016 makes that write atomic. `ensureProjectFile` imports `layers.json` once as "Legacy map". Layer routes moved under `/maps/:mapId/layers`; `layerRepository.useMap(mapId)` scopes the client. The editor and play page pick the map from `?map=` (`Client/Service/active-map.ts`) and `MapSelect` in the side menu switches or creates one.
 
 ## Why
 
@@ -48,9 +52,9 @@ Out:
 
 ## Acceptance
 
-- [ ] Booting on an old `layers.json` yields a project with one map whose placements match.
-- [ ] A second map can be created and fetched without deleting the first.
-- [ ] Restarting the server keeps both.
+- [x] Booting on an old `layers.json` yields a project with one map whose placements match.
+- [x] A second map can be created and fetched without deleting the first.
+- [x] Restarting the server keeps both.
 
 ## Test plan
 

@@ -1,24 +1,42 @@
+import { findMap, withMapLayers } from 'domain/project'
 import { Layer } from 'Model/Layer'
-import { config } from 'Server/config'
-import { readJson } from 'Server/services/read-json'
-import { writeJson } from 'Server/services/write-json'
+import { readProject, writeProject } from 'Server/services/project-store'
 import { Request, RequestHandler, Response } from 'Server/types'
 
+function hasUuid(value: unknown): value is Pick<Layer, 'uuid'> & Partial<Layer> {
+    return typeof value === 'object'
+        && value !== null
+        && typeof (value as { uuid?: unknown }).uuid === 'string'
+}
+
 export const requestHandlerPatchLayers: RequestHandler = (request: Request, response: Response): void => {
-    const updatedLayer = request.body as Layer
+    const updatedLayer: unknown = request.body
 
-    const jsonFileDir = config.layersJsonFileDir
+    if (!hasUuid(updatedLayer)) {
+        response.status(400).json({ error: 'Invalid data format' })
+        return
+    }
 
-    const layers = readJson<Layer[]>(jsonFileDir)
-    const layer: undefined | Layer = layers.find(l => l.uuid === updatedLayer.uuid)
+    const project = readProject()
+    const map = findMap(project, request.params.mapId)
+
+    if (map === undefined) {
+        response.status(404).json({ error: 'Map not found' })
+        return
+    }
+
+    const layer = map.layers.find(l => l.uuid === updatedLayer.uuid)
 
     if (layer === undefined) {
         response.status(404).json({ error: 'Layer not found' })
-    } else {
-        Object.assign(layer, updatedLayer)
-
-        writeJson(jsonFileDir, layers)
-
-        response.json({ ok: true, updatedLayer: layer })
+        return
     }
+
+    const merged: Layer = { ...layer, ...updatedLayer }
+
+    writeProject(
+        withMapLayers(project, map.id, map.layers.map(l => l.uuid === merged.uuid ? merged : l))
+    )
+
+    response.json({ ok: true, updatedLayer: merged })
 }

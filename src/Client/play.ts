@@ -4,6 +4,8 @@ import { placementImageRepository } from 'Client/Service/Repository/PlacementIma
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { Coordinates } from 'domain/coordinates'
 import { layerRepository } from 'Client/Service/Repository/LayerRepository'
+import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
+import { activeMapId } from 'Client/Service/active-map'
 import { Layer } from 'Model/Layer'
 import { drawOrder } from 'Model/draw-order'
 import { directionFromKeys, HeldKeys } from 'Client/Service/direction-from-keys'
@@ -140,6 +142,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     fitCanvasToWindow(canvas, ctx)
     window.addEventListener('resize', () => fitCanvasToWindow(canvas, ctx))
+
+    const mapId = activeMapId(window.location.search, await projectRepository.load())
+
+    if (mapId === undefined) {
+        return
+    }
+
+    layerRepository.useMap(mapId)
 
     const layers = sortBackToFront(await layerRepository.getAll())
     const loadedPlacements = await loadPlacements(layers)

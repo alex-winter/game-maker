@@ -1,22 +1,25 @@
-import { Layer } from 'Model/Layer'
-import { config } from 'Server/config'
-import { readJson } from 'Server/services/read-json'
-import { writeJson } from 'Server/services/write-json'
+import { findMap, withMapLayers } from 'domain/project'
+import { readProject, writeProject } from 'Server/services/project-store'
 import { RequestHandler, Request, Response } from 'Server/types'
 
 export const requestHandlerDeleteLayers: RequestHandler = (request: Request, response: Response): void => {
-    const { uuid } = request.params
-    const jsonFileDir = config.layersJsonFileDir
-    const layers = readJson<Layer[]>(jsonFileDir)
-    const index = layers.findIndex(layer => layer.uuid === uuid)
+    const { mapId, uuid } = request.params
+    const project = readProject()
+    const map = findMap(project, mapId)
 
-    if (index === -1) {
+    if (map === undefined) {
+        response.status(404).json({ error: 'Map not found' })
+        return
+    }
+
+    if (!map.layers.some(layer => layer.uuid === uuid)) {
         response.status(404).json({ error: 'Layer not found' })
         return
     }
 
-    layers.splice(index, 1)
-    writeJson(jsonFileDir, layers)
+    writeProject(
+        withMapLayers(project, map.id, map.layers.filter(layer => layer.uuid !== uuid))
+    )
 
     response.json({
         ok: true,

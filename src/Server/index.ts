@@ -18,6 +18,10 @@ import { requestHandlerDeleteLayers } from 'Server/RequestHandlers/delete-layers
 import { createDataFile } from 'Server/services/create-data-file'
 import { requestHandlerPostFiles } from 'Server/RequestHandlers/post-files'
 import { requestHandlerPostSpriteModel } from 'Server/RequestHandlers/post-sprite-model'
+import { requestHandlerGetProject } from 'Server/RequestHandlers/get-project'
+import { requestHandlerPostMaps } from 'Server/RequestHandlers/post-maps'
+import { requestHandlerPatchMap } from 'Server/RequestHandlers/patch-map'
+import { ensureProjectFile } from 'Server/services/project-store'
 import { RequestHandler } from 'Server/types'
 
 const app = express()
@@ -64,10 +68,10 @@ const uploadSheets: RequestHandler = (request, response, next) => {
 }
 
 createDataFile(config.uploadsIndexFileDir)
-createDataFile(config.layersJsonFileDir)
 createDataFile(config.placementImagesJsonFileDir)
 createDataFile(config.spriteModelsJsonFileDir)
 createDataFile(config.userDataFileDir, UserDataFactory.make())
+ensureProjectFile()
 
 app.use(express.static(config.publicDir))
 app.use(express.json({ limit: config.fileUploadSizeLimit }))
@@ -78,10 +82,14 @@ app.get('/play', requestHandlerPlay)
 
 app.get('/sheets', requestHandlerGetSheets)
 
-app.get('/layers', requestHandlerGetLayers)
-app.post('/layers', requestHandlerPostLayers)
-app.patch('/layers', requestHandlerPatchLayers)
-app.delete('/layers/:uuid', requestHandlerDeleteLayers)
+app.get('/project', requestHandlerGetProject)
+app.post('/project/maps', requestHandlerPostMaps)
+app.patch('/project/maps/:mapId', requestHandlerPatchMap)
+
+app.get('/maps/:mapId/layers', requestHandlerGetLayers)
+app.post('/maps/:mapId/layers', requestHandlerPostLayers)
+app.patch('/maps/:mapId/layers', requestHandlerPatchLayers)
+app.delete('/maps/:mapId/layers/:uuid', requestHandlerDeleteLayers)
 
 app.post('/upload-files', uploadSheets, requestHandlerPostFiles)
 

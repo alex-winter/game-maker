@@ -1,6 +1,6 @@
 # Architecture today
 
-The program is a local editor plus a play page. Both are webpack bundles. An Express process serves them and stores JSON on disk. There is one implicit project, one implicit map, and no engine module.
+The program is a local editor plus a play page. Both are webpack bundles. An Express process serves them and stores JSON on disk. There is one local project in `data/project.json` holding many maps; the editor and play page open one map at a time, chosen by `?map=<id>`. There is no engine module yet.
 
 ```
 src/
@@ -9,7 +9,7 @@ src/
   Model/      shared types for the placement model (some are unused sketches)
   Server/     Express routes and JSON files
 public/       index.html, play.html, built bundles in dist/
-data/         created at runtime: layers, placement images, user data, sprite models
+data/         created at runtime: project.json (maps and their layers), placement images, user data, sprite models
 uploads/      sprite sheet files, stored as <uuid><ext>, plus index.json with the original names
 ```
 
@@ -22,12 +22,12 @@ Editor (`public/index.html` → `src/Client/index.ts`):
 1. Register every custom element in `Client/Constants/components.ts`.
 2. On `DOMContentLoaded`, append an `<ide-wrapper>`.
 3. `Ide` paints a menu bar (the items do nothing) and a `WorldEditor`.
-4. `WorldEditor.setup` loads user data, layers, sheets, and placement images, then decodes every placement into `loadedPlacementRepository`.
-5. `WorldEditor.build` mounts the side menu, the tool bar, one `CanvasLayer` per layer, and always opens a dialog window.
+4. `WorldEditor.setup` loads the project, picks the active map (`Client/Service/active-map.ts`: `?map=` if it exists, else the first map), points `layerRepository.useMap` at it, then loads user data, that map's layers, sheets, and placement images, and decodes every placement into `loadedPlacementRepository`.
+5. `WorldEditor.build` mounts the side menu (with `MapSelect`, a select plus a "+ Map" button that reloads the page on the chosen map), the tool bar, one `CanvasLayer` per layer, and always opens a dialog window.
 
 Play (`public/play.html` → `src/Client/play.ts`):
 
-1. Load every layer and every placement image.
+1. Load the project, pick the active map the same way the editor does, and load that map's layers and every placement image.
 2. Draw them in one canvas from a camera offset.
 3. Held arrow keys pan that offset every frame at 120 px/s. There is no player and no collision.
 
@@ -77,14 +77,15 @@ Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names a
 
 | File | Written by | Shape |
 | --- | --- | --- |
-| `data/layers.json` | layer routes | `Layer[]` |
+| `data/project.json` | project, map, and layer routes | `{ id, name, maps: { id, name, layers: Layer[] }[] }` |
+| `data/layers.json` | nothing any more | imported once into a map named "Legacy map" when `project.json` is first created, then ignored |
 | `data/placement-images.json` | placement-image route | `{ uuid, src }[]` where `src` is a data URL |
 | `data/user-data.json` | user-data route | camera, tool name, window rects |
 | `data/sprite-models.json` | sprite-model route | unused by the client |
 | `uploads/<uuid><ext>` | `multer` | the sheet bytes |
 | `uploads/index.json` | upload route | `{ id, originalName, file }[]` |
 
-`config.projectsDir` points at `data/projects.json` and is never read. `Project` is an unused type.
+`Project` and `GameMap` live in `domain/project.ts` with pure helpers (`addMap`, `renameMap`, `withMapLayers`, `findMap`). `Server/services/project-store.ts` reads and writes the file; handlers call a domain helper and write the result.
 
 A layer is:
 
@@ -126,8 +127,11 @@ Painting uses `event.clientX` / `clientY` as if the canvas origin were the viewp
 | GET | `/` | editor HTML |
 | GET | `/play` | play HTML |
 | GET | `/sheets` | every upload, read asynchronously, returned as base64 with a mapped MIME type |
-| GET/POST/PATCH | `/layers` | the one map |
-| DELETE | `/layers/:uuid` | remove a layer |
+| GET | `/project` | the project with every map and its layers |
+| POST | `/project/maps` | `{ name }` → the new map |
+| PATCH | `/project/maps/:mapId` | `{ name }` → the renamed map |
+| GET/POST/PATCH | `/maps/:mapId/layers` | one map's layers |
+| DELETE | `/maps/:mapId/layers/:uuid` | remove a layer from one map |
 | GET/PATCH | `/user-data` | camera, tool, windows |
 | GET/POST | `/placement-images` | data URLs |
 | POST | `/upload-files` | `multer`, filename = uuid + allow-listed extension |
@@ -146,7 +150,6 @@ These files are intentions, not behavior. Do not wire them up half-way inside a 
 | `Model/SpriteModel.ts`, `SpriteModelMaker.ts` | Maker is not a registered element. Side-menu handler is empty. |
 | `Component/Animation/AnimationMaker.ts` | Empty container. Registered, never opened. |
 | `Model/Skill.ts` | `{ uuid }` only. |
-| `Model/Project.ts` | Unused. |
 
 ## Target shape
 

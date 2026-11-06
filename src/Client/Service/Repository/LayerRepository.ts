@@ -1,5 +1,6 @@
 import { Events } from 'Client/Service/Events'
 import { Repository } from 'Client/Service/Repository/Repository'
+import { Id } from 'domain/id'
 import { Layer } from 'Model/Layer'
 
 export type LayerChangeKind = 'active' | 'visibility' | 'order' | 'name' | 'placements'
@@ -11,15 +12,40 @@ export type LayerChange = {
 }
 
 class LayerRepository extends Repository {
-    private readonly API_PATH = '/layers'
+    private mapId: Id | undefined
 
-    private layers!: Layer[]
+    private layers: Layer[] | undefined
+
+    /** Points every later call at one map's layers. Call before `getAll`. */
+    public useMap(mapId: Id): void {
+        if (this.mapId !== mapId) {
+            this.layers = undefined
+        }
+
+        this.mapId = mapId
+    }
+
+    private get API_PATH(): string {
+        if (this.mapId === undefined) {
+            throw new Error('LayerRepository.useMap must be called before any layer request')
+        }
+
+        return `/maps/${this.mapId}/layers`
+    }
+
+    private get loaded(): Layer[] {
+        if (this.layers === undefined) {
+            throw new Error('Layers are not loaded; await getAll first')
+        }
+
+        return this.layers
+    }
 
     private getLastOrder(): number {
-        if (this.layers.length === 0) {
+        if (this.loaded.length === 0) {
             return -1
         }
-        return Math.max(...this.layers.map(item => item.order))
+        return Math.max(...this.loaded.map(item => item.order))
     }
 
     public async create(...layers: Layer[]): Promise<void> {
@@ -28,7 +54,7 @@ class LayerRepository extends Repository {
 
             layer.order = lastOrder + 1
 
-            this.layers.push(layer)
+            this.loaded.push(layer)
         }
 
         await this.post(
@@ -41,7 +67,7 @@ class LayerRepository extends Repository {
 
     /** Copies `layer` over the stored one and persists that one layer. */
     public update(layer: Layer, changed: LayerChangeKind): Promise<void> {
-        const found = this.layers.find(l => l.uuid === layer.uuid)
+        const found = this.loaded.find(l => l.uuid === layer.uuid)
 
         if (found && found !== layer) {
             Object.assign(
@@ -54,23 +80,23 @@ class LayerRepository extends Repository {
     }
 
     public async getAll(): Promise<Layer[]> {
-        if (!this.layers) {
-            this.layers = await this.get(this.API_PATH)
+        if (this.layers === undefined) {
+            this.layers = await this.get<Layer[]>(this.API_PATH)
         }
 
         return this.layers.sort((a, b) => a.order - b.order)
     }
 
     public async remove(uuid: string): Promise<void> {
-        const index = this.layers.findIndex(p => p.uuid === uuid)
+        const index = this.loaded.findIndex(p => p.uuid === uuid)
         if (index !== -1) {
-            this.layers.splice(index, 1)
+            this.loaded.splice(index, 1)
         }
         await this.delete(this.API_PATH + '/' + uuid)
     }
 
     public setActive(uuid: string): void {
-        for (const layer of this.layers) {
+        for (const layer of this.loaded) {
             const isActive = layer.uuid === uuid
 
             if (layer.is_active !== isActive) {
@@ -92,7 +118,7 @@ class LayerRepository extends Repository {
     }
 
     public getByUuid(uuid: string): Layer | undefined {
-        return this.layers.find(layer => layer.uuid === uuid)
+        return this.loaded.find(layer => layer.uuid === uuid)
     }
 
     private async persist(layer: Layer, changed: LayerChangeKind): Promise<void> {

@@ -1,11 +1,14 @@
-import { config } from 'Server/config'
-import { readJson } from 'Server/services/read-json'
-import { Request, Response } from 'Server/types'
+import { findMap } from 'domain/project'
+import { readProject } from 'Server/services/project-store'
+import { Request, RequestHandler, Response } from 'Server/types'
 
-export const requestHandlerGetLayers = (request: Request, response: Response): void => {
-    response.json(
-        readJson(
-            config.layersJsonFileDir
-        )
-    )
+export const requestHandlerGetLayers: RequestHandler = (request: Request, response: Response): void => {
+    const map = findMap(readProject(), request.params.mapId)
+
+    if (map === undefined) {
+        response.status(404).json({ error: 'Map not found' })
+        return
+    }
+
+    response.json(map.layers)
 }

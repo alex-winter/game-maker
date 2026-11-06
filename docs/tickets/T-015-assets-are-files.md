@@ -1,7 +1,7 @@
 ---
 id: T-015
 title: Serve sheet images as files
-status: backlog
+status: ready
 priority: P1
 phase: 1
 type: feat

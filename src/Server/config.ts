@@ -15,9 +15,10 @@ export const config = {
 
     uploadsIndexFileDir: path.join(projectRootDir, 'uploads', 'index.json'),
 
-    projectsDir: path.join(dataDir, 'projects.json'),
+    projectFileDir: path.join(dataDir, 'project.json'),
 
-    layersJsonFileDir: path.join(dataDir, 'layers.json'),
+    /** Read once, when `project.json` does not exist yet, to import old paintings. */
+    legacyLayersJsonFileDir: path.join(dataDir, 'layers.json'),
 
     placementImagesJsonFileDir: path.join(dataDir, 'placement-images.json'),
 

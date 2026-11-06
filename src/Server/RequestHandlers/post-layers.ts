@@ -1,8 +1,6 @@
-import { Layer } from 'Model/Layer'
-import { config } from 'Server/config'
+import { findMap, withMapLayers } from 'domain/project'
 import { isLayerList } from 'Server/services/is-layer-list'
-import { readJson } from 'Server/services/read-json'
-import { writeJson } from 'Server/services/write-json'
+import { readProject, writeProject } from 'Server/services/project-store'
 import { Request, RequestHandler, Response } from 'Server/types'
 
 export const requestHandlerPostLayers: RequestHandler = (request: Request, response: Response): void => {
@@ -13,15 +11,17 @@ export const requestHandlerPostLayers: RequestHandler = (request: Request, respo
         return
     }
 
-    const jsonFileDir = config.layersJsonFileDir
+    const project = readProject()
+    const map = findMap(project, request.params.mapId)
 
-    const existing = readJson<Layer[]>(jsonFileDir)
-    const updated = [
-        ...existing,
-        ...body,
-    ]
+    if (map === undefined) {
+        response.status(404).json({ error: 'Map not found' })
+        return
+    }
 
-    writeJson(jsonFileDir, updated)
+    writeProject(
+        withMapLayers(project, map.id, [...map.layers, ...body])
+    )
 
     response.json({
         ok: true,
