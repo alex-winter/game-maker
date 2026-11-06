@@ -14,7 +14,7 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 ## Editor geometry and tools
 
-5. **The brush is in the wrong coordinate space.** `CanvasLayer.handleMouseMove` treats `clientX`/`clientY` as canvas pixels. The canvas is inset by the side menu, so stamped tiles land away from the cursor. The ghost image is `position: fixed`, so it follows the cursor and disagrees with the stamp. Ticket T-002.
+5. **Fixed (T-002).** **The brush is in the wrong coordinate space.** `CanvasLayer.handleMouseMove` treats `clientX`/`clientY` as canvas pixels. The canvas is inset by the side menu, so stamped tiles land away from the cursor. The ghost image is `position: fixed`, so it follows the cursor and disagrees with the stamp. Ticket T-002.
 
 6. **The first click can stamp a stale cell.** `mousedown` calls `generatePlacement` using `mouseCoordinates` from the previous move, or `{0,0}` if the pointer has not moved on that layer. The rubber's document-level `mousemove` has the same stale read. Ticket T-008.
 

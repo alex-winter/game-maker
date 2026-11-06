@@ -70,6 +70,7 @@ export class WorldEditor extends Component {
 
             .canvas-container {
                 flex-grow: 1;
+                position: relative;
             }
         `
     }

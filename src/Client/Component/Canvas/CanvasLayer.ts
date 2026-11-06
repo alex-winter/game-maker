@@ -12,6 +12,7 @@ import { Canvas2D } from 'Client/Component/Canvas/Canvas'
 import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
 import { layerRepository } from 'Client/Service/Repository/LayerRepository'
 import { loadPlacement } from 'Client/Service/load-placement'
+import { pointerToWorld } from 'Client/Service/pointer-to-world'
 import { snap } from 'Client/Service/snap'
 
 type Movement = {
@@ -68,6 +69,9 @@ export class CanvasLayer extends Component {
             :host {
                 z-index: 500;
                 display: block;
+                position: absolute;
+                top: 0;
+                left: 0;
                 width: 100%;
                 height: 100%;
                 pointer-events: none;
@@ -78,7 +82,7 @@ export class CanvasLayer extends Component {
             }
 
             .current-image {
-                position: fixed;
+                position: absolute;
                 pointer-events: none;
                 z-index: 510;
             }
@@ -87,8 +91,10 @@ export class CanvasLayer extends Component {
             }
        
             .container {
+                position: relative;
                 width: 100%;
                 height: 100%;
+                overflow: hidden;
             }
         `
     }
@@ -148,6 +154,38 @@ export class CanvasLayer extends Component {
 
     private getCurrentImage(): HTMLImageElement {
         return this.findOne('.current-image')!
+    }
+
+    private getContainer(): HTMLDivElement {
+        return this.findOne('.container')!
+    }
+
+    private snappedWorldPointAt(event: MouseEvent): Coordinates {
+        const world = pointerToWorld(
+            event,
+            this.getContainer().getBoundingClientRect(),
+            this.viewCoordinates,
+        )
+
+        return {
+            x: this.snap(world.x),
+            y: this.snap(world.y),
+        }
+    }
+
+    private trackPointer(event: MouseEvent): void {
+        const cell = this.snappedWorldPointAt(event)
+
+        this.mouseCoordinates.x = cell.x
+        this.mouseCoordinates.y = cell.y
+
+        const currentImage = this.getCurrentImage()
+
+        if (currentImage) {
+            currentImage.classList.remove('hide')
+            currentImage.style.left = (cell.x - this.viewCoordinates.x) + 'px'
+            currentImage.style.top = (cell.y - this.viewCoordinates.y) + 'px'
+        }
     }
 
     private move(movement: Movement): void {
@@ -246,28 +284,7 @@ export class CanvasLayer extends Component {
     }
 
     private handleMouseMove(event: MouseEvent): void {
-        const rawX = event.clientX
-        const rawY = event.clientY
-
-        const worldX = this.viewCoordinates.x + rawX
-        const worldY = this.viewCoordinates.y + rawY
-
-        const snappedWorldX = this.snap(worldX)
-        const snappedWorldY = this.snap(worldY)
-
-        const screenX = snappedWorldX - this.viewCoordinates.x
-        const screenY = snappedWorldY - this.viewCoordinates.y
-
-        this.mouseCoordinates.x = snappedWorldX
-        this.mouseCoordinates.y = snappedWorldY
-
-        const currentImage = this.getCurrentImage()
-
-        if (currentImage) {
-            currentImage.classList.remove('hide')
-            currentImage.style.left = screenX + 'px'
-            currentImage.style.top = screenY + 'px'
-        }
+        this.trackPointer(event)
 
         if (this.isMoving) {
             const movement: Movement = {
@@ -285,6 +302,8 @@ export class CanvasLayer extends Component {
     }
 
     private handleMouseDown(event: MouseEvent): void {
+        this.trackPointer(event)
+
         if (event.button === LEFT_BUTTON) {
             if (this.toolSelection === 'pencil') {
                 this.generatePlacement()
