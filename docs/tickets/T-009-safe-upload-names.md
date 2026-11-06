@@ -1,7 +1,7 @@
 ---
 id: T-009
 title: Store uploads under a generated name
-status: ready
+status: done
 priority: P0
 phase: 0
 type: bug
@@ -15,6 +15,8 @@ blocks: [T-007, T-015]
 ## Outcome
 
 An uploaded sheet is stored as `<uuid><allowed extension>` inside `uploads/`. The original filename is display-only. A second file with the same original name does not overwrite the first. A filename containing `..` or a directory separator cannot escape `uploads/`.
+
+Done in commit `fix(server): store uploads under a generated name (T-009)`. `multer.diskStorage.filename` uses `crypto.randomUUID()` plus `allowedExtension(originalname, config.allowedExtensions)` (`src/Server/services/allowed-extension.ts`, with a node test). `uploads/index.json` holds `{ id, originalName, file }[]` (`Model/UploadedSheet.ts`); `POST /upload-files` appends to it and returns `{ id, originalName, savedAs }`. `GET /sheets` returns `{ id, name, file, imageSrc }` where `name` is the original name and `id` is the lookup key; files uploaded before the index are listed under their stored name. A disallowed extension currently fails the upload with multer's error (500); T-007 turns that into a 400.
 
 ## Why
 
@@ -48,9 +50,9 @@ Out:
 
 ## Acceptance
 
-- [ ] Uploading `a.png` twice leaves two files and two list entries.
-- [ ] A multipart filename of `../outside.png` does not create a file outside `uploads/`.
-- [ ] The list still shows `a.png` as the label.
+- [x] Uploading `a.png` twice leaves two files and two list entries.
+- [x] A multipart filename of `../outside.png` does not create a file outside `uploads/`.
+- [x] The list still shows `a.png` as the label.
 
 ## Test plan
 

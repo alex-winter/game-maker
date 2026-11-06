@@ -67,8 +67,11 @@ export class FileListing extends Component {
 
             reader.onload = () => {
                 const base64 = reader.result as string
+                // A local preview row. The server copy replaces it after the upload lands (T-007).
                 resolve({
+                    id: file.name,
                     name: file.name,
+                    file: file.name,
                     imageSrc: base64,
                 })
             }

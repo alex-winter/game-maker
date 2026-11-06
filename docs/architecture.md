@@ -9,7 +9,7 @@ src/
   Server/     Express routes and JSON files
 public/       index.html, play.html, built bundles in dist/
 data/         created at runtime: layers, placement images, user data, sprite models
-uploads/      sprite sheet files, stored under their original filename
+uploads/      sprite sheet files, stored as <uuid><ext>, plus index.json with the original names
 ```
 
 `npm` scripts only watch-compile. Nothing starts Express, typechecks, or tests. See ticket T-011.
@@ -80,7 +80,8 @@ Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names a
 | `data/placement-images.json` | placement-image route | `{ uuid, src }[]` where `src` is a data URL |
 | `data/user-data.json` | user-data route | camera, tool name, window rects |
 | `data/sprite-models.json` | sprite-model route | unused by the client |
-| `uploads/<original filename>` | `multer` | the sheet bytes |
+| `uploads/<uuid><ext>` | `multer` | the sheet bytes |
+| `uploads/index.json` | upload route | `{ id, originalName, file }[]` |
 
 `config.projectsDir` points at `data/projects.json` and is never read. `Project` is an unused type.
 
@@ -118,7 +119,7 @@ Painting uses `event.clientX` / `clientY` as if the canvas origin were the viewp
 | DELETE | `/layers/:uuid` | remove a layer |
 | GET/PATCH | `/user-data` | camera, tool, windows |
 | GET/POST | `/placement-images` | data URLs |
-| POST | `/upload-files` | `multer`, filename = original name |
+| POST | `/upload-files` | `multer`, filename = uuid + allow-listed extension |
 | POST | `/sprite-model` | append to a file the client never reads |
 
 JSON reads and writes are synchronous and not atomic. Two overlapping `PATCH /layers` can lose a placement.

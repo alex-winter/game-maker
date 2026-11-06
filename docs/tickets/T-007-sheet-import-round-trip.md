@@ -1,7 +1,7 @@
 ---
 id: T-007
 title: Make sprite sheet import open the file that was uploaded
-status: backlog
+status: ready
 priority: P0
 phase: 0
 type: bug

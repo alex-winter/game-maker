@@ -1,6 +1,8 @@
+import crypto from 'crypto'
 import express from 'express'
 import multer from 'multer'
 import { config } from 'Server/config'
+import { allowedExtension } from 'Server/services/allowed-extension'
 import { UserDataFactory } from 'Model/Factory/UserDataFactory'
 import { requestHandlerPlay } from 'Server/RequestHandlers/play'
 import { requestHandlerIndex } from 'Server/RequestHandlers'
@@ -24,12 +26,21 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, config.uploadsDir)
   },
+  // The original name is display-only. The path is an id plus an allow-listed extension.
   filename: (req, file, cb) => {
-    cb(null, file.originalname)
+    const extension = allowedExtension(file.originalname, config.allowedExtensions)
+
+    if (extension === undefined) {
+      cb(new Error(`Unsupported file type: ${file.originalname}`), '')
+      return
+    }
+
+    cb(null, crypto.randomUUID() + extension)
   }
 })
 const upload = multer({ storage })
 
+createDataFile(config.uploadsIndexFileDir)
 createDataFile(config.layersJsonFileDir)
 createDataFile(config.placementImagesJsonFileDir)
 createDataFile(config.spriteModelsJsonFileDir)
