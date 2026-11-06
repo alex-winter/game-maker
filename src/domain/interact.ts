@@ -10,6 +10,7 @@ export type Interaction =
     | { readonly kind: 'sign'; readonly eventId: Id; readonly dialogId: Id }
     | { readonly kind: 'item'; readonly itemEventId: Id }
     | { readonly kind: 'npc'; readonly eventId: Id; readonly dialogId: Id | null }
+    | { readonly kind: 'heal'; readonly eventId: Id }
 
 /**
  * The way someone on `from` turns to face someone on `to`: a conversation
@@ -26,8 +27,8 @@ export function cellInFront(player: Player): Cell {
     return neighbour(standing, player.facing)
 }
 
-/** Who speaks first when several things share a cell: a person, then a thing to pick up, then a sign. */
-const PRIORITY: readonly MapEvent['kind'][] = ['npc', 'item', 'sign']
+/** Who speaks first when several things share a cell: a person, then a thing to pick up, then a sign, then a heal point. */
+const PRIORITY: readonly MapEvent['kind'][] = ['npc', 'item', 'sign', 'heal']
 
 /** The interaction on a cell, by authored priority, or undefined when nothing there answers. Warps are not interactive. */
 export function interactionAt(events: readonly MapEvent[], cell: Cell): Interaction | undefined {
@@ -47,6 +48,8 @@ export function interactionAt(events: readonly MapEvent[], cell: Cell): Interact
                 return { kind: 'item', itemEventId: event.id }
             case 'sign':
                 return { kind: 'sign', eventId: event.id, dialogId: event.dialogId }
+            case 'heal':
+                return { kind: 'heal', eventId: event.id }
             case 'warp':
                 continue
         }

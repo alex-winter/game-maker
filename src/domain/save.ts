@@ -5,6 +5,25 @@ import { Bag, isBag } from './item'
 import { isParty, Party } from './creature'
 import { Direction, isDirection } from './movement'
 
+/** Where a lost battle sends the player (T-056): the last heal point used. */
+export type HealPoint = {
+    readonly mapId: Id
+
+    readonly cell: Cell
+
+    readonly facing: Direction
+}
+
+export function isHealPoint(value: unknown): value is HealPoint {
+    if (typeof value !== 'object' || value === null) {
+        return false
+    }
+
+    const point = value as { [K in keyof HealPoint]?: unknown }
+
+    return typeof point.mapId === 'string' && isCell(point.cell) && isDirection(point.facing)
+}
+
 /** Everything a play session needs to resume: where the player is and what the world remembers. Never the map itself. */
 export type SavedSession = {
     readonly mapId: Id
@@ -19,6 +38,9 @@ export type SavedSession = {
 
     /** The creatures carried (T-047). A save written before them resumes with nobody. */
     readonly party: Party
+
+    /** The last heal point used (T-056), or null when the spawn is still home. A save written before them resumes with null. */
+    readonly healPoint: HealPoint | null
 }
 
 export const SAVE_VERSION = 1
@@ -42,7 +64,7 @@ export type ParseResult =
 export function serializeSave(session: SavedSession, savedAt: string): SaveDocument {
     return {
         version: SAVE_VERSION,
-        slots: [{ mapId: session.mapId, cell: session.cell, facing: session.facing, memory: session.memory, bag: session.bag, party: session.party, savedAt }],
+        slots: [{ mapId: session.mapId, cell: session.cell, facing: session.facing, memory: session.memory, bag: session.bag, party: session.party, healPoint: session.healPoint, savedAt }],
     }
 }
 
@@ -59,6 +81,7 @@ export function isSavedSession(value: unknown): value is SavedSession {
         && isMemory(session.memory)
         && isBag(session.bag)
         && (session.party === undefined || isParty(session.party))
+        && (session.healPoint === undefined || session.healPoint === null || isHealPoint(session.healPoint))
 }
 
 /**
@@ -86,5 +109,5 @@ export function parseSave(value: unknown): ParseResult {
         return { ok: false, reason: 'The slot is missing a field or has one of the wrong shape' }
     }
 
-    return { ok: true, session: { mapId: slot.mapId, cell: slot.cell, facing: slot.facing, memory: slot.memory, bag: slot.bag, party: slot.party ?? [] } }
+    return { ok: true, session: { mapId: slot.mapId, cell: slot.cell, facing: slot.facing, memory: slot.memory, bag: slot.bag, party: slot.party ?? [], healPoint: slot.healPoint ?? null } }
 }

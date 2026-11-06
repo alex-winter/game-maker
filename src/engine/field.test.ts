@@ -4,15 +4,16 @@ import { insideMap, WALK_MS_PER_CELL } from '../domain/movement'
 import { MIN_PAUSE_MS } from '../domain/npc-behavior'
 import { maxHpAt, newSpecies, starterParty } from '../domain/creature'
 import { newPage } from '../domain/dialog'
-import { newItemEvent, newNpcEvent, newSign, newWarp } from '../domain/warp'
+import { newHealEvent, newItemEvent, newNpcEvent, newSign, newWarp } from '../domain/warp'
 import { bagCount } from '../domain/item'
 import { hasFlag, newMemory, setFlag } from '../domain/flags'
 import { FADE_MS, fadeOpacity } from './fade'
-import { advanceField, afterBattle, afterSave, FieldInput, FieldState, FieldWorld, isTransitioning, liveEvents, newField, npcMover, restoreField, snapshotField } from './field'
+import { advanceField, afterBattle, afterSave, dismissBattle, FieldInput, FieldState, FieldWorld, HEALED_TEXT, isTransitioning, liveEvents, newField, npcMover, RETREAT_TEXT, restoreField, snapshotField } from './field'
 
 const town = { width: 10, height: 10 }
 const house = { width: 6, height: 6 }
 const door = newWarp('door', { x: 5, y: 4 }, 'house', { x: 3, y: 5 }, 'up')
+const sprout = newSpecies('sprout', 'Sprout', ['grass'])
 
 const world: FieldWorld = {
     sizeOf: id => (id === 'town' ? town : id === 'house' ? house : undefined),
@@ -29,6 +30,8 @@ const world: FieldWorld = {
     isGrassAt: () => false,
     encountersOf: () => undefined,
     speciesName: id => (id === 'sprout' ? 'Sprout' : undefined),
+    speciesOf: id => (id === 'sprout' ? sprout : undefined),
+    home: { mapId: 'town', cell: { x: 1, y: 1 }, facing: 'down' },
 }
 
 const right = { direction: 'right' as const, running: false, interact: false, menu: false }
@@ -276,6 +279,7 @@ test('a save snapshots the standing cell, memory, and bag, and restoring it resu
         memory: { flags: ['took-potion'], variables: {} },
         bag: [{ itemId: 'potion', count: 1 }],
         party: [],
+        healPoint: null,
     })
 
     const restored = restoreField(saved)
@@ -497,11 +501,11 @@ test('a step that finishes in tall grass rolls on the map\'s table and hands the
     assert.deepEqual(state.battle, { party, speciesId: 'sprout', level: 3, trainer: null })
     assert.deepEqual(state.player, { cell: { x: 6, y: 5 }, facing: 'right', step: null }, 'stopped in the grass though the key is held')
 
-    const result = afterBattle(state, { outcome: 'won', party }, 'Sprout')
+    const result = afterBattle(state, { outcome: 'won', party }, world)
 
     assert.equal(result.battle, undefined)
-    assert.equal(result.message?.pages[0]?.text, 'A wild SPROUT appeared!')
-    assert.match(result.message?.pages[1]?.text ?? '', /You won/)
+    assert.match(result.message?.pages[0]?.text ?? '', /You won/)
+    assert.equal(result.message?.pages.length, 1)
     assert.equal(result.memory.variables['battles-won'], 1)
     assert.deepEqual(result.party, party)
 
@@ -555,12 +559,12 @@ test('a trainer who sees the player walks up along empty cells and issues the ch
     assert.equal(state.player.facing, 'left', 'the player turns to meet them')
     assert.deepEqual(state.battle, { party, speciesId: 'sprout', level: 5, trainer: { eventId: 'ace', name: 'Ace', defeatedFlagId: 'beat-ace' } })
 
-    const after = afterBattle(state, { outcome: 'won', party }, 'Sprout')
+    const after = afterBattle(state, { outcome: 'won', party }, watched)
 
     assert.equal(after.battle, undefined)
     assert.equal(after.approach, null)
     assert.equal(hasFlag(after.memory, 'beat-ace'), true, 'a win sets the defeated flag')
-    assert.equal(after.message?.pages[0]?.text, 'Ace wants to battle!')
+    assert.equal(after.message?.pages[0]?.text, 'You won!')
 
     let settled = after
     for (let t = 0; t < 2000; t += 16) {
@@ -587,7 +591,7 @@ test('a trainer already beaten, or still thinking of the fight lost, obeys the f
 
     assert.equal(advanceField(beaten, none, 16, watched).approach, null, 'the flag suppresses the challenge')
 
-    const lost = afterBattle({ ...newField('town', { x: 5, y: 5 }), battle: { party: [], speciesId: 'sprout', level: 5, trainer: { eventId: 'ace', name: 'Ace', defeatedFlagId: 'beat-ace' } } }, { outcome: 'lost', party: [] }, 'Sprout')
+    const lost = afterBattle({ ...newField('town', { x: 5, y: 5 }), battle: { party: [], speciesId: 'sprout', level: 5, trainer: { eventId: 'ace', name: 'Ace', defeatedFlagId: 'beat-ace' } } }, { outcome: 'lost', party: [] }, watched)
 
     assert.equal(hasFlag(lost.memory, 'beat-ace'), false, 'a loss leaves the flag clear, so they can be fought again')
     assert.equal(lost.challengedBy, 'ace')
@@ -676,4 +680,57 @@ test('the Party entry opens the party screen over the menu, the cursor moves thr
     assert.equal(field.menu, null)
     assert.deepEqual(field.player.cell, { x: 5, y: 5 })
     assert.equal(field.player.facing, 'left', 'exactly where and how they stood')
+})
+
+test('a heal point refills the party and becomes home; a lost battle restores the pre-battle party and fades the player back there (T-056)', () => {
+    const bed = newHealEvent('bed', { x: 5, y: 4 })
+    const resting: FieldWorld = { ...world, eventsOf: id => (id === 'town' ? [bed] : []) }
+    const full = starterParty({ speciesId: 'sprout', level: 7 }, [sprout])
+    const hurt = full.map(creature => ({ ...creature, hp: 5 }))
+    let state = newField('town', { x: 5, y: 5 }, 'up', undefined, undefined, hurt)
+
+    assert.equal(state.healPoint, null)
+    state = advanceField(state, { ...none, interact: true }, 16, resting)
+    assert.equal(state.message?.pages[0]?.text, HEALED_TEXT)
+    assert.deepEqual(state.party, full, 'HP back to the maximum')
+    assert.deepEqual(state.healPoint, { mapId: 'town', cell: { x: 5, y: 5 }, facing: 'up' })
+    assert.deepEqual(snapshotField(state).healPoint, state.healPoint, 'the save keeps it')
+    state = advanceField(state, { ...none, interact: true }, 16, resting)
+    assert.equal(state.message, null)
+
+    // Walk off, lose a battle somewhere else.
+    const elsewhere = { ...state, player: { ...state.player, cell: { x: 8, y: 8 } }, battle: { party: hurt, speciesId: 'sprout', level: 9, trainer: null } }
+    const fainted = hurt.map(creature => ({ ...creature, hp: 0 }))
+    let lost = afterBattle(elsewhere, { outcome: 'lost', party: fainted }, resting)
+
+    assert.deepEqual(lost.party, hurt, 'the party is as it was before the battle, not fainted')
+    assert.equal(lost.message?.pages[0]?.text, 'You lost...')
+    assert.equal(lost.message?.pages[1]?.text, RETREAT_TEXT)
+    assert.equal(lost.memory.variables['battles-won'], undefined)
+
+    lost = advanceField(lost, { ...none, interact: true }, 16, resting)
+    assert.equal(lost.fade, null, 'the box still holds the field')
+    lost = advanceField(lost, { ...none, interact: true }, 16, resting)
+    assert.equal(lost.message, null)
+    assert.equal(isTransitioning(lost), true, 'the last word closes into the fade')
+    assert.equal(lost.retreat, null)
+
+    lost = run(lost, none, FADE_MS)
+    assert.deepEqual(lost.player.cell, { x: 5, y: 5 }, 'woke up at the heal point')
+    assert.equal(lost.player.facing, 'up')
+
+    // Without a heal point the world's home is where a loss lands.
+    let fresh = afterBattle({ ...newField('town', { x: 8, y: 8 }), battle: { party: hurt, speciesId: 'sprout', level: 9, trainer: null } }, { outcome: 'lost', party: fainted }, resting)
+
+    fresh = advanceField(fresh, { ...none, interact: true }, 16, resting)
+    fresh = advanceField(fresh, { ...none, interact: true }, 16, resting)
+    fresh = run(fresh, none, FADE_MS)
+    assert.deepEqual(fresh.player.cell, { x: 1, y: 1 })
+    assert.deepEqual(fresh.party, hurt)
+
+    // A request whose species is gone is dropped with a word.
+    const dropped = dismissBattle({ ...newField('town', { x: 8, y: 8 }), battle: { party: hurt, speciesId: 'ghost', level: 9, trainer: null } })
+
+    assert.equal(dropped.battle, undefined)
+    assert.match(dropped.message?.pages[0]?.text ?? '', /nothing came out/)
 })

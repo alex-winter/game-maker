@@ -109,7 +109,24 @@ export type NpcEvent = {
 }
 
 /** Something placed on a map cell that is not a tile. */
-export type MapEvent = Warp | Sign | ItemEvent | NpcEvent
+/**
+ * A heal point (T-056): a bed, a nurse's counter. Facing it and pressing
+ * the interact key heals the party and makes this the place a lost battle
+ * sends the player back to.
+ */
+export type HealEvent = {
+    readonly kind: 'heal'
+
+    readonly id: Id
+
+    cell: Cell
+}
+
+export type MapEvent = Warp | Sign | ItemEvent | NpcEvent | HealEvent
+
+export function newHealEvent(id: Id, cell: Cell): HealEvent {
+    return { kind: 'heal', id, cell }
+}
 
 export function newSign(id: Id, cell: Cell, dialogId: Id): Sign {
     return { kind: 'sign', id, cell, dialogId }
@@ -250,6 +267,8 @@ function isMapEvent(value: unknown): value is MapEvent {
                 && (event.dialogId === null || typeof event.dialogId === 'string')
                 && (event.behavior === undefined || isNpcBehavior(event.behavior))
                 && (event.trainer === undefined || event.trainer === null || isTrainer(event.trainer))
+        case 'heal':
+            return true
         default:
             return false
     }

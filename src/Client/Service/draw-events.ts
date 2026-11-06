@@ -7,10 +7,12 @@ const SIGN_FILL = 'rgba(241, 196, 15, 0.55)'
 const OTHER_FILL = 'rgba(46, 204, 113, 0.55)'
 const WARP_STROKE = 'rgba(255, 255, 255, 0.9)'
 
-const LETTER: { readonly [K in MapEvent['kind']]: string } = { warp: 'W', sign: 'S', item: 'I', npc: 'N' }
-const FILL: { readonly [K in MapEvent['kind']]: string } = { warp: WARP_FILL, sign: SIGN_FILL, item: OTHER_FILL, npc: OTHER_FILL }
+const HEAL_FILL = 'rgba(231, 76, 60, 0.55)'
 
-/** Draws each map event as a lettered marker on its cell: purple W for warps, yellow S for signs, green I/N for items and people. */
+const LETTER: { readonly [K in MapEvent['kind']]: string } = { warp: 'W', sign: 'S', item: 'I', npc: 'N', heal: 'H' }
+const FILL: { readonly [K in MapEvent['kind']]: string } = { warp: WARP_FILL, sign: SIGN_FILL, item: OTHER_FILL, npc: OTHER_FILL, heal: HEAL_FILL }
+
+/** Draws each map event as a lettered marker on its cell: purple W for warps, yellow S for signs, green I/N for items and people, red H for heal points. */
 export function drawEvents(ctx: CanvasRenderingContext2D, view: View, events: readonly MapEvent[]): void {
     const size = GRID_SIZE * view.zoom
 

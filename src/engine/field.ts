@@ -12,11 +12,11 @@ import { addToVariable, hasFlag, Memory, newMemory, setFlag } from '../domain/fl
 import { sees } from '../domain/sight'
 import { faceToward as turnToward } from '../domain/interact'
 import { Bag, isTaken, newBag, pickUp } from '../domain/item'
-import { Party } from '../domain/creature'
-import { BattleRequest, BattleResult, EncounterTable, rollEncounter, wildAppearedText } from '../domain/encounter'
+import { healed, Party, Species } from '../domain/creature'
+import { BattleRequest, BattleResult, EncounterTable, rollEncounter } from '../domain/encounter'
 import { advanceMessage, currentPage, MessageState, missingDialogPages, moveHighlight, openMessage } from './message'
 import { MenuEntry, MenuState, moveMenu, openMenu, selectedEntry } from './menu'
-import { SavedSession } from '../domain/save'
+import { HealPoint, SavedSession } from '../domain/save'
 import { BagScreenState, moveBagCursor, openBagScreen } from './bag-screen'
 import { movePartyCursor, openPartyScreen, PartyScreenState } from './party-screen'
 
@@ -87,6 +87,12 @@ export type FieldState = {
     readonly approach: { readonly eventId: Id } | null
 
     readonly challengedBy: Id | null
+
+    /** The last heal point used (T-056); a lost battle sends the player back here, or to the world's home when null. */
+    readonly healPoint: HealPoint | null
+
+    /** Set by a lost battle: when its message closes, the screen fades and the player wakes up here. */
+    readonly retreat: Transition | null
 }
 
 /** Movement plus whether the interact and menu keys were pressed this frame (edges, not levels). */
@@ -127,20 +133,25 @@ export type FieldWorld = {
     encountersOf(mapId: Id): EncounterTable | undefined
 
     speciesName(speciesId: Id): string | undefined
+
+    speciesOf(speciesId: Id): Species | undefined
+
+    /** Where a new game starts; a lost battle before any heal point was used returns here. */
+    home: Transition
 }
 
-export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down', memory: Memory = newMemory(), bag: Bag = newBag(), party: Party = []): FieldState {
-    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined, bagScreen: null, partyScreen: null, talkingTo: null, people: [], party, battle: undefined, approach: null, challengedBy: null }
+export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down', memory: Memory = newMemory(), bag: Bag = newBag(), party: Party = [], healPoint: HealPoint | null = null): FieldState {
+    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined, bagScreen: null, partyScreen: null, talkingTo: null, people: [], party, battle: undefined, approach: null, challengedBy: null, healPoint, retreat: null }
 }
 
 /** What a save keeps of the session (T-041): the standing cell, never a half-finished step. */
 export function snapshotField(state: FieldState): SavedSession {
-    return { mapId: state.mapId, cell: restingCell(state.player), facing: state.player.facing, memory: state.memory, bag: state.bag, party: state.party }
+    return { mapId: state.mapId, cell: restingCell(state.player), facing: state.player.facing, memory: state.memory, bag: state.bag, party: state.party, healPoint: state.healPoint }
 }
 
 /** A session resumed from a save: standing where it was saved, with its memory, bag, and party. */
 export function restoreField(session: SavedSession): FieldState {
-    return newField(session.mapId, session.cell, session.facing, session.memory, session.bag, session.party)
+    return newField(session.mapId, session.cell, session.facing, session.memory, session.bag, session.party, session.healPoint)
 }
 
 /** After the host has written the save: the menu closes and the box says so. */
@@ -148,39 +159,62 @@ export function afterSave(state: FieldState): FieldState {
     return { ...state, menu: null, menuChoice: undefined, message: openMessage([newPage('Saved the game.')]) }
 }
 
-/** What the field says for each way out of a battle; the placeholder's flight is the one no scene was shown for. */
-export function battleOutcomeText(outcome: BattleResult['outcome'], shown = false): string {
+/** What the field says for each way out of a battle. */
+export function battleOutcomeText(outcome: BattleResult['outcome']): string {
     switch (outcome) {
         case 'won':
-            return shown ? 'You won!' : 'You won! (The battle scene arrives in phase 9.)'
+            return 'You won!'
         case 'lost':
             return 'You lost...'
         case 'fled':
-            return shown ? 'You got away.' : 'With nobody able to fight, you ran away.'
+            return 'You got away.'
     }
 }
 
+export const RETREAT_TEXT = 'You hurried back to safety.'
+
+export const NOTHING_CAME_TEXT = 'Something rustled in the grass, but nothing came out.'
+
+/** A request the scene could not open (its species is gone from the project): dropped with a word, the field goes on. */
+export function dismissBattle(state: FieldState): FieldState {
+    return { ...state, battle: undefined, approach: null, challengedBy: state.battle?.trainer?.eventId ?? null, message: openMessage([newPage(NOTHING_CAME_TEXT)]) }
+}
+
+export const HEALED_TEXT = 'Your party is fully healed. This is now where you return after a loss.'
+
+/** The party at full HP, each by its own species; a creature whose species is gone stays as it was. */
+function healedParty(party: Party, world: FieldWorld): Party {
+    return party.map(creature => {
+        const species = world.speciesOf(creature.speciesId)
+
+        return species === undefined ? creature : healed(creature, species)
+    })
+}
+
 /**
- * After the host has run the battle: the request is consumed, the party is
- * whatever the battle left, a win is counted in memory, and the box tells
- * the story — who appeared, then how it ended.
+ * After the host has run the battle scene: the request is consumed, a win is
+ * counted in memory and keeps the party as the battle left it, and the box
+ * tells how it ended. A loss (T-056) restores the party to its pre-battle
+ * HP and, once the box closes, fades the player back to the last heal
+ * point used — or to the world's home when none was.
  */
-export function afterBattle(state: FieldState, result: BattleResult, speciesName: string | undefined, shown = false): FieldState {
+export function afterBattle(state: FieldState, result: BattleResult, world: FieldWorld): FieldState {
     const trainer = state.battle?.trainer ?? null
     const won = result.outcome === 'won'
+    const lost = result.outcome === 'lost'
     const counted = won ? addToVariable(state.memory, 'battles-won', 1) : state.memory
-    const opening = trainer === null ? wildAppearedText(speciesName) : `${trainer.name} wants to battle!`
+    const ending = newPage(battleOutcomeText(result.outcome))
 
     return {
         ...state,
         battle: undefined,
         approach: null,
         challengedBy: trainer?.eventId ?? null,
-        party: result.party,
+        party: lost ? state.battle?.party ?? result.party : result.party,
         // A beaten trainer's flag is set, so they never challenge again. A loss leaves it clear (T-057 keeps this).
         memory: won && trainer !== null ? setFlag(counted, trainer.defeatedFlagId) : counted,
-        // After a scene the player watched, only the ending is left to tell; the placeholder has to tell the whole thing.
-        message: openMessage(shown ? [newPage(battleOutcomeText(result.outcome, true))] : [newPage(opening), newPage(battleOutcomeText(result.outcome))]),
+        retreat: lost ? state.healPoint ?? world.home : null,
+        message: openMessage(lost ? [ending, newPage(RETREAT_TEXT)] : [ending]),
     }
 }
 
@@ -358,6 +392,11 @@ function advanceFrame(state: FieldState, input: FieldInput, deltaMs: number, wor
         const moved = pressed === 'up' ? moveHighlight(state.message, -1) : pressed === 'down' ? moveHighlight(state.message, 1) : state.message
         const message = input.interact ? advanceMessage(moved, id => world.pagesOf(id)) : moved
 
+        // A lost battle's last word closes into the fade home (T-056).
+        if (message === null && state.retreat !== null) {
+            return { ...state, interaction: undefined, message, lastDirection: input.direction, menuChoice: undefined, talkingTo: null, people: [], fade: startFade(), pending: state.retreat, retreat: null }
+        }
+
         // Once the conversation ends the person turns back the way they were.
         return { ...state, interaction: undefined, message, lastDirection: input.direction, menuChoice: undefined, talkingTo: message === null ? null : state.talkingTo, people: pausePeople(state.people, deltaMs) }
     }
@@ -452,6 +491,12 @@ function advanceFrame(state: FieldState, input: FieldInput, deltaMs: number, wor
 
                 return { ...synced, interaction, message, bag: taken.bag, memory: taken.memory, lastDirection: input.direction, menuChoice: undefined }
             }
+        }
+
+        if (interaction?.kind === 'heal') {
+            const healPoint = { mapId: state.mapId, cell: state.player.cell, facing: state.player.facing }
+
+            return { ...synced, interaction, message: openMessage([newPage(HEALED_TEXT)]), party: healedParty(state.party, world), healPoint, lastDirection: input.direction, menuChoice: undefined }
         }
 
         return { ...synced, interaction, message: null, lastDirection: input.direction, menuChoice: undefined }

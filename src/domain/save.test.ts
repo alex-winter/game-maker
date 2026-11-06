@@ -9,6 +9,7 @@ const session: SavedSession = {
     memory: { flags: ['took-potion'], variables: { steps: 12 } },
     bag: [{ itemId: 'potion', count: 1 }],
     party: [{ speciesId: 'sprout', level: 5, hp: 20, experience: 125, moves: ['tackle'] }],
+    healPoint: { mapId: 'house', cell: { x: 2, y: 2 }, facing: 'down' },
 }
 
 test('a session round-trips through serialize and parse, with the time kept on the slot', () => {

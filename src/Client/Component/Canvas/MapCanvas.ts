@@ -18,7 +18,7 @@ import { newPlayer } from 'domain/movement'
 import { findSprite } from 'domain/project'
 import { EVENT_KIND_PICK, EventKindPick, EventKindPicker } from 'Client/Component/Events/EventKindPicker'
 import { newId } from 'domain/id'
-import { eventsAt, ItemEvent, newItemEvent, newNpcEvent, newSign, newWarp, NpcEvent, npcsOn, Sign, Warp, withEvent, withoutEvent } from 'domain/warp'
+import { eventsAt, ItemEvent, newItemEvent, newNpcEvent, newSign, newWarp, NpcEvent, npcsOn, Sign, Warp, withEvent, withoutEvent, newHealEvent } from 'domain/warp'
 import { drawGrid } from 'Client/Service/draw-grid'
 import { loadLegacyPlacements } from 'Client/Service/load-legacy-placements'
 import { MAP_SESSION_CHANGED, mapSession } from 'Client/Service/map-session'
@@ -701,6 +701,8 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
             await this.openItemForm(cell, first)
         } else if (first.kind === 'npc') {
             await this.openNpcForm(cell, first)
+        } else if (first.kind === 'heal') {
+            console.info('A heal point has nothing to edit; the rubber removes it.')
         }
     }
 
@@ -827,6 +829,9 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
             await this.openSignForm(pick.cell, null)
         } else if (pick.kind === 'item') {
             await this.openItemForm(pick.cell, null)
+        } else if (pick.kind === 'heal') {
+            // A heal point has nothing to configure: it is placed at once.
+            await mapSession.commitEvents(withEvent(mapSession.current.events, newHealEvent(newId(), pick.cell)))
         } else {
             await this.openNpcForm(pick.cell, null)
         }

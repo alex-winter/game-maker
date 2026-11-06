@@ -20,7 +20,7 @@ import { Direction, insideMap, Player, playerPixel } from 'domain/movement'
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { cameraFor, GBA_VIEW, integerScale } from 'engine/camera'
 import { fadeOpacity } from 'engine/fade'
-import { advanceField, afterBattle, afterSave, FieldState, FieldWorld, itemsOnMap, newField, npcMover, restoreField, snapshotField } from 'engine/field'
+import { advanceField, afterBattle, afterSave, dismissBattle, FieldState, FieldWorld, itemsOnMap, newField, npcMover, restoreField, snapshotField, Transition } from 'engine/field'
 import { startLoop } from 'engine/loop'
 import { playerActor } from 'engine/player-actor'
 import { renderFrame } from 'engine/render'
@@ -35,7 +35,6 @@ import { itemActor } from 'engine/item-actor'
 import { npcActor, SpriteLookup } from 'engine/npc-actor'
 import { npcsOn } from 'domain/warp'
 import { starterParty } from 'domain/creature'
-import { placeholderBattle } from 'engine/battle-placeholder'
 import { BattleData, battleResult, newBattle } from 'domain/battle'
 import { advanceBattleScene, BattleSceneState, drawBattleScene, isBattleOver, newBattleScene } from 'engine/battle-scene'
 import { View } from 'engine/view'
@@ -137,7 +136,7 @@ function ruleFor(map: GameMap, memory: Memory): CanEnter {
 }
 
 /** Answers the field session's questions from the loaded project. */
-function worldOf(project: Project): FieldWorld {
+function worldOf(project: Project, home: Transition): FieldWorld {
     // The rule is rebuilt only when the flags change: a gate opening is the one thing that moves it.
     const rules = new Map<Id, { flags: Memory['flags']; rule: CanEnter }>()
 
@@ -175,6 +174,8 @@ function worldOf(project: Project): FieldWorld {
         },
         encountersOf: mapId => findMap(project, mapId)?.encounters,
         speciesName: speciesId => findSpecies(project, speciesId)?.name,
+        speciesOf: speciesId => findSpecies(project, speciesId),
+        home,
     }
 }
 
@@ -283,7 +284,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await Promise.all(project.maps.map(async each => [each.id, await loadLegacyPlacements(each.layers)] as const)),
     )
     const port = canvasDrawPort(ctx)
-    const world = worldOf(project)
+    const world = worldOf(project, { mapId: startAt.id, cell: startAt.spawn, facing: 'down' })
     const spriteLookup: SpriteLookup<CanvasImageSource> = spriteId => {
         const definition = findSprite(project, spriteId)
         const image = definition === undefined ? undefined : sheetById.get(definition.sheetId)
@@ -327,7 +328,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             directionPressed = null
 
             if (isBattleOver(battleScene)) {
-                field = afterBattle(field, battleResult(battleScene.battle), world.speciesName(field.battle?.speciesId ?? ''), true)
+                field = afterBattle(field, battleResult(battleScene.battle), world)
                 battleScene = undefined
             } else {
                 drawBattleScene(port, battleScene, battleData, GBA_VIEW, zoom)
@@ -340,12 +341,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         menuPressed = false
         directionPressed = null
 
-        // The grass rustled or a trainer walked up: open the scene (T-053). A request the scene cannot open — unknown species, nobody standing — falls to the placeholder.
+        // The grass rustled or a trainer walked up: open the scene (T-053). A request the scene cannot open — its species gone from the project — is dropped with a word.
         if (field.battle !== undefined) {
             const battle = newBattle(field.battle, speciesOf)
 
             if (battle === undefined) {
-                field = afterBattle(field, placeholderBattle(field.battle), world.speciesName(field.battle.speciesId))
+                field = dismissBattle(field)
             } else {
                 battleScene = newBattleScene(battle, field.battle.trainer)
             }

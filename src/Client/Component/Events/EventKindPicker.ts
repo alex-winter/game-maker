@@ -4,7 +4,7 @@ import { Events } from 'Client/Service/Events'
 import { Cell } from 'domain/coordinates'
 
 /** The kinds an author can place by clicking an empty cell. */
-export type PlaceableKind = 'warp' | 'sign' | 'item' | 'npc'
+export type PlaceableKind = 'warp' | 'sign' | 'item' | 'npc' | 'heal'
 
 export type EventKindPick = { readonly kind: PlaceableKind; readonly cell: Cell }
 
@@ -17,6 +17,7 @@ export class EventKindPicker extends Component<{ cell: Cell }> {
         '.pick-sign:click': () => this.pick('sign'),
         '.pick-item:click': () => this.pick('item'),
         '.pick-npc:click': () => this.pick('npc'),
+        '.pick-heal:click': () => this.pick('heal'),
     }
 
     protected css(): string {
@@ -83,6 +84,10 @@ export class EventKindPicker extends Component<{ cell: Cell }> {
                 background: #3f51b5;
             }
 
+            .pick-heal .letter {
+                background: #e74c3c;
+            }
+
             .description {
                 display: flex;
                 flex-direction: column;
@@ -106,6 +111,7 @@ export class EventKindPicker extends Component<{ cell: Cell }> {
             this.option('pick-sign', 'S', 'Sign', 'Facing it and pressing the interact key shows a dialog.'),
             this.option('pick-item', 'I', 'Item', 'Lies here until picked up; a flag remembers it is gone.'),
             this.option('pick-npc', 'N', 'Person', 'Stands here with a sprite and a facing; talk to them for their dialog.'),
+            this.option('pick-heal', 'H', 'Heal point', 'Facing it and pressing the interact key heals the party; a lost battle sends the player back here.'),
         )
 
         return picker

@@ -40,7 +40,7 @@ export type TrainerChallenge = {
 /**
  * What the field hands a battle: the player's party and the opponent's
  * species and level, plus who the opponent is when a trainer sent it.
- * T-048's placeholder and T-056's scene both take it.
+ * The battle scene (T-053) opens from it.
  */
 export type BattleRequest = {
     readonly party: Party
@@ -58,9 +58,6 @@ export type BattleResult = {
 
     readonly party: Party
 }
-
-/** The seam the field depends on. T-048's placeholder implements it; T-056 replaces it with the battle scene. */
-export type BattleRunner = (request: BattleRequest) => BattleResult
 
 /** The entry a weighted pick lands on, or undefined when every weight is 0. `roll` is a number in [0, 1). */
 export function pickEntry(entries: readonly EncounterEntry[], roll: number): EncounterEntry | undefined {

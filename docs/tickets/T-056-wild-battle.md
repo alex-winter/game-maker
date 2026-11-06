@@ -1,7 +1,7 @@
 ---
 id: T-056
 title: Run wild encounters through the battle scene
-status: ready
+status: done
 priority: P1
 phase: 9
 type: feat
@@ -45,10 +45,17 @@ Out:
 
 ## Acceptance
 
-- [ ] Manual: win a wild battle, see HP change persist in the party screen.
-- [ ] Manual: lose, appear at the heal point with the pre-battle HP.
-- [ ] No placeholder message remains as the only result.
+- [x] Manual: win a wild battle, see HP change persist in the party screen.
+- [x] Manual: lose, appear at the heal point with the pre-battle HP.
+- [x] No placeholder message remains as the only result.
 
 ## Test plan
 
 - A session test with a scripted battle result for win and loss. Manual grass.
+
+## Result
+
+- `HealEvent { kind: 'heal' }` in `domain/warp.ts`; the event picker places it at once (red H marker), the rubber removes it. Interacting refills the party by species and sets `FieldState.healPoint` where the player stood; the save keeps it (`SavedSession.healPoint`, null for older saves).
+- `afterBattle(state, result, world)`: a loss restores the request's pre-battle party and sets `retreat`; when the box's last page closes the field fades to the heal point or `FieldWorld.home` (the start map's spawn). Win and flight keep the battle's party.
+- `engine/battle-placeholder.ts` and `BattleRunner` are gone; a request whose species is missing is dropped by `dismissBattle` with a word.
+- Tests: heal, loss retreat to heal point and to home, dismissal. Checked in Chrome: healed at a bed, lost to a Lv40 trainer, woke at the bed with 28/28 HP, flag clear.

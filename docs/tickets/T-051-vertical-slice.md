@@ -1,7 +1,7 @@
 ---
 id: T-051
 title: Build the Gate A and Gate B town in the editor
-status: backlog
+status: ready
 priority: P1
 phase: 8
 type: feat
