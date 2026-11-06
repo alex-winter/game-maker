@@ -31,7 +31,7 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-007](T-007-sheet-import-round-trip.md) | 0 | P0 | done | editor | Make sprite sheet import open the file that was uploaded |
 | [T-008](T-008-tools-hit-the-cell.md) | 0 | P0 | done | editor | Make pencil, fill, and eraser hit the cell under the cursor |
 | [T-009](T-009-safe-upload-names.md) | 0 | P0 | done | server | Store uploads under a generated name |
-| [T-010](T-010-fix-frame-delay.md) | 0 | P1 | ready | editor | Fix the canvas frame delay |
+| [T-010](T-010-fix-frame-delay.md) | 0 | P1 | done | editor | Fix the canvas frame delay |
 | [T-011](T-011-typecheck-and-run-scripts.md) | 0 | P1 | ready | repo | Add typecheck and a documented way to run |
 | [T-012](T-012-domain-boundary.md) | 1 | P1 | backlog | domain | Cut a pure domain layer out of the UI |
 | [T-013](T-013-project-of-maps.md) | 1 | P1 | backlog | server | Store a project that contains many maps |
@@ -82,8 +82,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 ## Counts
 
-- ready: 2
+- ready: 1
 - in_progress: 0
 - backlog: 46
-- done: 9
+- done: 10
 - total: 57

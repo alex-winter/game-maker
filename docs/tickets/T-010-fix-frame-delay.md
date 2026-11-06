@@ -1,7 +1,7 @@
 ---
 id: T-010
 title: Fix the canvas frame delay
-status: ready
+status: done
 priority: P1
 phase: 0
 type: bug
@@ -15,6 +15,8 @@ blocks: []
 ## Outcome
 
 A canvas created with `fps: 60` waits about 16 milliseconds between frames, not 30. A missing fps uses 30 frames per second on purpose.
+
+Done in commit `fix(editor): fix the canvas frame delay (T-010)`. `frameDelayMs(fps: unknown)` in `src/Client/Component/Canvas/frame-delay.ts` rounds `1000 / fps` and falls back to 30 fps for anything that is not a positive finite number. `Canvas2D` calls it in `setup`. The node test beside it runs under `npm test` once T-011 lands.
 
 ## Why
 
@@ -43,9 +45,9 @@ Out:
 
 ## Acceptance
 
-- [ ] `frameDelayMs(60)` is 17.
-- [ ] `frameDelayMs(undefined)` and `frameDelayMs(0)` are 33.
-- [ ] The canvas uses that function.
+- [x] `frameDelayMs(60)` is 17.
+- [x] `frameDelayMs(undefined)` and `frameDelayMs(0)` are 33.
+- [x] The canvas uses that function.
 
 ## Test plan
 

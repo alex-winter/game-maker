@@ -1,11 +1,12 @@
 import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { Coordinates, Rect } from 'Model/Coordinates'
+import { frameDelayMs } from 'Client/Component/Canvas/frame-delay'
 
 export class Canvas2D extends Component {
     private animationTimeout!: number
     private frameFunction!: Function
-    private msPerFrame: number = 100
+    private msPerFrame: number = frameDelayMs(undefined)
 
     protected externalListeners: ExternalListeners = {
         'window-resize': this.handleResize
@@ -102,7 +103,7 @@ export class Canvas2D extends Component {
     }
 
     protected async setup(): Promise<void> {
-        this.msPerFrame = 1000 / this.parsedDataset.fps | 30
+        this.msPerFrame = frameDelayMs(this.parsedDataset.fps)
     }
 
     protected build(): HTMLElement {

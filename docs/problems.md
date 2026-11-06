@@ -26,7 +26,7 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 10. **Fixed (T-005).** **Layer visibility and selection restart every canvas.** `layers-update` calls `patch()`, which rebuilds the layer DOM and starts another animation loop. `setActive` emits that once per layer. Ticket T-005.
 
-11. **Frame delay is a bitwise accident.** `Canvas2D` does `1000 / fps | 30`. `|` is bitwise OR, and it binds looser than `/`, so 60 fps becomes `16 | 30 === 30` milliseconds. Ticket T-010.
+11. **Fixed (T-010).** **Frame delay is a bitwise accident.** `Canvas2D` does `1000 / fps | 30`. `|` is bitwise OR, and it binds looser than `/`, so 60 fps becomes `16 | 30 === 30` milliseconds. Ticket T-010.
 
 12. **Fixed (T-007).** **Sheet open races the upload.** The listing shows a local data URL immediately. `open-sheet` looks up `sheetRepository`, which was filled from `GET /sheets` at startup and is never refreshed. A new file throws on `sheet.name` because `getByName` returns undefined. Reopening an upload also depends on the server having finished `multer`. Ticket T-007.
 
