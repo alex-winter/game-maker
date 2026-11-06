@@ -1,4 +1,5 @@
 import type { Layer } from 'Model/Layer'
+import { Connections } from './connection'
 import { Cell } from './coordinates'
 import { Id, newId } from './id'
 import { emptyTileMap, GridSize, isInside, TileMap, withTileMapDefaults } from './map'
@@ -23,6 +24,9 @@ export type GameMap = {
 
     /** Where play mode puts the player when it starts on this map. */
     spawn: Cell
+
+    /** Seams to neighbouring maps by edge (T-031). */
+    connections: Connections
 
     layers: Layer[]
 }
@@ -52,7 +56,7 @@ export function centreCell(size: GridSize): Cell {
 }
 
 export function newMap(name: string, layers: Layer[] = [], size: GridSize = DEFAULT_MAP_SIZE): GameMap {
-    return { id: newId(), name, tileMap: emptyTileMap(size), spawn: centreCell(size), layers }
+    return { id: newId(), name, tileMap: emptyTileMap(size), spawn: centreCell(size), connections: {}, layers }
 }
 
 export function newProject(name: string, maps: GameMap[] = []): Project {
@@ -78,6 +82,7 @@ export function withProjectDefaults(stored: Partial<Project> & Pick<Project, 'id
                 ...map,
                 tileMap,
                 spawn: isCell(map.spawn) && isInside(tileMap, map.spawn) ? map.spawn : centreCell(tileMap),
+                connections: map.connections ?? {},
                 layers: map.layers ?? [],
             }
         }),
@@ -168,6 +173,14 @@ export function withMapTileMap(project: Project, mapId: Id, tileMap: TileMap): P
         maps: project.maps.map(map => map.id === mapId
             ? { ...map, tileMap, spawn: isInside(tileMap, map.spawn) ? map.spawn : centreCell(tileMap) }
             : map),
+    }
+}
+
+/** A new project with one map's edge connections replaced. */
+export function withMapConnections(project: Project, mapId: Id, connections: Connections): Project {
+    return {
+        ...project,
+        maps: project.maps.map(map => map.id === mapId ? { ...map, connections } : map),
     }
 }
 

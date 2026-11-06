@@ -1,5 +1,6 @@
+import { isConnections } from 'domain/connection'
 import { isValidGridSize, resizeTileMap } from 'domain/map'
-import { findMap, removeMap, withMapTileMap, withStartMap } from 'domain/project'
+import { findMap, removeMap, withMapConnections, withMapTileMap, withStartMap } from 'domain/project'
 import { readProject, writeProject } from 'Server/services/project-store'
 import { Request, RequestHandler, Response } from 'Server/types'
 
@@ -64,4 +65,35 @@ export const requestHandlerPutStartMap: RequestHandler = (request: Request, resp
     writeProject(updated)
 
     response.json({ startMapId: updated.startMapId })
+}
+
+/** Body: `{ north?, south?, east?, west? }`, each `{ mapId, offset }`. Every named map must exist. Answers the map. */
+export const requestHandlerPutMapConnections: RequestHandler = (request: Request, response: Response): void => {
+    const { mapId } = request.params
+    const body: unknown = request.body
+
+    if (!isConnections(body)) {
+        response.status(400).json({ error: 'Connections are { north?, south?, east?, west? } of { mapId, offset }' })
+        return
+    }
+
+    const project = readProject()
+
+    if (findMap(project, mapId) === undefined) {
+        response.status(404).json({ error: 'Map not found' })
+        return
+    }
+
+    const missing = Object.values(body).find(connection => findMap(project, connection.mapId) === undefined)
+
+    if (missing !== undefined) {
+        response.status(404).json({ error: 'Connected map not found: ' + missing.mapId })
+        return
+    }
+
+    const updated = withMapConnections(project, mapId, body)
+
+    writeProject(updated)
+
+    response.json(findMap(updated, mapId))
 }

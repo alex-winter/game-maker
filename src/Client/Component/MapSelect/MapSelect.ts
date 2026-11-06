@@ -1,10 +1,12 @@
 import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 import { ConfirmDialog } from 'Client/Component/MapSelect/ConfirmDialog'
 import { MapSizeForm } from 'Client/Component/MapSelect/MapSizeForm'
+import { MapConnectionsForm } from 'Client/Component/MapSelect/MapConnectionsForm'
 import { Component, ExternalListeners, Listeners } from 'Client/Service/Component'
 import { Dom } from 'Client/Service/Dom'
 import { urlForMap } from 'Client/Service/active-map'
 import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
+import { Connections } from 'domain/connection'
 import { Id } from 'domain/id'
 import { GridSize } from 'domain/map'
 import { GameMap, isValidMapName } from 'domain/project'
@@ -28,11 +30,13 @@ export class MapSelect extends Component<{ activeMapId: Id | null }> {
         '.resize-map:click': this.handleResizeMap,
         '.delete-map:click': this.handleDeleteMap,
         '.start-map:click': this.handleStartMap,
+        '.connect-map:click': this.handleConnectMap,
     }
 
     protected externalListeners: ExternalListeners = {
         'confirmed': this.handleConfirmed,
         'map-size-submit': this.handleSizeSubmit,
+        'map-connections-submit': this.handleConnectionsSubmit,
     }
 
     protected css(): string {
@@ -92,6 +96,10 @@ export class MapSelect extends Component<{ activeMapId: Id | null }> {
                 color: #2ecc71;
             }
 
+            .actions .connect-map.broken {
+                color: #c0392b;
+            }
+
             .actions i {
                 pointer-events: none;
             }
@@ -140,8 +148,17 @@ export class MapSelect extends Component<{ activeMapId: Id | null }> {
             const start = Dom.button('', 'start-map')
             const rename = Dom.button('', 'rename-map')
             const resize = Dom.button('', 'resize-map')
+            const connect = Dom.button('', 'connect-map')
             const remove = Dom.button('', 'delete-map')
             const isStart = active.id === this.startMapId
+            const connected = Object.keys(active.connections).length
+            const broken = Object.values(active.connections).some(connection => !this.maps.some(map => map.id === connection.mapId))
+
+            connect.title = broken
+                ? 'A connection points at a missing map'
+                : connected === 0 ? 'Connect edges to other maps' : `${connected} connected edge${connected === 1 ? '' : 's'}`
+            connect.classList.toggle('broken', broken)
+            connect.append(Dom.i('fa-solid', 'fa-link'))
 
             start.title = isStart ? 'Play starts on this map' : 'Set as start map'
             start.classList.toggle('active', isStart)
@@ -152,7 +169,7 @@ export class MapSelect extends Component<{ activeMapId: Id | null }> {
             rename.append(Dom.i('fa-solid', 'fa-pen'))
             resize.append(Dom.i('fa-solid', 'fa-up-right-and-down-left-from-center'))
             remove.append(Dom.i('fa-solid', 'fa-trash'))
-            actions.append(start, rename, resize, remove)
+            actions.append(start, rename, resize, connect, remove)
 
             bottom.append(
                 Dom.span(`${active.tileMap.width} × ${active.tileMap.height} cells`, 'details'),
@@ -230,6 +247,31 @@ export class MapSelect extends Component<{ activeMapId: Id | null }> {
         }
 
         this.openModal(Dom.makeComponent(MapSizeForm, { width: active.tileMap.width, height: active.tileMap.height }))
+    }
+
+    private handleConnectMap(): void {
+        const active = this.activeMap()
+
+        if (active === undefined) {
+            return
+        }
+
+        this.openModal(Dom.makeComponent(MapConnectionsForm, {
+            connections: active.connections,
+            maps: this.maps.filter(map => map.id !== active.id).map(map => ({ id: map.id, name: map.name })),
+        }))
+    }
+
+    private async handleConnectionsSubmit(connections: Connections): Promise<void> {
+        const active = this.activeMap()
+
+        if (active === undefined) {
+            return
+        }
+
+        await projectRepository.saveConnections(active.id, connections)
+        active.connections = connections
+        this.patch()
     }
 
     private handleDeleteMap(): void {

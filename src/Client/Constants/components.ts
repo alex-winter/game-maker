@@ -17,6 +17,7 @@ import { DialogCreator } from 'Client/Component/Dialog/DialogCreator'
 import { MapSelect } from 'Client/Component/MapSelect/MapSelect'
 import { ConfirmDialog } from 'Client/Component/MapSelect/ConfirmDialog'
 import { MapSizeForm } from 'Client/Component/MapSelect/MapSizeForm'
+import { MapConnectionsForm } from 'Client/Component/MapSelect/MapConnectionsForm'
 import { TilesetPalette } from 'Client/Component/Tileset/TilesetPalette'
 import { ComponentConstructor } from 'Client/Service/Dom'
 
@@ -40,6 +41,7 @@ export const COMPONENTS = new Map<ComponentConstructor, string>([
   [MapSelect, 'map-select'],
   [ConfirmDialog, 'confirm-dialog'],
   [MapSizeForm, 'map-size-form'],
+  [MapConnectionsForm, 'map-connections-form'],
   [TilesetPalette, 'tileset-palette'],
 ])
 

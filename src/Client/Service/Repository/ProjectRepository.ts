@@ -1,7 +1,8 @@
 import { Repository } from 'Client/Service/Repository/Repository'
+import { Connections } from 'domain/connection'
 import { Id } from 'domain/id'
 import { GridSize, TileMap } from 'domain/map'
-import { addSprite, GameMap, Project, removeMap, removeSprite, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withStartMap, withTileset } from 'domain/project'
+import { addSprite, GameMap, Project, removeMap, removeSprite, withMapConnections, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withStartMap, withTileset } from 'domain/project'
 import { SpriteDefinition } from 'domain/sprite'
 import { Metatile, MetatileAttributes, MetatileId, Tileset, withMetatileAttributes } from 'domain/tileset'
 
@@ -99,6 +100,14 @@ class ProjectRepository extends Repository {
 
         if (this.project) {
             this.project = withPlayerSprite(this.project, spriteId)
+        }
+    }
+
+    public async saveConnections(mapId: Id, connections: Connections): Promise<void> {
+        await this.put(`${this.API_PATH}/maps/${mapId}/connections`, connections)
+
+        if (this.project) {
+            this.project = withMapConnections(this.project, mapId, connections)
         }
     }
 
