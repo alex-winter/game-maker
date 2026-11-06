@@ -48,17 +48,21 @@ export function withoutEvent(events: readonly MapEvent[], eventId: Id): MapEvent
 }
 
 /**
+ * True when the step in progress in `before` completed by `after`: the
+ * player's cell is now where that step was going. Holds even if a held key
+ * has already begun the next step from there.
+ */
+export function stepFinished(before: Player, after: Player): boolean {
+    return before.step !== null && sameCell(after.cell, before.step.to)
+}
+
+/**
  * The warp the player just took, if any. A warp fires only when a step
- * finishes on its cell: `before` was mid-step and `after` stands on the
- * warp. Standing there already — having spawned or arrived on it — does
- * not fire, so a return warp cannot bounce the player straight back.
+ * finishes on its cell. Standing there already — having spawned or arrived
+ * on it — does not fire, so a return warp cannot bounce the player back.
  */
 export function warpTaken(before: Player, after: Player, events: readonly MapEvent[]): Warp | undefined {
-    if (before.step === null || after.step !== null) {
-        return undefined
-    }
-
-    return warpAt(events, after.cell)
+    return stepFinished(before, after) ? warpAt(events, after.cell) : undefined
 }
 
 function isWarp(value: unknown): value is Warp {

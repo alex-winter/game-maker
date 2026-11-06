@@ -1,7 +1,7 @@
 ---
 id: T-036
 title: Author dialog in the project
-status: backlog
+status: ready
 priority: P1
 phase: 5
 type: feat

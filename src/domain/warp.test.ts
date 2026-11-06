@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { advanceStep, beginStep, newPlayer } from './movement'
+import { advanceStep, beginStep, newPlayer, stepPlayer } from './movement'
 import { isMapEvents, newWarp, warpAt, warpTaken, withEvent, withoutEvent } from './warp'
 
 const door = newWarp('door', { x: 4, y: 2 }, 'house', { x: 3, y: 5 }, 'up')
@@ -26,6 +26,14 @@ test('spawning or arriving on a warp does not fire it; only a finished step does
 
     assert.equal(warpTaken(standing, stepping, [exit]), undefined, 'mid-step on the warp cell')
     assert.equal(warpTaken(stepping, advanceStep(stepping, 100), [exit]), undefined, 'stepped off it')
+})
+
+test('a held key that chains straight into the next step still fires the warp it finished on', () => {
+    const before = beginStep(newPlayer({ x: 4, y: 3 }, 'up'), 'up', 100, () => true)
+    const after = stepPlayer(before, { direction: 'up', running: false }, 100, () => true)
+
+    assert.notEqual(after.step, null, 'the next step already began')
+    assert.equal(warpTaken(before, after, [door])?.id, 'door')
 })
 
 test('warpAt finds the warp on a cell; one warp per cell; events are replaced by id', () => {

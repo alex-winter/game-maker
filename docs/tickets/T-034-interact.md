@@ -1,7 +1,7 @@
 ---
 id: T-034
 title: Interact with the cell the player faces
-status: backlog
+status: ready
 priority: P1
 phase: 5
 type: feat

@@ -8,18 +8,18 @@ import { buildScene } from 'Client/Service/build-scene'
 import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
 import { HeldDirections } from 'Client/Service/held-directions'
 import { findMap, GameMap, playerSprite, Project, startMap } from 'domain/project'
-import { crossEdge } from 'domain/connection'
-import { warpTaken } from 'domain/warp'
-import { isInside, isSolid } from 'domain/map'
+import { isSolid } from 'domain/map'
 import { Scene } from 'engine/scene'
 import { PortSize } from 'engine/draw-port'
 import { CanEnter } from 'domain/movement'
 import { Id } from 'domain/id'
 import { stepRule } from 'domain/collision'
 import { GRID_SIZE } from 'domain/grid'
-import { Direction, insideMap, newPlayer, Player, playerPixel, stepPlayer } from 'domain/movement'
+import { Direction, insideMap, Player, playerPixel } from 'domain/movement'
 import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { cameraFor, GBA_VIEW, integerScale } from 'engine/camera'
+import { fadeOpacity } from 'engine/fade'
+import { advanceField, FieldWorld, newField } from 'engine/field'
 import { startLoop } from 'engine/loop'
 import { playerActor } from 'engine/player-actor'
 import { renderFrame } from 'engine/render'
@@ -87,57 +87,69 @@ function sessionMap(search: string, project: Project) {
     return tried ?? startMap(project)
 }
 
-/** Everything the loop needs for the map the player is on. Rebuilt when they cross a seam. */
+/** Everything the loop needs to draw the map the player is on. Rebuilt when they cross to another. */
 type OpenMap = {
     readonly map: GameMap
 
     readonly scene: Scene<CanvasImageSource>
 
-    readonly canEnter: CanEnter
-
     readonly pixels: PortSize
 }
 
+/** The within-map rule: collision, elevation, and ledges, or only the edge for a map without a tileset. */
+function ruleFor(map: GameMap): CanEnter {
+    const tileset = projectRepository.cachedTileset(map.tileMap.tilesetId)
+
+    return tileset === undefined ? insideMap(map.tileMap) : stepRule(map.tileMap, tileset)
+}
+
+/** Answers the field session's questions from the loaded project. */
+function worldOf(project: Project): FieldWorld {
+    const rules = new Map<Id, CanEnter>()
+
+    return {
+        sizeOf: mapId => findMap(project, mapId)?.tileMap,
+        canEnter: mapId => {
+            const cached = rules.get(mapId)
+
+            if (cached !== undefined) {
+                return cached
+            }
+
+            const map = findMap(project, mapId)
+            const rule: CanEnter = map === undefined ? () => false : ruleFor(map)
+
+            rules.set(mapId, rule)
+
+            return rule
+        },
+        isSolidAt: (mapId, cell) => {
+            const map = findMap(project, mapId)
+            const tileset = map === undefined ? undefined : projectRepository.cachedTileset(map.tileMap.tilesetId)
+
+            return map !== undefined && tileset !== undefined && isSolid(map.tileMap, tileset, cell)
+        },
+        connectionsOf: mapId => findMap(project, mapId)?.connections ?? {},
+        eventsOf: mapId => findMap(project, mapId)?.events ?? [],
+    }
+}
+
 function openMap(
-    project: Project,
     map: GameMap,
     sheetById: ReadonlyMap<Id, CanvasImageSource>,
     legacyPlacements: ReadonlyMap<Id, readonly LoadedPlacement[]>,
 ): OpenMap {
-    const tileset = projectRepository.cachedTileset(map.tileMap.tilesetId)
     const scene = buildScene({
         tileMap: map.tileMap,
-        tileset,
+        tileset: projectRepository.cachedTileset(map.tileMap.tilesetId),
         sheetById,
         layers: map.layers,
         loadedPlacements: legacyPlacements.get(map.id) ?? [],
     })
-    // Without a tileset there are no metatile attributes to consult; only the edge blocks.
-    const onThisMap: CanEnter = tileset === undefined ? insideMap(map.tileMap) : stepRule(map.tileMap, tileset)
-    const sizeOf = (mapId: Id) => findMap(project, mapId)?.tileMap
-
-    /** Inside the map the collision rule decides; beyond an edge a connection may let the step through. */
-    const canEnter: CanEnter = (from, to) => {
-        if (isInside(map.tileMap, to)) {
-            return onThisMap(from, to)
-        }
-
-        const crossing = crossEdge(map.tileMap, map.connections, to, sizeOf)
-        const destination = crossing === undefined ? undefined : findMap(project, crossing.mapId)
-
-        if (crossing === undefined || destination === undefined) {
-            return false
-        }
-
-        const destinationTileset = projectRepository.cachedTileset(destination.tileMap.tilesetId)
-
-        return destinationTileset === undefined || !isSolid(destination.tileMap, destinationTileset, crossing.cell)
-    }
 
     return {
         map,
         scene,
-        canEnter,
         pixels: { width: map.tileMap.width * GRID_SIZE, height: map.tileMap.height * GRID_SIZE },
     }
 }
@@ -181,35 +193,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         await Promise.all(project.maps.map(async each => [each.id, await loadLegacyPlacements(each.layers)] as const)),
     )
     const port = canvasDrawPort(ctx)
-    let open = openMap(project, map, sheetById, legacyPlacements)
-    let player = newPlayer(map.spawn)
+    const world = worldOf(project)
+    let open = openMap(map, sheetById, legacyPlacements)
+    let field = newField(map.id, map.spawn)
 
     startLoop(deltaSeconds => {
-        const before = player
+        field = advanceField(field, { direction: held.latest(), running }, deltaSeconds * 1000, world)
 
-        player = stepPlayer(player, { direction: held.latest(), running }, deltaSeconds * 1000, open.canEnter)
+        // The session changed map at the black point of a fade: draw the new one from now on.
+        if (field.mapId !== open.map.id) {
+            const next = findMap(project, field.mapId)
 
-        // A step that just finished on a warp cell takes the warp. Arriving on one does not: see warpTaken.
-        const warp = warpTaken(before, player, open.map.events)
-        const warpTarget = warp === undefined ? undefined : findMap(project, warp.toMapId)
-
-        if (warp !== undefined && warpTarget !== undefined) {
-            open = openMap(project, warpTarget, sheetById, legacyPlacements)
-            player = newPlayer(warp.toCell, warp.facing)
-        }
-
-        // A finished step that ended beyond the edge was allowed by a connection: continue on the other map.
-        if (player.step === null && !isInside(open.map.tileMap, player.cell)) {
-            const crossing = crossEdge(open.map.tileMap, open.map.connections, player.cell, mapId => findMap(project, mapId)?.tileMap)
-            const destination = crossing === undefined ? undefined : findMap(project, crossing.mapId)
-
-            if (crossing !== undefined && destination !== undefined) {
-                open = openMap(project, destination, sheetById, legacyPlacements)
-                player = newPlayer(crossing.cell, player.facing)
+            if (next !== undefined) {
+                open = openMap(next, sheetById, legacyPlacements)
             }
         }
 
+        const player = field.player
+
         renderFrame(port, open.scene, followPlayer(player, open.pixels, zoom), [playerActor(player, sprite, spriteSheet)])
+
+        const darkness = fadeOpacity(field.fade)
+
+        if (darkness > 0) {
+            port.fillRect(0, 0, port.width, port.height, `rgba(0, 0, 0, ${darkness.toFixed(3)})`)
+        }
     }, callback => window.requestAnimationFrame(callback))
 })
 
