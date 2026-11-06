@@ -57,13 +57,13 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-033](T-033-map-fade.md) | 4 | P2 | done | engine | Fade between maps |
 | [T-034](T-034-interact.md) | 5 | P1 | done | engine | Interact with the cell the player faces |
 | [T-035](T-035-message-box.md) | 5 | P1 | done | engine | Show paging messages |
-| [T-036](T-036-author-dialog.md) | 5 | P1 | ready | editor | Author dialog in the project |
-| [T-037](T-037-dialog-choices.md) | 5 | P1 | backlog | domain | Branch dialog with choices |
+| [T-036](T-036-author-dialog.md) | 5 | P1 | done | editor | Author dialog in the project |
+| [T-037](T-037-dialog-choices.md) | 5 | P1 | ready | domain | Branch dialog with choices |
 | [T-038](T-038-items.md) | 6 | P1 | backlog | domain | Define items and pick them up once |
 | [T-039](T-039-bag.md) | 6 | P1 | backlog | play | Open a bag from the field |
 | [T-040](T-040-flags.md) | 6 | P1 | backlog | domain | Store story flags and variables |
 | [T-041](T-041-save-load.md) | 6 | P1 | backlog | play | Save and load a play session |
-| [T-042](T-042-place-npcs.md) | 7 | P1 | backlog | editor | Place NPC object events |
+| [T-042](T-042-place-npcs.md) | 7 | P1 | ready | editor | Place NPC object events |
 | [T-043](T-043-npc-talk.md) | 7 | P1 | backlog | engine | Talk to an NPC |
 | [T-044](T-044-npc-movement.md) | 7 | P2 | backlog | engine | Let NPCs look around or wander |
 | [T-045](T-045-animated-tiles.md) | 8 | P2 | backlog | engine | Animate water and other tiles |
@@ -82,8 +82,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 ## Counts
 
-- ready: 2
+- ready: 3
 - in_progress: 0
-- backlog: 21
-- done: 35
+- backlog: 19
+- done: 36
 - total: 57

@@ -1,7 +1,7 @@
 ---
 id: T-042
 title: Place NPC object events
-status: backlog
+status: ready
 priority: P1
 phase: 7
 type: feat

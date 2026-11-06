@@ -30,7 +30,7 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 12. **Fixed (T-007).** **Sheet open races the upload.** The listing shows a local data URL immediately. `open-sheet` looks up `sheetRepository`, which was filled from `GET /sheets` at startup and is never refreshed. A new file throws on `sheet.name` because `getByName` returns undefined. Reopening an upload also depends on the server having finished `multer`. Ticket T-007.
 
-13. **The dialog window is not a feature.** `WorldEditor.build` always appends `DialogCreator`. It does not save. Closing it forgets nothing worth keeping, and the next load opens it again. `userData.windows` is written and never read. Ticket T-036 owns real dialog; until then T-011's cleanup note and the empty handler in `handleOpenNewModel` should not be "finished" by wiring the stub. Leave the stub dark. A small fix lives in T-010's out-of-scope note: do it inside T-036, not as drive-by UI.
+13. **Fixed (T-036).** **The dialog window is not a feature.** `WorldEditor.build` always appends `DialogCreator`. It does not save. Closing it forgets nothing worth keeping, and the next load opens it again. `userData.windows` is written and never read. Ticket T-036 owns real dialog; until then T-011's cleanup note and the empty handler in `handleOpenNewModel` should not be "finished" by wiring the stub. Leave the stub dark. A small fix lives in T-010's out-of-scope note: do it inside T-036, not as drive-by UI.
 
 14. **Fixed (T-008).** **Selector snap and map snap differ.** The sheet viewer rounds to 16 (`Math.round`). The map floors to 16 (`Math.floor` via `snap`). A selection on a sheet and a stamp on the map do not share a function. Ticket T-008.
 

@@ -10,8 +10,10 @@ import { drawAttributes } from 'Client/Service/draw-attributes'
 import { drawEvents } from 'Client/Service/draw-events'
 import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 import { WARP_DELETE, WARP_SUBMIT, WarpForm } from 'Client/Component/Events/WarpForm'
+import { SIGN_DELETE, SIGN_SUBMIT, SignForm } from 'Client/Component/Events/SignForm'
+import { EVENT_KIND_PICK, EventKindPick, EventKindPicker } from 'Client/Component/Events/EventKindPicker'
 import { newId } from 'domain/id'
-import { newWarp, Warp, warpAt, withEvent, withoutEvent } from 'domain/warp'
+import { eventsAt, newSign, newWarp, Sign, Warp, withEvent, withoutEvent } from 'domain/warp'
 import { drawGrid } from 'Client/Service/draw-grid'
 import { loadLegacyPlacements } from 'Client/Service/load-legacy-placements'
 import { MAP_SESSION_CHANGED, mapSession } from 'Client/Service/map-session'
@@ -69,6 +71,9 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         'tool-selection': this.handleToolSelection,
         [WARP_SUBMIT]: this.handleWarpSubmit,
         [WARP_DELETE]: this.handleWarpDelete,
+        [SIGN_SUBMIT]: this.handleSignSubmit,
+        [SIGN_DELETE]: this.handleSignDelete,
+        [EVENT_KIND_PICK]: this.handleEventKindPick,
     }
 
     protected readonly listeners: Listeners = {
@@ -620,8 +625,9 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
     }
 
     /**
-     * On the events target a click places or edits a warp through the form;
-     * the rubber removes the warp under the cursor.
+     * On the events target a click edits the event on the cell through its
+     * form, or asks which kind to place on an empty cell; the rubber removes
+     * whatever is under the cursor.
      */
     private async handleEventClick(cell: Cell): Promise<void> {
         const map = mapSession.current
@@ -630,25 +636,71 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
             return
         }
 
-        const existing = warpAt(map.events, cell)
+        const existing = eventsAt(map.events, cell)
 
         if (this.tool === 'rubber') {
-            if (existing !== undefined) {
-                await mapSession.commitEvents(withoutEvent(map.events, existing.id))
+            if (existing.length > 0) {
+                await mapSession.commitEvents(existing.reduce((events, event) => withoutEvent(events, event.id), map.events))
             }
 
             return
         }
 
-        const project = await projectRepository.load()
+        const [first] = existing
+
+        if (first === undefined) {
+            this.openModal(Dom.makeComponent(EventKindPicker, { cell }))
+        } else if (first.kind === 'warp') {
+            await this.openWarpForm(cell, first)
+        } else if (first.kind === 'sign') {
+            await this.openSignForm(cell, first)
+        }
+    }
+
+    private openModal(form: HTMLElement): void {
         const modal = Dom.makeComponent(BasicModal)
 
-        modal.append(Dom.makeComponent(WarpForm, {
-            warp: existing ?? null,
+        modal.append(form)
+        this.getRootNode().appendChild(modal)
+    }
+
+    private async openWarpForm(cell: Cell, warp: Warp | null): Promise<void> {
+        const project = await projectRepository.load()
+
+        this.openModal(Dom.makeComponent(WarpForm, {
+            warp,
             cell,
             maps: project.maps.map(each => ({ id: each.id, name: each.name, size: { width: each.tileMap.width, height: each.tileMap.height } })),
         }))
-        this.getRootNode().appendChild(modal)
+    }
+
+    private async openSignForm(cell: Cell, sign: Sign | null): Promise<void> {
+        const project = await projectRepository.load()
+
+        this.openModal(Dom.makeComponent(SignForm, {
+            sign,
+            cell,
+            dialogs: project.dialogs.map(each => ({ id: each.id, name: each.name, firstPage: each.pages[0] ?? '' })),
+        }))
+    }
+
+    private async handleEventKindPick(pick: EventKindPick): Promise<void> {
+        if (pick.kind === 'warp') {
+            await this.openWarpForm(pick.cell, null)
+        } else {
+            await this.openSignForm(pick.cell, null)
+        }
+    }
+
+    private async handleSignSubmit(submitted: Omit<Sign, 'id'> & { id: Id | null }): Promise<void> {
+        const map = mapSession.current
+        const sign = newSign(submitted.id ?? newId(), submitted.cell, submitted.dialogId)
+
+        await mapSession.commitEvents(withEvent(map.events, sign))
+    }
+
+    private async handleSignDelete(signId: Id): Promise<void> {
+        await mapSession.commitEvents(withoutEvent(mapSession.current.events, signId))
     }
 
     private async handleWarpSubmit(submitted: Omit<Warp, 'id'> & { id: Id | null }): Promise<void> {

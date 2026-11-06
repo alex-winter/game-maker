@@ -15,6 +15,9 @@ export class SideMenu extends Component {
         '.open-sprite-editor:click': () => {
             Events.emit('open-sprite-editor', undefined)
         },
+        '.open-dialog-editor:click': () => {
+            Events.emit('open-dialog-editor', undefined)
+        },
     }
 
     protected css(): string {
@@ -91,7 +94,11 @@ export class SideMenu extends Component {
         spriteButton.title = 'Sprites'
         spriteButton.appendChild(Dom.i('fa-solid', 'fa-person-walking'))
 
-        floatingWrapper.append(importButton, paletteButton, spriteButton)
+        const dialogButton = Dom.button('', 'open-dialog-editor')
+        dialogButton.title = 'Dialogs'
+        dialogButton.appendChild(Dom.i('fa-solid', 'fa-comment-dots'))
+
+        floatingWrapper.append(importButton, paletteButton, spriteButton, dialogButton)
 
         container.appendChild(floatingWrapper)
 

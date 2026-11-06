@@ -13,7 +13,9 @@ import { CanvasTools } from 'Client/Component/Canvas/CanvasTools'
 import { SpriteEditor } from 'Client/Component/Sprite/SpriteEditor'
 import { WorldEditor } from 'Client/Component/WorldEditor'
 import { Ide } from 'Client/Component/Ide'
-import { DialogCreator } from 'Client/Component/Dialog/DialogCreator'
+import { DialogEditor } from 'Client/Component/Dialog/DialogEditor'
+import { SignForm } from 'Client/Component/Events/SignForm'
+import { EventKindPicker } from 'Client/Component/Events/EventKindPicker'
 import { MapSelect } from 'Client/Component/MapSelect/MapSelect'
 import { ConfirmDialog } from 'Client/Component/MapSelect/ConfirmDialog'
 import { MapSizeForm } from 'Client/Component/MapSelect/MapSizeForm'
@@ -38,7 +40,9 @@ export const COMPONENTS = new Map<ComponentConstructor, string>([
   [LayerItem, 'layer-item'],
   [CanvasTools, 'canvas-tools'],
   [SpriteEditor, 'sprite-editor'],
-  [DialogCreator, 'dialog-creator'],
+  [DialogEditor, 'dialog-editor'],
+  [SignForm, 'sign-form'],
+  [EventKindPicker, 'event-kind-picker'],
   [MapSelect, 'map-select'],
   [ConfirmDialog, 'confirm-dialog'],
   [MapSizeForm, 'map-size-form'],

@@ -24,7 +24,7 @@ import { userDataRepository } from 'Client/Service/Repository/UserDataRepository
 import { WindowBoxFactory } from 'Client/Service/WindowBoxFactory'
 import { View } from 'engine/view'
 import { UserData, WindowConfiguration } from 'Model/UserData'
-import { DialogCreator } from './Dialog/DialogCreator'
+import { DialogEditor } from 'Client/Component/Dialog/DialogEditor'
 
 /**
  * The editor page: picks the map, mounts the side menu, tool bar, and the one
@@ -45,6 +45,7 @@ export class WorldEditor extends Component {
         'open-sheet-importer': this.handleOpenSheetImporter,
         'open-add-new-layer': this.handleOpenAddNewLayer,
         'open-sprite-editor': this.handleOpenSpriteEditor,
+        'open-dialog-editor': this.handleOpenDialogEditor,
         'updated-view-coordinates': this.handleUpdateViewCoordinates,
         'grid-toggled': this.handleGridToggled,
         'window-update': this.handleWindowUpdate,
@@ -101,18 +102,6 @@ export class WorldEditor extends Component {
         const container = Dom.div('container')
         const sideMenu = Dom.makeComponent(SideMenu)
         const canvasContainer = Dom.div('canvas-container')
-
-        const dialogCreator = Dom.makeComponent(DialogCreator)
-
-        const dialog = WindowBoxFactory.make(dialogCreator, 'dialog', {
-            uuid: componentId(DialogCreator),
-            componentConfigration: { dataset: {} },
-            title: 'Dialog',
-        })
-
-        if (dialog) {
-            this.shadowRoot?.append(dialog)
-        }
 
         sideMenu.append(Dom.makeComponent(MapSelect, { activeMapId: this.map?.id ?? null }))
 
@@ -283,6 +272,28 @@ export class WorldEditor extends Component {
         userData.windows[windowConfiguration.uuid] = windowConfiguration
 
         userDataRepository.persist(userData)
+    }
+
+    private async handleOpenDialogEditor(dialogId: Id | undefined): Promise<void> {
+        const key = 'dialogs'
+        const openWindow = this.windowBoxes[key]
+
+        if (openWindow && openWindow.isConnected) {
+            openWindow.flash()
+            return
+        }
+
+        const dataset = { dialogId: dialogId ?? null }
+        const windowBox = WindowBoxFactory.make(Dom.makeComponent(DialogEditor, dataset), 'Dialogs', {
+            uuid: componentId(DialogEditor),
+            componentConfigration: { dataset },
+            title: 'Dialogs',
+        })
+
+        if (windowBox) {
+            this.windowBoxes[key] = windowBox
+            this.shadowRoot?.append(windowBox)
+        }
     }
 
     private async handleOpenSpriteEditor(spriteId: Id | undefined): Promise<void> {

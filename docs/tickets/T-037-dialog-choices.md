@@ -1,7 +1,7 @@
 ---
 id: T-037
 title: Branch dialog with choices
-status: backlog
+status: ready
 priority: P1
 phase: 5
 type: feat

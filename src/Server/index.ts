@@ -21,6 +21,7 @@ import { requestHandlerPutTileMap } from 'Server/RequestHandlers/put-tile-map'
 import { requestHandlerDeleteMap, requestHandlerPutMapConnections, requestHandlerPutMapEvents, requestHandlerPutMapSize, requestHandlerPutStartMap } from 'Server/RequestHandlers/map-lifecycle'
 import { ensureProjectFile } from 'Server/services/project-store'
 import { requestHandlerPatchMetatile, requestHandlerPostTilesets, requestHandlerPutMapTileset } from 'Server/RequestHandlers/tilesets'
+import { requestHandlerDeleteDialog, requestHandlerPostDialogs, requestHandlerPutDialog } from 'Server/RequestHandlers/dialogs'
 import { requestHandlerDeleteSprite, requestHandlerPostSprites, requestHandlerPutPlayerSprite, requestHandlerPutSprite } from 'Server/RequestHandlers/sprites'
 import { RequestHandler } from 'Server/types'
 
@@ -98,6 +99,9 @@ app.post('/project/sprites', requestHandlerPostSprites)
 app.put('/project/sprites/:spriteId', requestHandlerPutSprite)
 app.delete('/project/sprites/:spriteId', requestHandlerDeleteSprite)
 app.put('/project/player-sprite', requestHandlerPutPlayerSprite)
+app.post('/project/dialogs', requestHandlerPostDialogs)
+app.put('/project/dialogs/:dialogId', requestHandlerPutDialog)
+app.delete('/project/dialogs/:dialogId', requestHandlerDeleteDialog)
 
 
 app.post('/upload-files', uploadSheets, requestHandlerPostFiles)

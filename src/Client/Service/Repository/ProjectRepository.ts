@@ -2,7 +2,8 @@ import { Repository } from 'Client/Service/Repository/Repository'
 import { Connections } from 'domain/connection'
 import { Id } from 'domain/id'
 import { GridSize, TileMap } from 'domain/map'
-import { addSprite, GameMap, Project, removeMap, removeSprite, withMapConnections, withMapEvents, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withStartMap, withTileset } from 'domain/project'
+import { Dialog } from 'domain/dialog'
+import { addDialog, addSprite, GameMap, removeDialog, withDialog, Project, removeMap, removeSprite, withMapConnections, withMapEvents, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withStartMap, withTileset } from 'domain/project'
 import { SpriteDefinition } from 'domain/sprite'
 import { MapEvent } from 'domain/warp'
 import { Metatile, MetatileAttributes, MetatileId, Tileset, withMetatileAttributes } from 'domain/tileset'
@@ -109,6 +110,36 @@ class ProjectRepository extends Repository {
 
         if (this.project) {
             this.project = withMapConnections(this.project, mapId, connections)
+        }
+    }
+
+    public async createDialog(input: Omit<Dialog, 'id'>): Promise<Dialog> {
+        const response = await this.post(this.API_PATH + '/dialogs', input)
+        const dialog: Dialog = await response.json()
+
+        if (this.project) {
+            this.project = addDialog(this.project, dialog)
+        }
+
+        return dialog
+    }
+
+    public async saveDialog(dialog: Dialog): Promise<Dialog> {
+        const response = await this.put(this.API_PATH + '/dialogs/' + dialog.id, dialog)
+        const saved: Dialog = await response.json()
+
+        if (this.project) {
+            this.project = withDialog(this.project, saved)
+        }
+
+        return saved
+    }
+
+    public async deleteDialog(dialogId: Id): Promise<void> {
+        await this.delete(this.API_PATH + '/dialogs/' + dialogId)
+
+        if (this.project) {
+            this.project = removeDialog(this.project, dialogId)
         }
     }
 
