@@ -1,7 +1,7 @@
 ---
 id: T-055
 title: Show the party screen
-status: backlog
+status: ready
 priority: P2
 phase: 9
 type: feat

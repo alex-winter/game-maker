@@ -1,7 +1,7 @@
 ---
 id: T-052
 title: Define moves and a type chart
-status: backlog
+status: ready
 priority: P1
 phase: 9
 type: feat

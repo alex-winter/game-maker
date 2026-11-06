@@ -68,22 +68,22 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-044](T-044-npc-movement.md) | 7 | P2 | done | engine | Let NPCs look around or wander |
 | [T-045](T-045-animated-tiles.md) | 8 | P2 | done | engine | Animate water and other tiles |
 | [T-046](T-046-start-menu.md) | 6 | P1 | done | play | Open a field start menu |
-| [T-047](T-047-party-model.md) | 8 | P1 | ready | domain | Model a party of creatures |
-| [T-048](T-048-encounters.md) | 8 | P1 | backlog | domain | Start an encounter from grass |
+| [T-047](T-047-party-model.md) | 8 | P1 | done | domain | Model a party of creatures |
+| [T-048](T-048-encounters.md) | 8 | P1 | ready | domain | Start an encounter from grass |
 | [T-049](T-049-trainer-sight.md) | 8 | P2 | backlog | engine | Let a trainer notice the player |
 | [T-050](T-050-field-gates.md) | 8 | P2 | ready | domain | Open a field gate with a flag |
 | [T-051](T-051-vertical-slice.md) | 8 | P1 | backlog | content | Build the Gate A and Gate B town in the editor |
-| [T-052](T-052-move-catalog.md) | 9 | P1 | backlog | domain | Define moves and a type chart |
+| [T-052](T-052-move-catalog.md) | 9 | P1 | ready | domain | Define moves and a type chart |
 | [T-053](T-053-battle-scene.md) | 9 | P1 | backlog | engine | Resolve a single-creature battle |
 | [T-054](T-054-experience.md) | 9 | P2 | backlog | domain | Award experience and levels |
-| [T-055](T-055-party-screen.md) | 9 | P2 | backlog | play | Show the party screen |
+| [T-055](T-055-party-screen.md) | 9 | P2 | ready | play | Show the party screen |
 | [T-056](T-056-wild-battle.md) | 9 | P1 | backlog | engine | Run wild encounters through the battle scene |
 | [T-057](T-057-trainer-battle.md) | 9 | P1 | backlog | engine | Run trainer battles through the battle scene |
 
 ## Counts
 
-- ready: 2
+- ready: 4
 - in_progress: 0
-- backlog: 9
-- done: 46
+- backlog: 6
+- done: 47
 - total: 57

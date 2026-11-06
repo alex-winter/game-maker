@@ -32,6 +32,7 @@ import { drawBagScreen } from 'engine/bag-screen'
 import { itemActor } from 'engine/item-actor'
 import { npcActor, SpriteLookup } from 'engine/npc-actor'
 import { npcsOn } from 'domain/warp'
+import { starterParty } from 'domain/creature'
 import { View } from 'engine/view'
 
 const held = new HeldDirections()
@@ -283,7 +284,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const savedMap = resume === undefined ? undefined : findMap(project, resume.mapId)
     const map = savedMap ?? startAt
     let open = openMap(map, sheetById, legacyPlacements)
-    let field: FieldState = resume !== undefined && savedMap !== undefined ? restoreField(resume) : newField(map.id, map.spawn)
+    // A new game carries the authored starter (T-047); a resumed one carries whatever was saved.
+    let field: FieldState = resume !== undefined && savedMap !== undefined ? restoreField(resume) : newField(map.id, map.spawn, 'down', undefined, undefined, starterParty(project.starter, project.species))
 
     // The session clock animated tiles follow: it runs on through fades and menus so water never stutters.
     let clockMs = 0

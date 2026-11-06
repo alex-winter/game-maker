@@ -6,7 +6,8 @@ import { GridSize, TileMap } from 'domain/map'
 import { Dialog } from 'domain/dialog'
 import { Flag } from 'domain/flags'
 import { Item } from 'domain/item'
-import { addDialog, addFlag, addItem, addSprite, GameMap, removeDialog, removeFlag, removeItem, withDialog, withFlag, withItem, Project, removeMap, removeSprite, withMapConnections, withMapEvents, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withStartMap, withTileset } from 'domain/project'
+import { Move, Species, Starter } from 'domain/creature'
+import { addMove, addSpecies, removeMove, removeSpecies, withMove, withSpecies, withStarter, addDialog, addFlag, addItem, addSprite, GameMap, removeDialog, removeFlag, removeItem, withDialog, withFlag, withItem, Project, removeMap, removeSprite, withMapConnections, withMapEvents, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withStartMap, withTileset } from 'domain/project'
 import { SpriteDefinition } from 'domain/sprite'
 import { MapEvent } from 'domain/warp'
 import { Metatile, MetatileAttributes, MetatileId, Tileset, withMetatileAttributes } from 'domain/tileset'
@@ -213,6 +214,74 @@ class ProjectRepository extends Repository {
 
         if (this.project) {
             this.project = removeItem(this.project, itemId)
+        }
+    }
+
+    public async createSpecies(input: Omit<Species, 'id'>): Promise<Species> {
+        const response = await this.post(this.API_PATH + '/species', input)
+        const species: Species = await response.json()
+
+        if (this.project) {
+            this.project = addSpecies(this.project, species)
+        }
+
+        return species
+    }
+
+    public async saveSpecies(species: Species): Promise<Species> {
+        const response = await this.put(this.API_PATH + '/species/' + species.id, species)
+        const saved: Species = await response.json()
+
+        if (this.project) {
+            this.project = withSpecies(this.project, saved)
+        }
+
+        return saved
+    }
+
+    public async deleteSpecies(speciesId: Id): Promise<void> {
+        await this.delete(this.API_PATH + '/species/' + speciesId)
+
+        if (this.project) {
+            this.project = removeSpecies(this.project, speciesId)
+        }
+    }
+
+    public async createMove(input: Omit<Move, 'id'>): Promise<Move> {
+        const response = await this.post(this.API_PATH + '/moves', input)
+        const move: Move = await response.json()
+
+        if (this.project) {
+            this.project = addMove(this.project, move)
+        }
+
+        return move
+    }
+
+    public async saveMove(move: Move): Promise<Move> {
+        const response = await this.put(this.API_PATH + '/moves/' + move.id, move)
+        const saved: Move = await response.json()
+
+        if (this.project) {
+            this.project = withMove(this.project, saved)
+        }
+
+        return saved
+    }
+
+    public async deleteMove(moveId: Id): Promise<void> {
+        await this.delete(this.API_PATH + '/moves/' + moveId)
+
+        if (this.project) {
+            this.project = removeMove(this.project, moveId)
+        }
+    }
+
+    public async setStarter(starter: Starter | null): Promise<void> {
+        await this.put(this.API_PATH + '/starter', { starter })
+
+        if (this.project) {
+            this.project = withStarter(this.project, starter)
         }
     }
 

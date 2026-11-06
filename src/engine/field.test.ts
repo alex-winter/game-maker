@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { insideMap, WALK_MS_PER_CELL } from '../domain/movement'
 import { MIN_PAUSE_MS } from '../domain/npc-behavior'
+import { maxHpAt, newSpecies, starterParty } from '../domain/creature'
 import { newPage } from '../domain/dialog'
 import { newItemEvent, newNpcEvent, newSign, newWarp } from '../domain/warp'
 import { bagCount } from '../domain/item'
@@ -271,6 +272,7 @@ test('a save snapshots the standing cell, memory, and bag, and restoring it resu
         facing: 'down',
         memory: { flags: ['took-potion'], variables: {} },
         bag: [{ itemId: 'potion', count: 1 }],
+        party: [],
     })
 
     const restored = restoreField(saved)
@@ -465,4 +467,15 @@ test('a wanderer never steps onto an item or another person', () => {
             assert.ok(!(cell.x === 7 && cell.y === 4), 'not onto Pal')
         }
     }
+})
+
+test('a new game carries the starter at the authored level with full HP, and a save keeps the party', () => {
+    const sprout = newSpecies('sprout', 'Sprout')
+    const party = starterParty({ speciesId: 'sprout', level: 5 }, [sprout])
+    const state = newField('town', { x: 5, y: 5 }, 'down', undefined, undefined, party)
+
+    assert.equal(state.party.length, 1)
+    assert.equal(state.party[0].level, 5)
+    assert.equal(state.party[0].hp, maxHpAt(sprout, 5))
+    assert.deepEqual(restoreField(snapshotField(state)).party, party)
 })

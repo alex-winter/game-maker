@@ -16,6 +16,7 @@ import { Ide } from 'Client/Component/Ide'
 import { DialogEditor } from 'Client/Component/Dialog/DialogEditor'
 import { FlagsEditor } from 'Client/Component/Flags/FlagsEditor'
 import { ItemsEditor } from 'Client/Component/Items/ItemsEditor'
+import { SpeciesEditor } from 'Client/Component/Creatures/SpeciesEditor'
 import { ItemForm } from 'Client/Component/Events/ItemForm'
 import { NpcForm } from 'Client/Component/Events/NpcForm'
 import { SignForm } from 'Client/Component/Events/SignForm'
@@ -47,6 +48,7 @@ export const COMPONENTS = new Map<ComponentConstructor, string>([
   [DialogEditor, 'dialog-editor'],
   [FlagsEditor, 'flags-editor'],
   [ItemsEditor, 'items-editor'],
+  [SpeciesEditor, 'species-editor'],
   [ItemForm, 'item-form'],
   [NpcForm, 'npc-form'],
   [SignForm, 'sign-form'],

@@ -1,7 +1,7 @@
 ---
 id: T-048
 title: Start an encounter from grass
-status: backlog
+status: ready
 priority: P1
 phase: 8
 type: feat

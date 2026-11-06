@@ -24,6 +24,9 @@ export class SideMenu extends Component {
         '.open-items-editor:click': () => {
             Events.emit('open-items-editor', undefined)
         },
+        '.open-species-editor:click': () => {
+            Events.emit('open-species-editor', undefined)
+        },
     }
 
     protected css(): string {
@@ -112,7 +115,11 @@ export class SideMenu extends Component {
         itemsButton.title = 'Items'
         itemsButton.appendChild(Dom.i('fa-solid', 'fa-box'))
 
-        floatingWrapper.append(importButton, paletteButton, spriteButton, dialogButton, flagsButton, itemsButton)
+        const speciesButton = Dom.button('', 'open-species-editor')
+        speciesButton.title = 'Creatures'
+        speciesButton.appendChild(Dom.i('fa-solid', 'fa-paw'))
+
+        floatingWrapper.append(importButton, paletteButton, spriteButton, dialogButton, flagsButton, itemsButton, speciesButton)
 
         container.appendChild(floatingWrapper)
 

@@ -10,6 +10,7 @@ import { advanceFade, Fade, startFade } from './fade'
 import { DialogPage, newPage } from '../domain/dialog'
 import { Memory, newMemory } from '../domain/flags'
 import { Bag, isTaken, newBag, pickUp } from '../domain/item'
+import { Party } from '../domain/creature'
 import { advanceMessage, MessageState, missingDialogPages, moveHighlight, openMessage } from './message'
 import { MenuEntry, MenuState, moveMenu, openMenu, selectedEntry } from './menu'
 import { SavedSession } from '../domain/save'
@@ -63,6 +64,9 @@ export type FieldState = {
 
     /** Where each person on this map is right now (T-044), seeded from the events the first frame they are seen. */
     readonly people: readonly NpcMotion[]
+
+    /** The creatures the player carries (T-047). Nothing on the field changes it yet. */
+    readonly party: Party
 }
 
 /** Movement plus whether the interact and menu keys were pressed this frame (edges, not levels). */
@@ -97,18 +101,18 @@ export type FieldWorld = {
     random: Random
 }
 
-export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down', memory: Memory = newMemory(), bag: Bag = newBag()): FieldState {
-    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined, bagScreen: null, talkingTo: null, people: [] }
+export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down', memory: Memory = newMemory(), bag: Bag = newBag(), party: Party = []): FieldState {
+    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined, bagScreen: null, talkingTo: null, people: [], party }
 }
 
 /** What a save keeps of the session (T-041): the standing cell, never a half-finished step. */
 export function snapshotField(state: FieldState): SavedSession {
-    return { mapId: state.mapId, cell: restingCell(state.player), facing: state.player.facing, memory: state.memory, bag: state.bag }
+    return { mapId: state.mapId, cell: restingCell(state.player), facing: state.player.facing, memory: state.memory, bag: state.bag, party: state.party }
 }
 
-/** A session resumed from a save: standing where it was saved, with its memory and bag. */
+/** A session resumed from a save: standing where it was saved, with its memory, bag, and party. */
 export function restoreField(session: SavedSession): FieldState {
-    return newField(session.mapId, session.cell, session.facing, session.memory, session.bag)
+    return newField(session.mapId, session.cell, session.facing, session.memory, session.bag, session.party)
 }
 
 /** After the host has written the save: the menu closes and the box says so. */

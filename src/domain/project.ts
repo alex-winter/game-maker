@@ -6,6 +6,7 @@ import { emptyTileMap, GridSize, isInside, TileMap, withTileMapDefaults } from '
 import { SpriteDefinition } from './sprite'
 import { MapEvent, withEventDefaults } from './warp'
 import { Dialog, withDialogDefaults } from './dialog'
+import { isStarter, Move, Species, Starter } from './creature'
 import type { Flag } from './flags'
 import type { Item } from './item'
 import { Tileset } from './tileset'
@@ -64,6 +65,15 @@ export type Project = {
 
     /** Where play begins (T-030). Null until the author picks; `startMap` falls back to the first map. */
     startMapId: Id | null
+
+    /** The creatures that exist (T-047). A party holds creatures of these. */
+    species: Species[]
+
+    /** The minimal move catalog (T-047); learnsets refer to it by id. T-052 extends the record. */
+    moves: Move[]
+
+    /** What a new game puts in the party, or null until the author picks. */
+    starter: Starter | null
 }
 
 /** The middle of the grid: where a map starts the player until someone moves the spawn. */
@@ -76,7 +86,7 @@ export function newMap(name: string, layers: Layer[] = [], size: GridSize = DEFA
 }
 
 export function newProject(name: string, maps: GameMap[] = []): Project {
-    return { id: newId(), name, tilesets: [], maps, sprites: [], playerSpriteId: null, dialogs: [], flags: [], items: [], startMapId: null }
+    return { id: newId(), name, tilesets: [], maps, sprites: [], playerSpriteId: null, dialogs: [], flags: [], items: [], startMapId: null, species: [], moves: [], starter: null }
 }
 
 /**
@@ -94,6 +104,9 @@ export function withProjectDefaults(stored: Partial<Project> & Pick<Project, 'id
         flags: stored.flags ?? [],
         items: stored.items ?? [],
         startMapId: stored.startMapId ?? null,
+        species: stored.species ?? [],
+        moves: stored.moves ?? [],
+        starter: isStarter(stored.starter) ? stored.starter : null,
         maps: stored.maps.map(map => {
             const tileMap = withTileMapDefaults(map.tileMap ?? emptyTileMap(DEFAULT_MAP_SIZE))
 
@@ -318,4 +331,50 @@ export function withItem(project: Project, item: Item): Project {
 
 export function removeItem(project: Project, itemId: Id): Project {
     return { ...project, items: project.items.filter(item => item.id !== itemId) }
+}
+
+export function findSpecies(project: Project, speciesId: Id): Species | undefined {
+    return project.species.find(species => species.id === speciesId)
+}
+
+export function addSpecies(project: Project, species: Species): Project {
+    return { ...project, species: [...project.species, species] }
+}
+
+export function withSpecies(project: Project, species: Species): Project {
+    return { ...project, species: project.species.map(existing => existing.id === species.id ? species : existing) }
+}
+
+/** Removes a species; a starter of that species is cleared too, so a new game never hands out a ghost. */
+export function removeSpecies(project: Project, speciesId: Id): Project {
+    return {
+        ...project,
+        species: project.species.filter(species => species.id !== speciesId),
+        starter: project.starter?.speciesId === speciesId ? null : project.starter,
+    }
+}
+
+export function findMove(project: Project, moveId: Id): Move | undefined {
+    return project.moves.find(move => move.id === moveId)
+}
+
+export function addMove(project: Project, move: Move): Project {
+    return { ...project, moves: [...project.moves, move] }
+}
+
+export function withMove(project: Project, move: Move): Project {
+    return { ...project, moves: project.moves.map(existing => existing.id === move.id ? move : existing) }
+}
+
+/** Removes a move and every learnset entry that taught it. */
+export function removeMove(project: Project, moveId: Id): Project {
+    return {
+        ...project,
+        moves: project.moves.filter(move => move.id !== moveId),
+        species: project.species.map(species => ({ ...species, learnset: species.learnset.filter(entry => entry.moveId !== moveId) })),
+    }
+}
+
+export function withStarter(project: Project, starter: Starter | null): Project {
+    return { ...project, starter }
 }

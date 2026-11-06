@@ -2,6 +2,7 @@ import { Cell, isCell } from './coordinates'
 import { isMemory, Memory } from './flags'
 import { Id } from './id'
 import { Bag, isBag } from './item'
+import { isParty, Party } from './creature'
 import { Direction, isDirection } from './movement'
 
 /** Everything a play session needs to resume: where the player is and what the world remembers. Never the map itself. */
@@ -15,6 +16,9 @@ export type SavedSession = {
     readonly memory: Memory
 
     readonly bag: Bag
+
+    /** The creatures carried (T-047). A save written before them resumes with nobody. */
+    readonly party: Party
 }
 
 export const SAVE_VERSION = 1
@@ -38,7 +42,7 @@ export type ParseResult =
 export function serializeSave(session: SavedSession, savedAt: string): SaveDocument {
     return {
         version: SAVE_VERSION,
-        slots: [{ mapId: session.mapId, cell: session.cell, facing: session.facing, memory: session.memory, bag: session.bag, savedAt }],
+        slots: [{ mapId: session.mapId, cell: session.cell, facing: session.facing, memory: session.memory, bag: session.bag, party: session.party, savedAt }],
     }
 }
 
@@ -54,6 +58,7 @@ export function isSavedSession(value: unknown): value is SavedSession {
         && isDirection(session.facing)
         && isMemory(session.memory)
         && isBag(session.bag)
+        && (session.party === undefined || isParty(session.party))
 }
 
 /**
@@ -81,5 +86,5 @@ export function parseSave(value: unknown): ParseResult {
         return { ok: false, reason: 'The slot is missing a field or has one of the wrong shape' }
     }
 
-    return { ok: true, session: { mapId: slot.mapId, cell: slot.cell, facing: slot.facing, memory: slot.memory, bag: slot.bag } }
+    return { ok: true, session: { mapId: slot.mapId, cell: slot.cell, facing: slot.facing, memory: slot.memory, bag: slot.bag, party: slot.party ?? [] } }
 }

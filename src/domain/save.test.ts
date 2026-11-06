@@ -8,6 +8,7 @@ const session: SavedSession = {
     facing: 'up',
     memory: { flags: ['took-potion'], variables: { steps: 12 } },
     bag: [{ itemId: 'potion', count: 1 }],
+    party: [{ speciesId: 'sprout', level: 5, hp: 20, experience: 125, moves: ['tackle'] }],
 }
 
 test('a session round-trips through serialize and parse, with the time kept on the slot', () => {
@@ -25,4 +26,13 @@ test('parse refuses the wrong version, no slot, and a malformed slot, each with 
     assert.equal(parseSave({ version: 1, slots: [{ ...session, facing: 'sideways' }] }).ok, false)
     assert.equal(parseSave({ version: 1, slots: [{ ...session, bag: 'full' }] }).ok, false)
     assert.equal(parseSave(null).ok, false)
+})
+
+test('a save written before parties resumes with nobody in the party', () => {
+    const { party: _party, ...older } = session
+    const result = parseSave({ version: 1, slots: [{ ...older, savedAt: '2026-01-01T00:00:00Z' }] })
+
+    assert.ok(result.ok)
+    assert.deepEqual(result.session.party, [])
+    assert.equal(parseSave({ version: 1, slots: [{ ...older, party: 'everyone', savedAt: 'x' }] }).ok, false)
 })
