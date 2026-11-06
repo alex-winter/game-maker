@@ -10,7 +10,7 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 3. **Round-trip and MIME fixed (T-007); storage still inline until T-015.** **Sheet GET is a synchronous base64 dump.** `get-sheets.ts` reads every upload inside the `readdir` callback with `readFileSync`, and builds `data:image/<ext>` so JPEG is `image/jpg`. The client keeps that whole payload in memory. Ticket T-007 for the round-trip; T-015 replaces the storage.
 
-4. **Fan-out fixed (T-005); atomic writes still open (T-016).** **JSON writes can tear.** `writeJson` truncates the destination in place. A crash or an overlapping request leaves `layers.json` half-written. `LayerRepository.update` fires a PATCH per call and does not order them. `setActive` and `toggleVisible` PATCH every layer, not the one that changed. Ticket T-005 for the fan-out; T-016 for atomic writes.
+4. **Fixed (T-005, T-016).** **JSON writes can tear.** `writeJson` truncates the destination in place. A crash or an overlapping request leaves `layers.json` half-written. `LayerRepository.update` fires a PATCH per call and does not order them. `setActive` and `toggleVisible` PATCH every layer, not the one that changed. Ticket T-005 for the fan-out; T-016 for atomic writes.
 
 ## Editor geometry and tools
 
