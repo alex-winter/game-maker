@@ -113,6 +113,11 @@ export function stepPlayer(player: Player, input: MovementInput, deltaMs: number
     return beginStep(advanced, input.direction, input.running ? RUN_MS_PER_CELL : WALK_MS_PER_CELL, canEnter)
 }
 
+/** Where the player stands, or will stand when the step in progress lands. */
+export function restingCell(player: Player): Cell {
+    return player.step === null ? player.cell : player.step.to
+}
+
 /** How far through the current step the player is, 0 to 1; 0 when standing. */
 export function stepProgress(player: Player): number {
     return player.step === null ? 0 : player.step.elapsedMs / player.step.durationMs

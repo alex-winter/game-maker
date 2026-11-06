@@ -4,7 +4,7 @@ import { Cell, isCell } from './coordinates'
 import { Id, newId } from './id'
 import { emptyTileMap, GridSize, isInside, TileMap, withTileMapDefaults } from './map'
 import { SpriteDefinition } from './sprite'
-import type { MapEvent } from './warp'
+import { MapEvent, withEventDefaults } from './warp'
 import { Dialog, withDialogDefaults } from './dialog'
 import type { Flag } from './flags'
 import type { Item } from './item'
@@ -102,7 +102,7 @@ export function withProjectDefaults(stored: Partial<Project> & Pick<Project, 'id
                 tileMap,
                 spawn: isCell(map.spawn) && isInside(tileMap, map.spawn) ? map.spawn : centreCell(tileMap),
                 connections: map.connections ?? {},
-                events: map.events ?? [],
+                events: (map.events ?? []).map(withEventDefaults),
                 layers: map.layers ?? [],
             }
         }),

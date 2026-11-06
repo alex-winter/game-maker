@@ -65,7 +65,7 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-041](T-041-save-load.md) | 6 | P1 | done | play | Save and load a play session |
 | [T-042](T-042-place-npcs.md) | 7 | P1 | done | editor | Place NPC object events |
 | [T-043](T-043-npc-talk.md) | 7 | P1 | done | engine | Talk to an NPC |
-| [T-044](T-044-npc-movement.md) | 7 | P2 | ready | engine | Let NPCs look around or wander |
+| [T-044](T-044-npc-movement.md) | 7 | P2 | done | engine | Let NPCs look around or wander |
 | [T-045](T-045-animated-tiles.md) | 8 | P2 | ready | engine | Animate water and other tiles |
 | [T-046](T-046-start-menu.md) | 6 | P1 | done | play | Open a field start menu |
 | [T-047](T-047-party-model.md) | 8 | P1 | ready | domain | Model a party of creatures |
@@ -82,8 +82,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 ## Counts
 
-- ready: 4
+- ready: 3
 - in_progress: 0
 - backlog: 9
-- done: 44
+- done: 45
 - total: 57

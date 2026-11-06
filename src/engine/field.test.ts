@@ -1,12 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { insideMap, WALK_MS_PER_CELL } from '../domain/movement'
+import { MIN_PAUSE_MS } from '../domain/npc-behavior'
 import { newPage } from '../domain/dialog'
 import { newItemEvent, newNpcEvent, newSign, newWarp } from '../domain/warp'
 import { bagCount } from '../domain/item'
 import { hasFlag } from '../domain/flags'
 import { FADE_MS, fadeOpacity } from './fade'
-import { advanceField, afterSave, FieldInput, FieldState, FieldWorld, isTransitioning, newField, npcFacing, restoreField, snapshotField } from './field'
+import { advanceField, afterSave, FieldInput, FieldState, FieldWorld, isTransitioning, liveEvents, newField, npcMover, restoreField, snapshotField } from './field'
 
 const town = { width: 10, height: 10 }
 const house = { width: 6, height: 6 }
@@ -23,6 +24,7 @@ const world: FieldWorld = {
         : id === 'boat' ? [newPage('Off you go.')]
         : undefined),
     itemOf: id => (id === 'potion' ? { name: 'Potion', description: 'Heals 20 HP.' } : undefined),
+    random: () => 0,
 }
 
 const right = { direction: 'right' as const, running: false, interact: false, menu: false }
@@ -338,18 +340,18 @@ test('talking to a person opens their dialog with choices, turns them to face th
 
     assert.equal(talking.message?.pages[0]?.text, 'Take the boat?')
     assert.deepEqual(talking.talkingTo, { eventId: 'mom', facing: 'left' })
-    assert.equal(npcFacing(talking, mom), 'left')
+    assert.equal(npcMover(talking, mom).facing, 'left')
 
     const chose = advanceField(advanceField(talking, down, 16, peopled), { ...none, interact: true }, 16, peopled)
 
     assert.equal(chose.message, null, '"No" ends it')
     assert.equal(chose.talkingTo, null)
-    assert.equal(npcFacing(chose, mom), 'down', 'back to her own facing')
+    assert.equal(npcMover(chose, mom).facing, 'down', 'back to her own facing')
 
     const yes = advanceField(talking, { ...none, interact: true }, 16, peopled)
 
     assert.equal(yes.message?.pages[0]?.text, 'Off you go.', 'the branch opens while still talking')
-    assert.equal(npcFacing(yes, mom), 'left')
+    assert.equal(npcMover(yes, mom).facing, 'left')
 })
 
 test('a person with nothing to say says so, so the author knows who to write for', () => {
@@ -358,4 +360,109 @@ test('a person with nothing to say says so, so the author knows who to write for
     const talking = advanceField(newField('town', { x: 5, y: 5 }, 'right'), { ...none, interact: true }, 16, peopled)
 
     assert.equal(talking.message?.pages[0]?.text, '(Kid has nothing to say yet.)')
+})
+
+test('a wanderer steps when their pause runs out, blocks the player where they stand and where they land, and the interact key finds them there', () => {
+    // Random 0.8 → right, always. Pauses are the minimum.
+    const walker = newNpcEvent('walker', { x: 7, y: 5 }, 'Walker', null, 'down', 'welcome', 'wander')
+    const roaming: FieldWorld = { ...world, eventsOf: () => [walker], random: () => 0.8 }
+    let state = newField('town', { x: 5, y: 5 }, 'right')
+
+    for (let t = 0; t < MIN_PAUSE_MS + 32; t += 16) {
+        state = advanceField(state, none, 16, roaming)
+    }
+
+    const motion = state.people[0]
+
+    assert.ok(motion.mover.step !== null, 'set off')
+    assert.deepEqual(motion.mover.step.to, { x: 8, y: 5 })
+
+    // The player walks right: (6,5) is free, (7,5) is still the walker's until the step lands.
+    let chasing = state
+
+    for (let t = 0; t < WALK_MS_PER_CELL / 2; t += 16) {
+        chasing = advanceField(chasing, right, 16, roaming)
+    }
+
+    assert.deepEqual(chasing.player.step?.to, { x: 6, y: 5 })
+    assert.equal(chasing.people[0].mover.step?.to.x, 8, 'the walker keeps going too')
+
+    for (let t = 0; t < WALK_MS_PER_CELL * 2; t += 16) {
+        chasing = advanceField(chasing, right, 16, roaming)
+    }
+
+    // The walker landed on (8,5) and pauses; the player reached (7,5) and cannot enter (8,5) behind them.
+    assert.deepEqual(chasing.people[0].mover, { cell: { x: 8, y: 5 }, facing: 'right', step: null })
+    assert.deepEqual(chasing.player, { cell: { x: 7, y: 5 }, facing: 'right', step: null })
+
+    // The interact key finds the walker where they now stand, not where they were placed.
+    assert.deepEqual(liveEvents(chasing, [walker])[0].cell, { x: 8, y: 5 })
+
+    const talking = advanceField(chasing, { ...none, interact: true }, 16, roaming)
+
+    assert.equal(talking.message?.pages[0]?.text, 'Welcome!')
+    assert.equal(npcMover(talking, walker).facing, 'left', 'turned to the player beside them')
+})
+
+test('the player cannot step into a person who is only part way out of a cell', () => {
+    const walker = newNpcEvent('walker', { x: 6, y: 5 }, 'Walker', null, 'down', null, 'wander')
+    const roaming: FieldWorld = { ...world, eventsOf: () => [walker], random: () => 0.8 }
+    let state = newField('town', { x: 5, y: 5 }, 'right')
+
+    for (let t = 0; t < MIN_PAUSE_MS + 32; t += 16) {
+        state = advanceField(state, none, 16, roaming)
+    }
+
+    assert.deepEqual(state.people[0].mover.step?.from, { x: 6, y: 5 })
+
+    const pushed = advanceField(state, right, 16, roaming)
+
+    assert.equal(pushed.player.step, null, 'blocked by the cell being left')
+})
+
+test('a looker turns in place while the field runs and holds their pose while a message is open', () => {
+    const looker = newNpcEvent('looker', { x: 8, y: 8 }, 'Looker', null, 'down', null, 'look')
+    const sign = newSign('sign', { x: 6, y: 5 }, 'welcome')
+    const peopled: FieldWorld = { ...world, eventsOf: () => [looker, sign], random: () => 0.1 }
+    let state = newField('town', { x: 5, y: 5 }, 'right')
+
+    for (let t = 0; t < MIN_PAUSE_MS + 32; t += 16) {
+        state = advanceField(state, none, 16, peopled)
+    }
+
+    assert.equal(npcMover(state, looker).facing, 'up')
+    assert.deepEqual(npcMover(state, looker).cell, { x: 8, y: 8 }, 'never moved')
+
+    let reading = advanceField(state, { ...none, interact: true }, 16, peopled)
+
+    assert.ok(reading.message !== null)
+
+    for (let t = 0; t < 5000; t += 16) {
+        reading = advanceField(reading, none, 16, peopled)
+    }
+
+    assert.equal(npcMover(reading, looker).facing, 'up', 'paused with the field')
+})
+
+test('a wanderer never steps onto an item or another person', () => {
+    const potion = newItemEvent('potion-1', { x: 8, y: 5 }, 'potion', 'took-potion', null)
+    const pal = newNpcEvent('pal', { x: 7, y: 4 }, 'Pal', null, 'down', null, 'still')
+    const walker = newNpcEvent('walker', { x: 7, y: 5 }, 'Walker', null, 'down', null, 'wander')
+    const directions = [0.1, 0.8, 0.3, 0.6]
+    let pick = 0
+    const crowded: FieldWorld = { ...world, eventsOf: () => [potion, pal, walker], random: () => directions[pick++ % directions.length] }
+    let state = newField('town', { x: 1, y: 1 }, 'right')
+
+    for (let t = 0; t < 20000; t += 16) {
+        state = advanceField(state, none, 16, crowded)
+
+        const walkerMotion = state.people.find(motion => motion.eventId === 'walker')
+
+        assert.ok(walkerMotion !== undefined)
+
+        for (const cell of [walkerMotion.mover.cell, ...(walkerMotion.mover.step === null ? [] : [walkerMotion.mover.step.to])]) {
+            assert.ok(!(cell.x === 8 && cell.y === 5), 'not onto the potion')
+            assert.ok(!(cell.x === 7 && cell.y === 4), 'not onto Pal')
+        }
+    }
 })

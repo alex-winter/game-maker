@@ -14,6 +14,7 @@ import { SIGN_DELETE, SIGN_SUBMIT, SignForm } from 'Client/Component/Events/Sign
 import { ITEM_DELETE, ITEM_SUBMIT, ItemForm } from 'Client/Component/Events/ItemForm'
 import { NPC_DELETE, NPC_SUBMIT, NpcForm } from 'Client/Component/Events/NpcForm'
 import { npcActor } from 'engine/npc-actor'
+import { newPlayer } from 'domain/movement'
 import { findSprite } from 'domain/project'
 import { EVENT_KIND_PICK, EventKindPick, EventKindPicker } from 'Client/Component/Events/EventKindPicker'
 import { newId } from 'domain/id'
@@ -354,7 +355,7 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
     private npcActors() {
         const project = projectRepository.cachedProject
 
-        return npcsOn(mapSession.current.events).map(npc => npcActor(npc, npc.facing, spriteId => {
+        return npcsOn(mapSession.current.events).map(npc => npcActor(npc, newPlayer(npc.cell, npc.facing), spriteId => {
             const sprite = project === undefined ? undefined : findSprite(project, spriteId)
             const image = sprite === undefined ? undefined : this.sheetById.get(sprite.sheetId)
 
@@ -694,7 +695,7 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
 
     private async handleNpcSubmit(submitted: Omit<NpcEvent, 'id'> & { id: Id | null }): Promise<void> {
         const map = mapSession.current
-        const npc = newNpcEvent(submitted.id ?? newId(), submitted.cell, submitted.name, submitted.spriteId, submitted.facing, submitted.dialogId)
+        const npc = newNpcEvent(submitted.id ?? newId(), submitted.cell, submitted.name, submitted.spriteId, submitted.facing, submitted.dialogId, submitted.behavior)
 
         await mapSession.commitEvents(withEvent(map.events, npc))
     }

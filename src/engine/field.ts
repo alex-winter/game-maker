@@ -2,7 +2,8 @@ import { Connections, crossEdge } from '../domain/connection'
 import { Cell } from '../domain/coordinates'
 import { Id } from '../domain/id'
 import { GridSize, isInside } from '../domain/map'
-import { CanEnter, Direction, MovementInput, newPlayer, Player, stepPlayer } from '../domain/movement'
+import { CanEnter, Direction, MovementInput, newPlayer, Player, restingCell, stepPlayer } from '../domain/movement'
+import { finishStep, newNpcMotion, NpcMotion, Random, tickNpcMotion } from '../domain/npc-behavior'
 import { faceToward, Interaction, resolveInteraction } from '../domain/interact'
 import { ItemEvent, MapEvent, NpcEvent, npcsOn, stepFinished, warpTaken } from '../domain/warp'
 import { advanceFade, Fade, startFade } from './fade'
@@ -59,6 +60,9 @@ export type FieldState = {
 
     /** The person being talked to and the way they turned to face the player (T-043), while the message is open. */
     readonly talkingTo: { readonly eventId: Id; readonly facing: Direction } | null
+
+    /** Where each person on this map is right now (T-044), seeded from the events the first frame they are seen. */
+    readonly people: readonly NpcMotion[]
 }
 
 /** Movement plus whether the interact and menu keys were pressed this frame (edges, not levels). */
@@ -88,17 +92,18 @@ export type FieldWorld = {
 
     /** The item's name and description, or undefined when the catalog has no such item. */
     itemOf(itemId: Id): { readonly name: string; readonly description: string } | undefined
+
+    /** Numbers in [0, 1) for people who look around or wander. */
+    random: Random
 }
 
 export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down', memory: Memory = newMemory(), bag: Bag = newBag()): FieldState {
-    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined, bagScreen: null, talkingTo: null }
+    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined, bagScreen: null, talkingTo: null, people: [] }
 }
 
 /** What a save keeps of the session (T-041): the standing cell, never a half-finished step. */
 export function snapshotField(state: FieldState): SavedSession {
-    const cell = state.player.step === null ? state.player.cell : state.player.step.to
-
-    return { mapId: state.mapId, cell, facing: state.player.facing, memory: state.memory, bag: state.bag }
+    return { mapId: state.mapId, cell: restingCell(state.player), facing: state.player.facing, memory: state.memory, bag: state.bag }
 }
 
 /** A session resumed from a save: standing where it was saved, with its memory and bag. */
@@ -111,9 +116,43 @@ export function afterSave(state: FieldState): FieldState {
     return { ...state, menu: null, menuChoice: undefined, message: openMessage([newPage('Saved the game.')]) }
 }
 
-/** The way an NPC faces this frame: toward the player while they talk, else their own. */
-export function npcFacing(state: FieldState, npc: NpcEvent): Direction {
-    return state.talkingTo !== null && state.talkingTo.eventId === npc.id ? state.talkingTo.facing : npc.facing
+/** Where a person is and how they face this frame, for the host to draw: their motion, turned toward the player while they talk. */
+export function npcMover(state: FieldState, npc: NpcEvent): Player {
+    const mover = state.people.find(motion => motion.eventId === npc.id)?.mover ?? newPlayer(npc.cell, npc.facing)
+
+    return state.talkingTo !== null && state.talkingTo.eventId === npc.id ? { ...mover, facing: state.talkingTo.facing } : mover
+}
+
+/** The map's people as the session knows them: each where their motion has taken them, so the interact key finds a wanderer where they stand. */
+export function liveEvents(state: FieldState, events: readonly MapEvent[]): MapEvent[] {
+    return events.map(event => {
+        if (event.kind !== 'npc') {
+            return event
+        }
+
+        const motion = state.people.find(candidate => candidate.eventId === event.id)
+
+        return motion === undefined ? event : { ...event, cell: restingCell(motion.mover) }
+    })
+}
+
+/** Keeps a motion for every person on the map and only those: a newly seen person starts where they were placed. */
+function syncPeople(people: readonly NpcMotion[], npcs: readonly NpcEvent[]): readonly NpcMotion[] {
+    return npcs.map(npc => people.find(motion => motion.eventId === npc.id) ?? newNpcMotion(npc))
+}
+
+/** While the field is paused people finish the step they are on and otherwise wait. */
+function pausePeople(people: readonly NpcMotion[], deltaMs: number): readonly NpcMotion[] {
+    return people.map(motion => finishStep(motion, deltaMs))
+}
+
+/** Every cell a mover occupies: where they stand and, mid-step, where they will land. */
+function footprint(mover: Player): Cell[] {
+    return mover.step === null ? [mover.cell] : [mover.step.from, mover.step.to]
+}
+
+function occupies(cells: readonly Cell[], cell: Cell): boolean {
+    return cells.some(candidate => candidate.x === cell.x && candidate.y === cell.y)
 }
 
 /** What a person with no dialog says, so the author sees who to write for. */
@@ -171,7 +210,7 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
         const message = input.interact ? advanceMessage(moved, id => world.pagesOf(id)) : moved
 
         // Once the conversation ends the person turns back the way they were.
-        return { ...state, interaction: undefined, message, lastDirection: input.direction, menuChoice: undefined, talkingTo: message === null ? null : state.talkingTo }
+        return { ...state, interaction: undefined, message, lastDirection: input.direction, menuChoice: undefined, talkingTo: message === null ? null : state.talkingTo, people: pausePeople(state.people, deltaMs) }
     }
 
     if (state.bagScreen !== null) {
@@ -179,7 +218,7 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
         const moved = pressed === 'up' ? moveBagCursor(state.bagScreen, -1, count) : pressed === 'down' ? moveBagCursor(state.bagScreen, 1, count) : state.bagScreen
 
         // The menu key steps back to the menu; there is nothing to do with an item yet, so the interact key does too.
-        return { ...state, interaction: undefined, menuChoice: undefined, bagScreen: input.menu || input.interact ? null : moved, lastDirection: input.direction }
+        return { ...state, interaction: undefined, menuChoice: undefined, bagScreen: input.menu || input.interact ? null : moved, lastDirection: input.direction, people: pausePeople(state.people, deltaMs) }
     }
 
     if (state.menu !== null) {
@@ -194,6 +233,7 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
             menuChoice: choice,
             bagScreen: choice === 'bag' ? openBagScreen() : null,
             lastDirection: input.direction,
+            people: pausePeople(state.people, deltaMs),
         }
     }
 
@@ -207,15 +247,18 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
         return { ...state, interaction: undefined, menuChoice: undefined }
     }
 
+    const mapEvents = world.eventsOf(state.mapId)
+    const synced: FieldState = { ...state, people: syncPeople(state.people, npcsOn(mapEvents)) }
+
     // The interact key looks, it does not move: a standing player stays put this frame.
     if (input.interact && state.player.step === null) {
-        const events = visibleEvents(world.eventsOf(state.mapId), state.memory)
+        const events = visibleEvents(liveEvents(synced, mapEvents), state.memory)
         const interaction = resolveInteraction(state.player, events)
 
         if (interaction?.kind === 'sign') {
             const message = openMessage(world.pagesOf(interaction.dialogId) ?? missingDialogPages(interaction.dialogId))
 
-            return { ...state, interaction, message, lastDirection: input.direction, menuChoice: undefined }
+            return { ...synced, interaction, message, lastDirection: input.direction, menuChoice: undefined }
         }
 
         if (interaction?.kind === 'npc') {
@@ -225,7 +268,7 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
                 const pages = interaction.dialogId === null ? silentPages(npc.name) : world.pagesOf(interaction.dialogId) ?? missingDialogPages(interaction.dialogId)
                 const facing = faceToward(npc.cell, state.player.cell) ?? npc.facing
 
-                return { ...state, interaction, message: openMessage(pages), talkingTo: { eventId: npc.id, facing }, lastDirection: input.direction, menuChoice: undefined }
+                return { ...synced, interaction, message: openMessage(pages), talkingTo: { eventId: npc.id, facing }, lastDirection: input.direction, menuChoice: undefined }
             }
         }
 
@@ -236,33 +279,50 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
                 const taken = pickUp(state.bag, state.memory, event)
                 const message = openMessage(foundMessage(world.itemOf(event.itemId)?.name))
 
-                return { ...state, interaction, message, bag: taken.bag, memory: taken.memory, lastDirection: input.direction, menuChoice: undefined }
+                return { ...synced, interaction, message, bag: taken.bag, memory: taken.memory, lastDirection: input.direction, menuChoice: undefined }
             }
         }
 
-        return { ...state, interaction, message: null, lastDirection: input.direction, menuChoice: undefined }
+        return { ...synced, interaction, message: null, lastDirection: input.direction, menuChoice: undefined }
     }
 
-    const player = stepPlayer(state.player, input, deltaMs, seamAwareRule(state.mapId, size, state.memory, world))
+    const people = movePeople(synced, mapEvents, size, deltaMs, world)
+    const player = stepPlayer(state.player, input, deltaMs, seamAwareRule(state.mapId, size, state.memory, people, world))
     const transition = transitionReached(state.player, player, state.mapId, size, world)
 
     if (transition !== undefined) {
-        // Freeze where the step landed; a held key must not walk on while the screen fades.
-        return { ...state, player: { ...player, step: null }, fade: startFade(), pending: transition, interaction: undefined, lastDirection: input.direction, menuChoice: undefined }
+        // Freeze where the step landed; a held key must not walk on while the screen fades. The next map's people are met on arrival.
+        return { ...state, player: { ...player, step: null }, fade: startFade(), pending: transition, interaction: undefined, lastDirection: input.direction, menuChoice: undefined, people: [] }
     }
 
-    return { ...state, player, interaction: undefined, lastDirection: input.direction, menuChoice: undefined }
+    return { ...state, player, interaction: undefined, lastDirection: input.direction, menuChoice: undefined, people }
 }
 
-/** Inside the map the collision rule decides and an item still lying there or a person standing there blocks; beyond an edge a seam may let the step through onto open ground. */
-function seamAwareRule(mapId: Id, size: GridSize, memory: Memory, world: FieldWorld): CanEnter {
+/** One frame of every person's behavior. Nobody steps onto an item, another person's cells, or the player's; the map edge is a wall to them. */
+function movePeople(state: FieldState, events: readonly MapEvent[], size: GridSize, deltaMs: number, world: FieldWorld): readonly NpcMotion[] {
+    const inside = world.canEnter(state.mapId)
+    const items = itemsOnMap(events, state.memory).map(item => item.cell)
+    const npcs = npcsOn(events)
+
+    return state.people.map(motion => {
+        const behavior = npcs.find(npc => npc.id === motion.eventId)?.behavior ?? 'still'
+        const others = state.people.filter(other => other.eventId !== motion.eventId).flatMap(other => footprint(other.mover))
+        const taken = [...items, ...others, ...footprint(state.player)]
+        const canEnter: CanEnter = (from, to) => isInside(size, to) && inside(from, to) && !occupies(taken, to)
+
+        return tickNpcMotion(motion, behavior, deltaMs, canEnter, world.random)
+    })
+}
+
+/** Inside the map the collision rule decides and an item still lying there or a person standing (or stepping) there blocks; beyond an edge a seam may let the step through onto open ground. */
+function seamAwareRule(mapId: Id, size: GridSize, memory: Memory, people: readonly NpcMotion[], world: FieldWorld): CanEnter {
     const inside = world.canEnter(mapId)
     const events = world.eventsOf(mapId)
-    const occupied: readonly Cell[] = [...itemsOnMap(events, memory), ...npcsOn(events)].map(event => event.cell)
+    const occupied: readonly Cell[] = [...itemsOnMap(events, memory).map(event => event.cell), ...people.flatMap(motion => footprint(motion.mover))]
 
     return (from, to) => {
         if (isInside(size, to)) {
-            return inside(from, to) && !occupied.some(cell => cell.x === to.x && cell.y === to.y)
+            return inside(from, to) && !occupies(occupied, to)
         }
 
         const crossing = crossEdge(size, world.connectionsOf(mapId), to, id => world.sizeOf(id))

@@ -52,8 +52,21 @@ export type ItemEvent = {
 }
 
 /**
+/** What a person does when left alone (T-044): stand, turn in place, or wander nearby. */
+export type NpcBehavior = 'still' | 'look' | 'wander'
+
+export const NPC_BEHAVIORS: readonly NpcBehavior[] = ['still', 'look', 'wander']
+
+export const DEFAULT_BEHAVIOR: NpcBehavior = 'still'
+
+export function isNpcBehavior(value: unknown): value is NpcBehavior {
+    return NPC_BEHAVIORS.includes(value as NpcBehavior)
+}
+
+/**
  * A person standing on a cell (T-042): what they look like, which way they
- * face, and what they say when talked to (T-043). Movement arrives in T-044.
+ * face, what they say when talked to (T-043), and what they do when left
+ * alone (T-044).
  */
 export type NpcEvent = {
     readonly kind: 'npc'
@@ -71,6 +84,8 @@ export type NpcEvent = {
 
     /** The dialog spoken when talked to, or null for a person with nothing to say yet. */
     dialogId: Id | null
+
+    behavior: NpcBehavior
 }
 
 /** Something placed on a map cell that is not a tile. */
@@ -84,8 +99,19 @@ export function newItemEvent(id: Id, cell: Cell, itemId: Id, flagId: Id, metatil
     return { kind: 'item', id, cell, itemId, flagId, metatileId }
 }
 
-export function newNpcEvent(id: Id, cell: Cell, name: string, spriteId: Id | null, facing: Direction, dialogId: Id | null): NpcEvent {
-    return { kind: 'npc', id, cell, name, spriteId, facing, dialogId }
+export function newNpcEvent(id: Id, cell: Cell, name: string, spriteId: Id | null, facing: Direction, dialogId: Id | null, behavior: NpcBehavior = DEFAULT_BEHAVIOR): NpcEvent {
+    return { kind: 'npc', id, cell, name, spriteId, facing, dialogId, behavior }
+}
+
+/** A stored event brought up to date: a person saved before T-044 stands still. */
+export function withEventDefaults(event: MapEvent): MapEvent {
+    if (event.kind !== 'npc') {
+        return event
+    }
+
+    const stored: Partial<NpcEvent> = event
+
+    return { ...event, behavior: isNpcBehavior(stored.behavior) ? stored.behavior : DEFAULT_BEHAVIOR }
 }
 
 /** The people standing on a map. */
@@ -170,7 +196,7 @@ function isMapEvent(value: unknown): value is MapEvent {
         return false
     }
 
-    const event = value as { kind: unknown; dialogId?: unknown; itemId?: unknown; flagId?: unknown; metatileId?: unknown; name?: unknown; spriteId?: unknown; facing?: unknown }
+    const event = value as { kind: unknown; dialogId?: unknown; itemId?: unknown; flagId?: unknown; metatileId?: unknown; name?: unknown; spriteId?: unknown; facing?: unknown; behavior?: unknown }
 
     switch (event.kind) {
         case 'warp':
@@ -185,6 +211,7 @@ function isMapEvent(value: unknown): value is MapEvent {
                 && (event.spriteId === null || typeof event.spriteId === 'string')
                 && isDirection(event.facing)
                 && (event.dialogId === null || typeof event.dialogId === 'string')
+                && (event.behavior === undefined || isNpcBehavior(event.behavior))
         default:
             return false
     }

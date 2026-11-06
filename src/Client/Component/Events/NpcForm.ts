@@ -4,7 +4,7 @@ import { Events } from 'Client/Service/Events'
 import { Cell } from 'domain/coordinates'
 import { Id } from 'domain/id'
 import { Direction, isDirection } from 'domain/movement'
-import { NpcEvent } from 'domain/warp'
+import { isNpcBehavior, NPC_BEHAVIORS, NpcEvent } from 'domain/warp'
 
 type Named = { readonly id: Id; readonly name: string }
 
@@ -25,9 +25,15 @@ export const NPC_DELETE = 'npc-delete'
 
 const FACINGS: readonly Direction[] = ['down', 'up', 'left', 'right']
 
+const BEHAVIOR_LABELS: { readonly [B in NpcEvent['behavior']]: string } = {
+    still: 'stands still',
+    look: 'looks around',
+    wander: 'wanders nearby',
+}
+
 /**
  * One person, inside `BasicModal`: name, sprite (or a stand-in), facing,
- * and the dialog they speak. Emits `npc-submit` (id-less for a new one) or
+ * what they do when left alone, and the dialog they speak. Emits `npc-submit` (id-less for a new one) or
  * `npc-delete` with the event id.
  */
 export class NpcForm extends Component<NpcFormDataset> {
@@ -132,6 +138,7 @@ export class NpcForm extends Component<NpcFormDataset> {
         const spriteSelect = this.select('sprite-select', [{ id: '', name: 'stand-in rectangle' }, ...sprites], npc?.spriteId ?? '')
         const facingSelect = this.select('facing-select', FACINGS.map(facing => ({ id: facing, name: facing })), npc?.facing ?? 'down')
         const dialogSelect = this.select('dialog-select', [{ id: '', name: 'nothing to say yet' }, ...dialogs], npc?.dialogId ?? '')
+        const behaviorSelect = this.select('behavior-select', NPC_BEHAVIORS.map(behavior => ({ id: behavior, name: BEHAVIOR_LABELS[behavior] })), npc?.behavior ?? 'still')
         const row = Dom.div('row')
 
         row.append(this.group('Looks like', spriteSelect), this.group('Facing', facingSelect))
@@ -144,7 +151,7 @@ export class NpcForm extends Component<NpcFormDataset> {
             buttons.append(Dom.button('Delete', 'delete-button'))
         }
 
-        form.append(title, this.group('Name', name), row, this.group('Says', dialogSelect), Dom.span('', 'error'), buttons)
+        form.append(title, this.group('Name', name), row, this.group('Does', behaviorSelect), this.group('Says', dialogSelect), Dom.span('', 'error'), buttons)
 
         return form
     }
@@ -182,6 +189,7 @@ export class NpcForm extends Component<NpcFormDataset> {
         const spriteId = this.findOne<HTMLSelectElement>('.sprite-select')?.value ?? ''
         const facing = this.findOne<HTMLSelectElement>('.facing-select')?.value
         const dialogId = this.findOne<HTMLSelectElement>('.dialog-select')?.value ?? ''
+        const behavior = this.findOne<HTMLSelectElement>('.behavior-select')?.value
 
         if (name === '') {
             if (error) error.textContent = 'Give them a name.'
@@ -190,6 +198,11 @@ export class NpcForm extends Component<NpcFormDataset> {
 
         if (!isDirection(facing)) {
             if (error) error.textContent = 'Pick a facing.'
+            return
+        }
+
+        if (!isNpcBehavior(behavior)) {
+            if (error) error.textContent = 'Pick what they do.'
             return
         }
 
@@ -202,6 +215,7 @@ export class NpcForm extends Component<NpcFormDataset> {
             spriteId: spriteId === '' ? null : spriteId,
             facing,
             dialogId: dialogId === '' ? null : dialogId,
+            behavior,
         })
     }
 
