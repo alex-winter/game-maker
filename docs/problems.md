@@ -4,7 +4,7 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 ## Server
 
-1. **Error responses fall through.** `delete-layers.ts` sends 404 when the uuid is missing and then still runs. `splice(-1, 1)` deletes the last layer. A second `response.json` runs after the 404. `post-layers.ts` sends 400 for a non-array body and then spreads that body anyway. Ticket T-001.
+1. **Fixed (T-001).** **Error responses fall through.** `delete-layers.ts` sends 404 when the uuid is missing and then still runs. `splice(-1, 1)` deletes the last layer. A second `response.json` runs after the 404. `post-layers.ts` sends 400 for a non-array body and then spreads that body anyway. Ticket T-001.
 
 2. **Uploads trust the original filename.** `multer` writes `file.originalname` into `uploads/`. Two files with the same name overwrite each other. A name with `../` is a path escape. Ticket T-009.
 

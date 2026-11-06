@@ -22,7 +22,7 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 | Id | Phase | Priority | Status | Area | Title |
 | --- | --- | --- | --- | --- | --- |
-| [T-001](T-001-stop-handlers-after-errors.md) | 0 | P0 | ready | server | Stop request handlers after an error response |
+| [T-001](T-001-stop-handlers-after-errors.md) | 0 | P0 | done | server | Stop request handlers after an error response |
 | [T-002](T-002-paint-in-canvas-space.md) | 0 | P0 | ready | editor | Paint and preview in canvas space |
 | [T-003](T-003-load-placements-once.md) | 0 | P0 | ready | editor | Load each placement once |
 | [T-004](T-004-one-camera.md) | 0 | P0 | ready | editor | Share one camera across layers |
@@ -82,8 +82,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 ## Counts
 
-- ready: 9
+- ready: 8
 - in_progress: 0
 - backlog: 48
-- done: 0
+- done: 1
 - total: 57
