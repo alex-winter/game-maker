@@ -22,8 +22,6 @@ export const config = {
 
     placementImagesJsonFileDir: path.join(dataDir, 'placement-images.json'),
 
-    spriteModelsJsonFileDir: path.join(dataDir, 'sprite-models.json'),
-
     userDataFileDir: path.join(dataDir, 'user-data.json'),
 
     allowedExtensions: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'],

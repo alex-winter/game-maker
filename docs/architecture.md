@@ -5,7 +5,7 @@ The program is a local editor plus a play page. Both are webpack bundles. An Exp
 ```
 src/
   Client/     browser UI and the play page
-  domain/     pure types and rules: coordinates, grid, rect, ids, project, tileset, map (metatile grids, collision, elevation), movement (the player's cell-to-cell step), history (undo stack). No DOM, no Express.
+  domain/     pure types and rules: coordinates, grid, rect, ids, project, tileset, map (metatile grids, collision, elevation), movement (the player's cell-to-cell step), sprite (idle and walk frames per direction), history (undo stack). No DOM, no Express.
   engine/     renderFrame over a DrawPort, Scene, and the frame loop. No DOM; the browser adapts a canvas context.
   Model/      shared types: the read-only legacy placement model, user data, sprite sketches
   Server/     Express routes and JSON files
@@ -47,7 +47,7 @@ Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names a
 | `mouse-down-window-box` | `WindowBox` | `WorldEditor` | the window element |
 | `open-sheet-importer` | `SideMenu` | `WorldEditor` | none |
 | `open-add-new-layer` | `LayerListing` | `WorldEditor` | none |
-| `click-open-new-model` | `SideMenu` | `WorldEditor` | none (handler empty) |
+| `open-sprite-editor` | `SideMenu` | `WorldEditor` | sprite id, or none for the first sprite |
 | `new-layer-submit` | `NewLayerForm` | `LayerListing` | `{ name, kind }` |
 | `updated-view-coordinates` | `MapCanvas` | `WorldEditor` | `View` (after a pan or zoom) |
 | `grid-toggled` | `MapCanvas` | `WorldEditor` | boolean |
@@ -68,11 +68,11 @@ The current brush is `Client/Service/brush.ts`: `{ tilesetId, metatileId }` or `
 
 | File | Written by | Shape |
 | --- | --- | --- |
-| `data/project.json` | project, map, tileset, and tile-map routes | `{ id, name, tilesets: Tileset[], maps: { id, name, tileMap: TileMap, layers: Layer[] }[] }`; `layers` is the read-only legacy placement list |
+| `data/project.json` | project, map, tileset, tile-map, and sprite routes | `{ id, name, tilesets: Tileset[], sprites: SpriteDefinition[], playerSpriteId, maps: { id, name, tileMap: TileMap, spawn: Cell, layers: Layer[] }[] }`; `layers` is the read-only legacy placement list |
 | `data/layers.json` | nothing any more | imported once into a map named "Legacy map" when `project.json` is first created, then ignored |
 | `data/placement-images.json` | `GET /placement-images` only | `{ uuid, src }[]` where `src` is a data URL; nothing appends to it since T-020 |
 | `data/user-data.json` | user-data route | camera, tool name, window rects |
-| `data/sprite-models.json` | sprite-model route | unused by the client |
+| `data/sprite-models.json` | nothing (the route went in T-027) | delete it when convenient |
 | `uploads/<uuid><ext>` | `multer` | the sheet bytes |
 | `uploads/index.json` | upload route | `{ id, originalName, file }[]` |
 
@@ -107,9 +107,9 @@ These field names are on disk and in the types that read them. New fields are ca
 
 Editor: `MapCanvas` is one element with one `<canvas>` and one `engine/loop.ts` loop. It builds the scene with `Client/Service/build-scene.ts` from `mapSession.visibleTileMap()` and marks it stale on `map-session-changed`. The pointer always lands on it: pencil and rubber call `withTile` per pointer sample and save on mouseup, rectangle previews a span and calls `withRect` on mouseup, fill calls `floodFill` (bounded by the map, not the view) and saves at once. On an attribute target the same tools write 0/1 collision or the chosen elevation (rubber writes 0). `Client/Service/draw-attributes.ts` draws painted collision in red, cells a solid metatile blocks in orange, and non-zero elevation as a tinted, numbered cell; each overlay hides without changing data. The brush is a metatile id; a one-cell ghost canvas previews it. The middle button pans the shared `camera` (`Client/Service/camera.ts`, which holds the `View`); the wheel and the HUD's −/+ buttons zoom toward the cursor or the centre. The HUD (bottom-left) also toggles the grid (`Client/Service/draw-grid.ts` strokes cell borders and the map outline over the frame) and reads out the cell under the cursor. Zoom and the grid flag persist in `user-data.json` (`zoom`, `showGrid`). `Client/Service/pointer-to-world.ts` is the one pointer → world formula and takes the `View`.
 
-Play: `play.ts` builds a scene once and runs the same loop and `renderFrame` at zoom 2. The player is a `domain/movement.ts` `Player`: a cell, a facing, and an optional `Step` (`from`, `to`, `durationMs`, `elapsedMs`). Each frame the host passes `{ direction, running }` — `Client/Service/held-directions.ts` keeps held keys in press order so the newest press wins — and `stepPlayer` advances the step by the frame's milliseconds, then begins the next one if a direction is still held and `CanEnter` allows the target cell. Facing changes at once even when the step cannot start; a press during a step only turns the player. Walk is `WALK_MS_PER_CELL` (267), run `RUN_MS_PER_CELL` (133), matching the GBA's 16 and 8 frames per cell. `playerPixel` interpolates `from → to` for drawing; until T-027 the player is a red cell `Actor`, and the camera keeps it centred.
+Play: `play.ts` builds a scene once and runs the same loop and `renderFrame` at zoom 2. The player is a `domain/movement.ts` `Player`: a cell, a facing, and an optional `Step` (`from`, `to`, `durationMs`, `elapsedMs`). Each frame the host passes `{ direction, running }` — `Client/Service/held-directions.ts` keeps held keys in press order so the newest press wins — and `stepPlayer` advances the step by the frame's milliseconds, then begins the next one if a direction is still held and `CanEnter` allows the target cell. Facing changes at once even when the step cannot start; a press during a step only turns the player. Walk is `WALK_MS_PER_CELL` (267), run `RUN_MS_PER_CELL` (133), matching the GBA's 16 and 8 frames per cell. `playerPixel` interpolates `from → to` for drawing, and the camera keeps the player centred.
 
-`Canvas2D` remains only because the unregistered `SpriteModelMaker` sketch references it; nothing on a page uses it.
+Sprites (T-027): a `SpriteDefinition` (`domain/sprite.ts`) is a sheet id, a frame size, and per direction an `idle` rectangle and a `walk` list of rectangles on that sheet. `pickFrame(definition, direction, phase, idle)` is the whole animation rule: idle (or an empty cycle) shows the idle pose; otherwise the step's phase indexes the walk list evenly. `engine/player-actor.ts` `playerActor(player, sprite, image)` turns the `Player` into the `Actor` `renderFrame` draws — the frame for `facing` and `stepProgress`, standing on its cell so a 16×32 frame overhangs the cell above — or a red cell when the project has no player sprite. The project holds `sprites[]` and `playerSpriteId`; `SpriteEditor` (`Client/Component/Sprite/`, the side menu's walking-figure button) creates sprites from an imported sheet, lets the author pick a slot (a direction's idle or a walk frame) and click a frame on the sheet grid to assign it, previews the walk cycle, saves every change, and marks one sprite as the player's.
 
 ## HTTP
 
@@ -131,7 +131,10 @@ Play: `play.ts` builds a scene once and runs the same loop and `renderFrame` at 
 | GET/PATCH | `/user-data` | camera, tool, windows |
 | GET | `/placement-images` | data URLs for legacy placements; read-only |
 | POST | `/upload-files` | `multer`, filename = uuid + allow-listed extension |
-| POST | `/sprite-model` | append to a file the client never reads |
+| POST | `/project/sprites` | a `SpriteDefinition` without an id (checked by `isSpriteDefinitionInput`) → the stored sprite |
+| PUT | `/project/sprites/:spriteId` | a whole definition → the stored sprite |
+| DELETE | `/project/sprites/:spriteId` | removes the sprite; clears `playerSpriteId` if it was the player's |
+| PUT | `/project/player-sprite` | `{ spriteId }` (or null) → `{ playerSpriteId }` |
 
 JSON reads and writes are synchronous. `writeJson` writes a `.tmp` sibling and renames it over the target, so a reader never sees a torn document. It does not lock: two overlapping PATCHes still race on read-modify-write (last write wins), which one server process and one editor tab keep rare.
 
@@ -142,9 +145,6 @@ These files are intentions, not behavior. Do not wire them up half-way inside a 
 | File | State |
 | --- | --- |
 | `Model/Dialog.ts`, `Component/Dialog/DialogCreator.ts` | A textarea and an "add reply" button. Not saved. The window opens on every editor load. |
-| `Model/AnimatedSprite.ts` | Walk and idle frame lists. Nothing reads them. |
-| `Model/SpriteModel.ts`, `SpriteModelMaker.ts` | Maker is not a registered element. Side-menu handler is empty. |
-| `Component/Animation/AnimationMaker.ts` | Empty container. Registered, never opened. |
 | `Model/Skill.ts` | `{ uuid }` only. |
 
 ## Target shape

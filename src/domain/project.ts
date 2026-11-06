@@ -2,6 +2,7 @@ import type { Layer } from 'Model/Layer'
 import { Cell } from './coordinates'
 import { Id, newId } from './id'
 import { emptyTileMap, GridSize, isInside, TileMap, withTileMapDefaults } from './map'
+import { SpriteDefinition } from './sprite'
 import { Tileset } from './tileset'
 
 /** Cells in a new map. A gen 3 town is about this size. */
@@ -35,6 +36,11 @@ export type Project = {
     tilesets: Tileset[]
 
     maps: GameMap[]
+
+    /** Character looks (T-027). The player uses `playerSpriteId`; NPCs pick from the same list later. */
+    sprites: SpriteDefinition[]
+
+    playerSpriteId: Id | null
 }
 
 /** The middle of the grid: where a map starts the player until someone moves the spawn. */
@@ -47,7 +53,7 @@ export function newMap(name: string, layers: Layer[] = [], size: GridSize = DEFA
 }
 
 export function newProject(name: string, maps: GameMap[] = []): Project {
-    return { id: newId(), name, tilesets: [], maps }
+    return { id: newId(), name, tilesets: [], maps, sprites: [], playerSpriteId: null }
 }
 
 /**
@@ -59,6 +65,8 @@ export function withProjectDefaults(stored: Partial<Project> & Pick<Project, 'id
         id: stored.id,
         name: stored.name,
         tilesets: stored.tilesets ?? [],
+        sprites: stored.sprites ?? [],
+        playerSpriteId: stored.playerSpriteId ?? null,
         maps: stored.maps.map(map => {
             const tileMap = withTileMapDefaults(map.tileMap ?? emptyTileMap(DEFAULT_MAP_SIZE))
 
@@ -168,4 +176,43 @@ export function withMapTileset(project: Project, mapId: Id, tilesetId: Id | null
 /** A trimmed name is valid when something is left of it. */
 export function isValidMapName(name: unknown): name is string {
     return typeof name === 'string' && name.trim().length > 0
+}
+
+export function findSprite(project: Project, spriteId: Id): SpriteDefinition | undefined {
+    return project.sprites.find(sprite => sprite.id === spriteId)
+}
+
+export function addSprite(project: Project, sprite: SpriteDefinition): Project {
+    return { ...project, sprites: [...project.sprites, sprite] }
+}
+
+/** A new project with one sprite replaced by id, or unchanged when the id is unknown. */
+export function withSprite(project: Project, sprite: SpriteDefinition): Project {
+    return {
+        ...project,
+        sprites: project.sprites.map(existing => existing.id === sprite.id ? sprite : existing),
+    }
+}
+
+/** Removing the player's sprite also clears `playerSpriteId`. */
+export function removeSprite(project: Project, spriteId: Id): Project {
+    return {
+        ...project,
+        sprites: project.sprites.filter(sprite => sprite.id !== spriteId),
+        playerSpriteId: project.playerSpriteId === spriteId ? null : project.playerSpriteId,
+    }
+}
+
+/** A new project with the player wearing `spriteId`, or unchanged when the id is unknown. */
+export function withPlayerSprite(project: Project, spriteId: Id | null): Project {
+    if (spriteId !== null && findSprite(project, spriteId) === undefined) {
+        return project
+    }
+
+    return { ...project, playerSpriteId: spriteId }
+}
+
+/** The player's sprite definition, when one is assigned and still exists. */
+export function playerSprite(project: Project): SpriteDefinition | undefined {
+    return project.playerSpriteId === null ? undefined : findSprite(project, project.playerSpriteId)
 }

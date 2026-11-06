@@ -34,7 +34,7 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 14. **Fixed (T-008).** **Selector snap and map snap differ.** The sheet viewer rounds to 16 (`Math.round`). The map floors to 16 (`Math.floor` via `snap`). A selection on a sheet and a stamp on the map do not share a function. Ticket T-008.
 
-15. **`SpriteModelMaker` is dead code that does not compile into the page.** It is not in `COMPONENTS`, so `Dom.makeComponent` would throw. The camera button emits `click-open-new-model` and the handler is empty. Leave it until T-027.
+15. **Fixed (T-027).** **`SpriteModelMaker` is dead code that does not compile into the page.** It is not in `COMPONENTS`, so `Dom.makeComponent` would throw. The camera button emits `click-open-new-model` and the handler is empty. Leave it until T-027.
 
 ## Play mode
 
@@ -60,4 +60,4 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 - The menu bar does nothing. It stays inert until a ticket needs it.
 - Placement history was deleted with the placement paint path (T-020). Undo/redo of strokes is T-024.
-- `AnimationMaker` is an empty shell. Player animation is T-027, built from domain data, not by filling this shell in place.
+- `AnimationMaker`, `SpriteModelMaker`, `Canvas2D`, and `Model/AnimatedSprite.ts` were deleted in T-027; `SpriteEditor` is the one authoring UI.

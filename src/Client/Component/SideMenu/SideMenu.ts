@@ -12,9 +12,9 @@ export class SideMenu extends Component {
         '.open-palette:click': () => {
             Events.emit('open-tileset-palette', undefined)
         },
-        '.open-new-model:click': () => {
-            Events.emit('click-open-new-model', undefined)
-        }
+        '.open-sprite-editor:click': () => {
+            Events.emit('open-sprite-editor', undefined)
+        },
     }
 
     protected css(): string {
@@ -87,10 +87,11 @@ export class SideMenu extends Component {
         paletteButton.appendChild(Dom.i('fa-solid', 'fa-table-cells'))
 
 
-        const newModelButton = Dom.button('', 'open-new-model')
-        newModelButton.appendChild(Dom.i('fa-solid', 'fa-camera'))
+        const spriteButton = Dom.button('', 'open-sprite-editor')
+        spriteButton.title = 'Sprites'
+        spriteButton.appendChild(Dom.i('fa-solid', 'fa-person-walking'))
 
-        floatingWrapper.append(importButton, paletteButton, newModelButton)
+        floatingWrapper.append(importButton, paletteButton, spriteButton)
 
         container.appendChild(floatingWrapper)
 

@@ -14,7 +14,6 @@ import { requestHandlerPatchUserData } from 'Server/RequestHandlers/patch-user-d
 import { requestHandlerGetPlacementImages } from 'Server/RequestHandlers/get-placement-images'
 import { createDataFile } from 'Server/services/create-data-file'
 import { requestHandlerPostFiles } from 'Server/RequestHandlers/post-files'
-import { requestHandlerPostSpriteModel } from 'Server/RequestHandlers/post-sprite-model'
 import { requestHandlerGetProject } from 'Server/RequestHandlers/get-project'
 import { requestHandlerPostMaps } from 'Server/RequestHandlers/post-maps'
 import { requestHandlerPatchMap } from 'Server/RequestHandlers/patch-map'
@@ -22,6 +21,7 @@ import { requestHandlerPutTileMap } from 'Server/RequestHandlers/put-tile-map'
 import { requestHandlerDeleteMap, requestHandlerPutMapSize } from 'Server/RequestHandlers/map-lifecycle'
 import { ensureProjectFile } from 'Server/services/project-store'
 import { requestHandlerPatchMetatile, requestHandlerPostTilesets, requestHandlerPutMapTileset } from 'Server/RequestHandlers/tilesets'
+import { requestHandlerDeleteSprite, requestHandlerPostSprites, requestHandlerPutPlayerSprite, requestHandlerPutSprite } from 'Server/RequestHandlers/sprites'
 import { RequestHandler } from 'Server/types'
 
 const app = express()
@@ -69,7 +69,6 @@ const uploadSheets: RequestHandler = (request, response, next) => {
 
 createDataFile(config.uploadsIndexFileDir)
 createDataFile(config.placementImagesJsonFileDir)
-createDataFile(config.spriteModelsJsonFileDir)
 createDataFile(config.userDataFileDir, UserDataFactory.make())
 ensureProjectFile()
 
@@ -92,6 +91,10 @@ app.put('/project/maps/:mapId/tileset', requestHandlerPutMapTileset)
 app.put('/project/maps/:mapId/tile-map', requestHandlerPutTileMap)
 app.post('/project/tilesets', requestHandlerPostTilesets)
 app.patch('/project/tilesets/:tilesetId/metatiles/:metatileId', requestHandlerPatchMetatile)
+app.post('/project/sprites', requestHandlerPostSprites)
+app.put('/project/sprites/:spriteId', requestHandlerPutSprite)
+app.delete('/project/sprites/:spriteId', requestHandlerDeleteSprite)
+app.put('/project/player-sprite', requestHandlerPutPlayerSprite)
 
 
 app.post('/upload-files', uploadSheets, requestHandlerPostFiles)
@@ -100,8 +103,6 @@ app.get('/user-data', requestHandlerGetUserData)
 app.patch('/user-data', requestHandlerPatchUserData)
 
 app.get('/placement-images', requestHandlerGetPlacementImages)
-
-app.post('/sprite-model', requestHandlerPostSpriteModel)
 
 
 app.listen(port, () => {

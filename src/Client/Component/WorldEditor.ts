@@ -7,6 +7,7 @@ import { NewLayerForm } from 'Client/Component/NewLayerForm/NewLayerForm'
 import { SideMenu } from 'Client/Component/SideMenu/SideMenu'
 import { SheetImporter } from 'Client/Component/SpriteSheets/SheetImporter/SheetImporter'
 import { SheetViewer } from 'Client/Component/SpriteSheets/SheetViewer/SheetViewer'
+import { SpriteEditor } from 'Client/Component/Sprite/SpriteEditor'
 import { TilesetPalette } from 'Client/Component/Tileset/TilesetPalette'
 import { WindowBox } from 'Client/Component/WindowBox/WindowBox'
 import { componentId } from 'Client/Constants/components'
@@ -43,7 +44,7 @@ export class WorldEditor extends Component {
         'mouse-down-window-box': this.handleMouseDownWindowBox,
         'open-sheet-importer': this.handleOpenSheetImporter,
         'open-add-new-layer': this.handleOpenAddNewLayer,
-        'click-open-new-model': this.handleOpenNewModel,
+        'open-sprite-editor': this.handleOpenSpriteEditor,
         'updated-view-coordinates': this.handleUpdateViewCoordinates,
         'grid-toggled': this.handleGridToggled,
         'window-update': this.handleWindowUpdate,
@@ -284,7 +285,25 @@ export class WorldEditor extends Component {
         userDataRepository.persist(userData)
     }
 
-    private handleOpenNewModel(): void {
+    private async handleOpenSpriteEditor(spriteId: Id | undefined): Promise<void> {
+        const key = 'sprites'
+        const openWindow = this.windowBoxes[key]
 
+        if (openWindow && openWindow.isConnected) {
+            openWindow.flash()
+            return
+        }
+
+        const dataset = { spriteId: spriteId ?? null }
+        const windowBox = WindowBoxFactory.make(Dom.makeComponent(SpriteEditor, dataset), 'Sprites', {
+            uuid: componentId(SpriteEditor),
+            componentConfigration: { dataset },
+            title: 'Sprites',
+        })
+
+        if (windowBox) {
+            this.windowBoxes[key] = windowBox
+            this.shadowRoot?.append(windowBox)
+        }
     }
 }

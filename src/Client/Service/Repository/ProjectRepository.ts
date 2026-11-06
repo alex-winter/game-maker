@@ -1,7 +1,8 @@
 import { Repository } from 'Client/Service/Repository/Repository'
 import { Id } from 'domain/id'
 import { GridSize, TileMap } from 'domain/map'
-import { GameMap, Project, removeMap, withMapTileMap, withMapTileset, withTileset } from 'domain/project'
+import { addSprite, GameMap, Project, removeMap, removeSprite, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withTileset } from 'domain/project'
+import { SpriteDefinition } from 'domain/sprite'
 import { Metatile, MetatileAttributes, MetatileId, Tileset, withMetatileAttributes } from 'domain/tileset'
 
 class ProjectRepository extends Repository {
@@ -63,6 +64,41 @@ class ProjectRepository extends Repository {
 
         if (this.project) {
             this.project = withMapTileset(this.project, mapId, tilesetId)
+        }
+    }
+
+    public async createSprite(input: Omit<SpriteDefinition, 'id'>): Promise<SpriteDefinition> {
+        const response = await this.post(this.API_PATH + '/sprites', input)
+        const sprite: SpriteDefinition = await response.json()
+
+        if (this.project) {
+            this.project = addSprite(this.project, sprite)
+        }
+
+        return sprite
+    }
+
+    public async saveSprite(sprite: SpriteDefinition): Promise<void> {
+        await this.put(this.API_PATH + '/sprites/' + sprite.id, sprite)
+
+        if (this.project) {
+            this.project = withSprite(this.project, sprite)
+        }
+    }
+
+    public async deleteSprite(spriteId: Id): Promise<void> {
+        await this.delete(this.API_PATH + '/sprites/' + spriteId)
+
+        if (this.project) {
+            this.project = removeSprite(this.project, spriteId)
+        }
+    }
+
+    public async setPlayerSprite(spriteId: Id | null): Promise<void> {
+        await this.put(this.API_PATH + '/player-sprite', { spriteId })
+
+        if (this.project) {
+            this.project = withPlayerSprite(this.project, spriteId)
         }
     }
 

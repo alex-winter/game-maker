@@ -7,12 +7,12 @@ import { activeMapId } from 'Client/Service/active-map'
 import { buildScene } from 'Client/Service/build-scene'
 import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
 import { HeldDirections } from 'Client/Service/held-directions'
-import { findMap } from 'domain/project'
-import { GRID_SIZE } from 'domain/grid'
+import { findMap, playerSprite } from 'domain/project'
 import { Id } from 'domain/id'
-import { Direction, insideMap, newPlayer, Player, playerPixel, stepPlayer } from 'domain/movement'
+import { Direction, insideMap, newPlayer, stepPlayer } from 'domain/movement'
 import { PortSize } from 'engine/draw-port'
 import { startLoop } from 'engine/loop'
+import { playerActor } from 'engine/player-actor'
 import { renderFrame } from 'engine/render'
 import { Actor } from 'engine/scene'
 
@@ -21,9 +21,6 @@ const view: { x: number; y: number; zoom: number } = {
     y: 0,
     zoom: 2,
 }
-
-/** The player until T-027 gives them a sprite: one red cell, drawn between the ground and overhead passes. */
-const PLAYER_COLOR = '#ff5252'
 
 const held = new HeldDirections()
 
@@ -51,10 +48,6 @@ function releaseAllKeys(): void {
 function fitCanvasToWindow(canvas: HTMLCanvasElement): void {
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
-}
-
-function playerActor(player: Player): Actor<CanvasImageSource> {
-    return { ...playerPixel(player), width: GRID_SIZE, height: GRID_SIZE, color: PLAYER_COLOR }
 }
 
 /** The camera keeps the player in the middle of the window. */
@@ -89,10 +82,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         return
     }
 
+    const sheetById = await loadSheets()
+    const sprite = playerSprite(project)
+    const spriteSheet = sprite === undefined ? undefined : sheetById.get(sprite.sheetId)
     const scene = buildScene({
         tileMap: map.tileMap,
         tileset: projectRepository.cachedTileset(map.tileMap.tilesetId),
-        sheetById: await loadSheets(),
+        sheetById,
         layers: map.layers,
         loadedPlacements: await loadLegacyPlacements(map.layers),
     })
@@ -103,7 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     startLoop(deltaSeconds => {
         player = stepPlayer(player, { direction: held.latest(), running }, deltaSeconds * 1000, canEnter)
 
-        const actor = playerActor(player)
+        const actor = playerActor(player, sprite, spriteSheet)
 
         followActor(port, actor)
         renderFrame(port, scene, view, [actor])

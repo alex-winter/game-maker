@@ -9,9 +9,8 @@ import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 import { NewLayerForm } from 'Client/Component/NewLayerForm/NewLayerForm'
 import { MapCanvas } from 'Client/Component/Canvas/MapCanvas'
 import { LayerItem } from 'Client/Component/LayerListing/LayerItem'
-import { Canvas2D } from 'Client/Component/Canvas/Canvas'
 import { CanvasTools } from 'Client/Component/Canvas/CanvasTools'
-import { AnimationMaker } from 'Client/Component/Animation/AnimationMaker'
+import { SpriteEditor } from 'Client/Component/Sprite/SpriteEditor'
 import { WorldEditor } from 'Client/Component/WorldEditor'
 import { Ide } from 'Client/Component/Ide'
 import { DialogCreator } from 'Client/Component/Dialog/DialogCreator'
@@ -35,9 +34,8 @@ export const COMPONENTS = new Map<ComponentConstructor, string>([
   [NewLayerForm, 'new-layer-form'],
   [MapCanvas, 'map-canvas'],
   [LayerItem, 'layer-item'],
-  [Canvas2D, 'canvas-2d'],
   [CanvasTools, 'canvas-tools'],
-  [AnimationMaker, 'animation-maker'],
+  [SpriteEditor, 'sprite-editor'],
   [DialogCreator, 'dialog-creator'],
   [MapSelect, 'map-select'],
   [ConfirmDialog, 'confirm-dialog'],
