@@ -6,7 +6,7 @@ import { newItemEvent, newSign, newWarp } from '../domain/warp'
 import { bagCount } from '../domain/item'
 import { hasFlag } from '../domain/flags'
 import { FADE_MS, fadeOpacity } from './fade'
-import { advanceField, FieldState, FieldWorld, isTransitioning, newField } from './field'
+import { advanceField, FieldInput, FieldState, FieldWorld, isTransitioning, newField } from './field'
 
 const town = { width: 10, height: 10 }
 const house = { width: 6, height: 6 }
@@ -25,11 +25,12 @@ const world: FieldWorld = {
     itemNameOf: id => (id === 'potion' ? 'Potion' : undefined),
 }
 
-const right = { direction: 'right' as const, running: false, interact: false }
-const up = { direction: 'up' as const, running: false, interact: false }
-const none = { direction: null, running: false, interact: false }
+const right = { direction: 'right' as const, running: false, interact: false, menu: false }
+const up = { direction: 'up' as const, running: false, interact: false, menu: false }
+const down = { direction: 'down' as const, running: false, interact: false, menu: false }
+const none = { direction: null, running: false, interact: false, menu: false }
 
-function run(state: FieldState, input: { direction: 'up' | 'down' | 'left' | 'right' | null; running: boolean; interact: boolean }, ms: number, step = 16): FieldState {
+function run(state: FieldState, input: FieldInput, ms: number, step = 16): FieldState {
     for (let t = 0; t < ms; t += step) {
         state = advanceField(state, input, step, world)
     }
@@ -74,7 +75,7 @@ test('input is refused mid-fade and accepted after it', () => {
 test('walking off a connected edge fades too and lands on the neighbour with the offset applied', () => {
     let state = newField('town', { x: 4, y: 9 }, 'down')
 
-    state = run(state, { direction: 'down', running: false, interact: false }, WALK_MS_PER_CELL + 16)
+    state = run(state, down, WALK_MS_PER_CELL + 16)
     assert.equal(isTransitioning(state), true)
 
     state = run(state, none, FADE_MS + 16)
@@ -113,7 +114,7 @@ test('a sign opens its dialog; movement does nothing while it is open; the inter
 
     assert.deepEqual(opened.message, { pages: [newPage('Welcome!'), newPage('Enjoy your stay.')], index: 0, highlight: 0 })
 
-    const walking = advanceField(opened, { direction: 'down', running: true, interact: false }, 500, world)
+    const walking = advanceField(opened, { direction: 'down', running: true, interact: false, menu: false }, 500, world)
 
     assert.deepEqual(walking.player.cell, { x: 5, y: 5 })
     assert.equal(walking.player.step, null)
@@ -147,7 +148,6 @@ test('a held direction moves the choice cursor once; a fresh press moves it agai
 
     assert.equal(opened.message?.highlight, 0)
 
-    const down = { direction: 'down' as const, running: false, interact: false }
     const held1 = advanceField(opened, down, 16, asking)
     const held2 = advanceField(held1, down, 16, asking)
 
@@ -198,4 +198,56 @@ test('an item on the floor blocks the step, is picked up once with a message, th
     const walkedOnto = advanceField(closed, right, 16, floor)
 
     assert.notEqual(walkedOnto.player.step, null, 'the cell is open once the item is gone')
+})
+
+test('the menu key opens the start menu, the player stands, the cursor moves, Close or the menu key closes it, and walking resumes', () => {
+    const opened = advanceField(newField('town', { x: 5, y: 5 }), { ...none, menu: true }, 16, world)
+
+    assert.deepEqual(opened.menu, { highlight: 0 })
+
+    const held = advanceField(opened, { ...right, direction: 'down' }, 300, world)
+
+    assert.deepEqual(held.player.cell, { x: 5, y: 5 })
+    assert.equal(held.player.step, null)
+    assert.equal(held.menu?.highlight, 1)
+
+    const toggled = advanceField(held, { ...none, menu: true }, 16, world)
+
+    assert.equal(toggled.menu, null)
+    assert.equal(toggled.menuChoice, undefined)
+
+    const again = advanceField(toggled, { ...none, menu: true }, 16, world)
+    const onParty = advanceField(again, down, 16, world)
+    const onSave = advanceField(advanceField(onParty, none, 16, world), down, 16, world)
+    const confirmedSave = advanceField(advanceField(onSave, none, 16, world), { ...none, interact: true }, 16, world)
+
+    assert.equal(confirmedSave.menuChoice, 'save', 'the host sees which entry was chosen')
+    assert.notEqual(confirmedSave.menu, null, 'an entry without a screen leaves the menu open')
+
+    const nextFrame = advanceField(confirmedSave, none, 16, world)
+
+    assert.equal(nextFrame.menuChoice, undefined, 'cleared the next frame')
+
+    const onClose = advanceField(nextFrame, down, 16, world)
+    const closed = advanceField(advanceField(onClose, none, 16, world), { ...none, interact: true }, 16, world)
+
+    assert.equal(closed.menuChoice, 'close')
+    assert.equal(closed.menu, null)
+
+    const walking = advanceField(closed, right, 16, world)
+
+    assert.notEqual(walking.player.step, null)
+})
+
+test('the menu does not open over a message or mid-step', () => {
+    const reading = advanceField(newField('town', { x: 5, y: 5 }, 'right'), { ...none, interact: true }, 16, world)
+    const tried = advanceField(reading, { ...none, menu: true }, 16, world)
+
+    assert.equal(tried.menu, null)
+    assert.notEqual(tried.message, null)
+
+    const stepping = advanceField(newField('town', { x: 5, y: 5 }), right, 16, world)
+    const midStep = advanceField(stepping, { ...right, menu: true }, 16, world)
+
+    assert.equal(midStep.menu, null)
 })

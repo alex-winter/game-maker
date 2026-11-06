@@ -24,6 +24,7 @@ import { startLoop } from 'engine/loop'
 import { playerActor } from 'engine/player-actor'
 import { renderFrame } from 'engine/render'
 import { drawMessageBox } from 'engine/message'
+import { drawMenu, MenuEntry } from 'engine/menu'
 import { itemActor } from 'engine/item-actor'
 import { View } from 'engine/view'
 
@@ -34,6 +35,7 @@ let running = false
 
 /** Set on the interact key's keydown and consumed by the next frame, so one press is one look. */
 let interactPressed = false
+let menuPressed = false
 
 const directionByCode: { readonly [code: string]: Direction | undefined } = {
     ArrowUp: 'up',
@@ -48,13 +50,20 @@ const directionByCode: { readonly [code: string]: Direction | undefined } = {
 
 const RUN_CODES: readonly string[] = ['ShiftLeft', 'ShiftRight', 'KeyX']
 
-/** A, like the GBA: Z, Enter, or Space. */
-const INTERACT_CODES: readonly string[] = ['KeyZ', 'Enter', 'Space']
+/** A, like the GBA: Z or Space. */
+const INTERACT_CODES: readonly string[] = ['KeyZ', 'Space']
+
+/** Start, like the GBA: Enter or Escape opens and closes the field menu. */
+const MENU_CODES: readonly string[] = ['Enter', 'Escape']
+
+/** Menu entries that open something today. The rest show greyed until their tickets land. */
+const ENABLED_ENTRIES: ReadonlySet<MenuEntry> = new Set(['close'])
 
 function releaseAllKeys(): void {
     held.clear()
     running = false
     interactPressed = false
+    menuPressed = false
 }
 
 /**
@@ -209,8 +218,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     let field = newField(map.id, map.spawn)
 
     startLoop(deltaSeconds => {
-        field = advanceField(field, { direction: held.latest(), running, interact: interactPressed }, deltaSeconds * 1000, world)
+        field = advanceField(field, { direction: held.latest(), running, interact: interactPressed, menu: menuPressed }, deltaSeconds * 1000, world)
         interactPressed = false
+        menuPressed = false
 
         // The session changed map at the black point of a fade: draw the new one from now on.
         if (field.mapId !== open.map.id) {
@@ -229,6 +239,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (field.message !== null) {
             drawMessageBox(port, field.message, GBA_VIEW, zoom)
+        }
+
+        if (field.menu !== null) {
+            drawMenu(port, field.menu, GBA_VIEW, zoom, ENABLED_ENTRIES)
         }
 
         const darkness = fadeOpacity(field.fade)
@@ -254,6 +268,11 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
     if (INTERACT_CODES.includes(event.code) && !event.repeat) {
         event.preventDefault()
         interactPressed = true
+    }
+
+    if (MENU_CODES.includes(event.code) && !event.repeat) {
+        event.preventDefault()
+        menuPressed = true
     }
 })
 

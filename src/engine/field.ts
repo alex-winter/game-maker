@@ -10,6 +10,7 @@ import { DialogPage, newPage } from '../domain/dialog'
 import { Memory, newMemory } from '../domain/flags'
 import { Bag, isTaken, newBag, pickUp } from '../domain/item'
 import { advanceMessage, MessageState, missingDialogPages, moveHighlight, openMessage } from './message'
+import { MenuEntry, MenuState, moveMenu, openMenu, selectedEntry } from './menu'
 
 /** Where the player will be once the screen is black. */
 export type Transition = {
@@ -44,11 +45,20 @@ export type FieldState = {
 
     /** What the player carries (T-038). */
     readonly bag: Bag
+
+    /** The start menu, while it is open (T-046). The player stands still. */
+    readonly menu: MenuState | null
+
+    /** The entry the player just confirmed in the menu, for the host to open. Cleared the next frame. */
+    readonly menuChoice: MenuEntry | undefined
 }
 
-/** Movement plus whether the interact key was pressed this frame (edge, not level). */
+/** Movement plus whether the interact and menu keys were pressed this frame (edges, not levels). */
 export type FieldInput = MovementInput & {
     readonly interact: boolean
+
+    /** Start: opens the menu, or closes it while it is open. */
+    readonly menu: boolean
 }
 
 /** What the session asks about the world. Hosts answer from the project; tests from fixtures. */
@@ -73,7 +83,7 @@ export type FieldWorld = {
 }
 
 export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down', memory: Memory = newMemory(), bag: Bag = newBag()): FieldState {
-    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag }
+    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined }
 }
 
 /** The map's events as the session sees them now: an item already taken is not there. */
@@ -101,7 +111,10 @@ export function isTransitioning(state: FieldState): boolean {
  * is dropped; when the fade-out completes the pending transition lands the
  * player on the new map. While a message is open the player stands, a
  * fresh up or down press moves the choice cursor, and the interact key
- * confirms — the next page, the chosen branch, or closing. Otherwise the player steps, and a warp or a
+ * confirms — the next page, the chosen branch, or closing. The menu key
+ * opens the start menu, which likewise holds the player; up and down move
+ * its cursor, the interact key confirms an entry into `menuChoice` (Close
+ * and the menu key close it). Otherwise the player steps, and a warp or a
  * seam reached by that step starts a fade with the destination pending.
  */
 export function advanceField(state: FieldState, input: FieldInput, deltaMs: number, world: FieldWorld): FieldState {
@@ -109,24 +122,37 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
         const { fade, swap } = advanceFade(state.fade, deltaMs)
 
         if (swap && state.pending !== undefined) {
-            return { ...state, mapId: state.pending.mapId, player: newPlayer(state.pending.cell, state.pending.facing), fade, pending: undefined, interaction: undefined }
+            return { ...state, mapId: state.pending.mapId, player: newPlayer(state.pending.cell, state.pending.facing), fade, pending: undefined, interaction: undefined, menuChoice: undefined }
         }
 
-        return { ...state, fade, interaction: undefined }
+        return { ...state, fade, interaction: undefined, menuChoice: undefined }
     }
 
+    const pressed = input.direction !== null && input.direction !== state.lastDirection ? input.direction : null
+
     if (state.message !== null) {
-        const pressed = input.direction !== null && input.direction !== state.lastDirection ? input.direction : null
         const moved = pressed === 'up' ? moveHighlight(state.message, -1) : pressed === 'down' ? moveHighlight(state.message, 1) : state.message
         const message = input.interact ? advanceMessage(moved, id => world.pagesOf(id)) : moved
 
-        return { ...state, interaction: undefined, message, lastDirection: input.direction }
+        return { ...state, interaction: undefined, message, lastDirection: input.direction, menuChoice: undefined }
+    }
+
+    if (state.menu !== null) {
+        const moved = pressed === 'up' ? moveMenu(state.menu, -1) : pressed === 'down' ? moveMenu(state.menu, 1) : state.menu
+        const choice = input.interact ? selectedEntry(moved) : undefined
+        const closes = input.menu || choice === 'close'
+
+        return { ...state, interaction: undefined, menu: closes ? null : moved, menuChoice: choice, lastDirection: input.direction }
+    }
+
+    if (input.menu && state.player.step === null) {
+        return { ...state, interaction: undefined, menu: openMenu(), menuChoice: undefined, lastDirection: input.direction }
     }
 
     const size = world.sizeOf(state.mapId)
 
     if (size === undefined) {
-        return { ...state, interaction: undefined }
+        return { ...state, interaction: undefined, menuChoice: undefined }
     }
 
     // The interact key looks, it does not move: a standing player stays put this frame.
@@ -137,7 +163,7 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
         if (interaction?.kind === 'sign') {
             const message = openMessage(world.pagesOf(interaction.dialogId) ?? missingDialogPages(interaction.dialogId))
 
-            return { ...state, interaction, message, lastDirection: input.direction }
+            return { ...state, interaction, message, lastDirection: input.direction, menuChoice: undefined }
         }
 
         if (interaction?.kind === 'item') {
@@ -147,11 +173,11 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
                 const taken = pickUp(state.bag, state.memory, event)
                 const message = openMessage(foundMessage(world.itemNameOf(event.itemId)))
 
-                return { ...state, interaction, message, bag: taken.bag, memory: taken.memory, lastDirection: input.direction }
+                return { ...state, interaction, message, bag: taken.bag, memory: taken.memory, lastDirection: input.direction, menuChoice: undefined }
             }
         }
 
-        return { ...state, interaction, message: null, lastDirection: input.direction }
+        return { ...state, interaction, message: null, lastDirection: input.direction, menuChoice: undefined }
     }
 
     const player = stepPlayer(state.player, input, deltaMs, seamAwareRule(state.mapId, size, state.memory, world))
@@ -159,10 +185,10 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
 
     if (transition !== undefined) {
         // Freeze where the step landed; a held key must not walk on while the screen fades.
-        return { ...state, player: { ...player, step: null }, fade: startFade(), pending: transition, interaction: undefined, lastDirection: input.direction }
+        return { ...state, player: { ...player, step: null }, fade: startFade(), pending: transition, interaction: undefined, lastDirection: input.direction, menuChoice: undefined }
     }
 
-    return { ...state, player, interaction: undefined, lastDirection: input.direction }
+    return { ...state, player, interaction: undefined, lastDirection: input.direction, menuChoice: undefined }
 }
 
 /** Inside the map the collision rule decides and an item still lying there blocks; beyond an edge a seam may let the step through onto open ground. */
