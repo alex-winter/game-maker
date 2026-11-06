@@ -7,6 +7,8 @@ import { UserDataFactory } from 'Model/Factory/UserDataFactory'
 import { requestHandlerPlay } from 'Server/RequestHandlers/play'
 import { requestHandlerIndex } from 'Server/RequestHandlers'
 import { requestHandlerGetSheets } from 'Server/RequestHandlers/get-sheets'
+import { requestHandlerGetAsset } from 'Server/RequestHandlers/get-asset'
+import { ASSETS_PATH } from 'domain/asset-url'
 import { requestHandlerGetLayers } from 'Server/RequestHandlers/get-layers'
 import { requestHandlerPostLayers } from 'Server/RequestHandlers/post-layers'
 import { requestHandlerGetUserData } from 'Server/RequestHandlers/get-user-data'
@@ -81,6 +83,7 @@ app.get('/', requestHandlerIndex)
 app.get('/play', requestHandlerPlay)
 
 app.get('/sheets', requestHandlerGetSheets)
+app.get(ASSETS_PATH + '/:file', requestHandlerGetAsset)
 
 app.get('/project', requestHandlerGetProject)
 app.post('/project/maps', requestHandlerPostMaps)

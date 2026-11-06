@@ -128,7 +128,8 @@ Painting uses `event.clientX` / `clientY` as if the canvas origin were the viewp
 | --- | --- | --- |
 | GET | `/` | editor HTML |
 | GET | `/play` | play HTML |
-| GET | `/sheets` | every upload, read asynchronously, returned as base64 with a mapped MIME type |
+| GET | `/sheets` | `{ id, name, file, imageSrc }[]`; `imageSrc` is `/assets/<file>`, never a data URL |
+| GET | `/assets/:file` | the bytes of one stored sheet; bare filename with an allow-listed extension only |
 | GET | `/project` | the project with every map and its layers |
 | POST | `/project/maps` | `{ name }` → the new map |
 | PATCH | `/project/maps/:mapId` | `{ name }` → the renamed map |

@@ -1,7 +1,7 @@
 ---
 id: T-015
 title: Serve sheet images as files
-status: ready
+status: done
 priority: P1
 phase: 1
 type: feat
@@ -15,6 +15,10 @@ blocks: [T-019]
 ## Outcome
 
 A sheet is fetched by URL. Project JSON and the sheet list contain an id and a URL, never a base64 payload. Existing uploads still open.
+
+## Result
+
+`GET /assets/:file` (`Server/RequestHandlers/get-asset.ts`) sends one stored file after checking the name is a bare filename with an allow-listed image extension, so `index.json` and `../` are refused with 404. `domain/asset-url.ts` builds the URL for both sides. `GET /sheets` no longer reads any file; `imageSrc` is the asset URL. `Server/services/image-mime.ts` went away with the base64 path. Verified by uploading a generated PNG, fetching it byte-identical from the URL, and opening it in the sheet window.
 
 ## Why
 
@@ -45,9 +49,9 @@ Out:
 
 ## Acceptance
 
-- [ ] `GET /sheets` JSON is small and contains no `data:` prefix.
-- [ ] Opening a sheet still draws the image.
-- [ ] A direct GET of the asset URL returns the bytes.
+- [x] `GET /sheets` JSON is small and contains no `data:` prefix.
+- [x] Opening a sheet still draws the image.
+- [x] A direct GET of the asset URL returns the bytes.
 
 ## Test plan
 

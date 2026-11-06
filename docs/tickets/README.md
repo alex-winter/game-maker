@@ -36,7 +36,7 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-012](T-012-domain-boundary.md) | 1 | P1 | done | domain | Cut a pure domain layer out of the UI |
 | [T-013](T-013-project-of-maps.md) | 1 | P1 | done | server | Store a project that contains many maps |
 | [T-014](T-014-metatile-model.md) | 1 | P1 | done | domain | Add a metatile map and tileset model |
-| [T-015](T-015-assets-are-files.md) | 1 | P1 | ready | server | Serve sheet images as files |
+| [T-015](T-015-assets-are-files.md) | 1 | P1 | done | server | Serve sheet images as files |
 | [T-016](T-016-atomic-json-writes.md) | 1 | P1 | ready | server | Write JSON by rename |
 | [T-017](T-017-shared-render-loop.md) | 1 | P1 | ready | engine | Draw a map through one engine loop |
 | [T-018](T-018-in-house-elements.md) | 1 | P2 | ready | editor | Replace the third-party element base |
@@ -82,8 +82,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 ## Counts
 
-- ready: 4
+- ready: 3
 - in_progress: 0
 - backlog: 40
-- done: 14
+- done: 15
 - total: 57

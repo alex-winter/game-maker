@@ -7,5 +7,6 @@ export type Sheet = {
 
     file: string
 
+    /** A URL under `/assets/`, never a data URL. */
     imageSrc: string
 }
