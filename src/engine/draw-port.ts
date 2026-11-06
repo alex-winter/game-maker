@@ -17,6 +17,9 @@ export type DrawPort<TImage> = PortSize & {
     /** Fills a screen rectangle with a CSS colour. Used for stand-ins and overlays, never for tiles. */
     fillRect(x: number, y: number, width: number, height: number, color: string): void
 
+    /** Draws one line of text with its top-left at (x, y) in a built-in monospace font `size` pixels tall. For message boxes, never for the world. */
+    fillText(text: string, x: number, y: number, size: number, color: string): void
+
     /** Copies the source rectangle of `image` onto the destination rectangle, without smoothing. */
     drawImage(
         image: TImage,

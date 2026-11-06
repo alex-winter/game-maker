@@ -1,7 +1,7 @@
 ---
 id: T-046
 title: Open a field start menu
-status: backlog
+status: ready
 priority: P1
 phase: 6
 type: feat

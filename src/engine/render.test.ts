@@ -20,6 +20,9 @@ function recordingPort(width = 64, height = 64): DrawPort<string> & { calls: Cal
         fillRect(x: number, y: number, w: number, h: number, color: string): void {
             port.calls.push({ image: 'rect:' + color, sx: 0, sy: 0, dx: x, dy: y, dw: w })
         },
+        fillText(text: string, x: number, y: number, size: number): void {
+            port.calls.push({ image: 'text:' + text, sx: 0, sy: 0, dx: x, dy: y, dw: size })
+        },
         drawImage(image: string, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number, dw: number): void {
             port.calls.push({ image, sx, sy, dx, dy, dw })
         },

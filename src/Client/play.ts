@@ -7,7 +7,7 @@ import { MAP_QUERY_PARAM } from 'Client/Service/active-map'
 import { buildScene } from 'Client/Service/build-scene'
 import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
 import { HeldDirections } from 'Client/Service/held-directions'
-import { findMap, GameMap, playerSprite, Project, startMap } from 'domain/project'
+import { findDialog, findMap, GameMap, playerSprite, Project, startMap } from 'domain/project'
 import { isSolid } from 'domain/map'
 import { Scene } from 'engine/scene'
 import { PortSize } from 'engine/draw-port'
@@ -23,6 +23,7 @@ import { advanceField, FieldWorld, newField } from 'engine/field'
 import { startLoop } from 'engine/loop'
 import { playerActor } from 'engine/player-actor'
 import { renderFrame } from 'engine/render'
+import { drawMessageBox } from 'engine/message'
 import { View } from 'engine/view'
 
 const held = new HeldDirections()
@@ -138,6 +139,7 @@ function worldOf(project: Project): FieldWorld {
         },
         connectionsOf: mapId => findMap(project, mapId)?.connections ?? {},
         eventsOf: mapId => findMap(project, mapId)?.events ?? [],
+        pagesOf: dialogId => findDialog(project, dialogId)?.pages,
     }
 }
 
@@ -208,11 +210,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         field = advanceField(field, { direction: held.latest(), running, interact: interactPressed }, deltaSeconds * 1000, world)
         interactPressed = false
 
-        if (field.interaction !== undefined) {
-            // T-035 opens the message box here; until then the look is only reported.
-            console.info('interact', field.interaction)
-        }
-
         // The session changed map at the black point of a fade: draw the new one from now on.
         if (field.mapId !== open.map.id) {
             const next = findMap(project, field.mapId)
@@ -225,6 +222,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const player = field.player
 
         renderFrame(port, open.scene, followPlayer(player, open.pixels, zoom), [playerActor(player, sprite, spriteSheet)])
+
+        if (field.message !== null) {
+            drawMessageBox(port, field.message, GBA_VIEW, zoom)
+        }
 
         const darkness = fadeOpacity(field.fade)
 

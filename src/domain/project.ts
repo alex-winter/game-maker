@@ -5,6 +5,7 @@ import { Id, newId } from './id'
 import { emptyTileMap, GridSize, isInside, TileMap, withTileMapDefaults } from './map'
 import { SpriteDefinition } from './sprite'
 import type { MapEvent } from './warp'
+import type { Dialog } from './dialog'
 import { Tileset } from './tileset'
 
 /** Cells in a new map. A gen 3 town is about this size. */
@@ -50,6 +51,9 @@ export type Project = {
 
     playerSpriteId: Id | null
 
+    /** What signs and people say (T-035). Referenced by id from events. */
+    dialogs: Dialog[]
+
     /** Where play begins (T-030). Null until the author picks; `startMap` falls back to the first map. */
     startMapId: Id | null
 }
@@ -64,7 +68,7 @@ export function newMap(name: string, layers: Layer[] = [], size: GridSize = DEFA
 }
 
 export function newProject(name: string, maps: GameMap[] = []): Project {
-    return { id: newId(), name, tilesets: [], maps, sprites: [], playerSpriteId: null, startMapId: null }
+    return { id: newId(), name, tilesets: [], maps, sprites: [], playerSpriteId: null, dialogs: [], startMapId: null }
 }
 
 /**
@@ -78,6 +82,7 @@ export function withProjectDefaults(stored: Partial<Project> & Pick<Project, 'id
         tilesets: stored.tilesets ?? [],
         sprites: stored.sprites ?? [],
         playerSpriteId: stored.playerSpriteId ?? null,
+        dialogs: stored.dialogs ?? [],
         startMapId: stored.startMapId ?? null,
         maps: stored.maps.map(map => {
             const tileMap = withTileMapDefaults(map.tileMap ?? emptyTileMap(DEFAULT_MAP_SIZE))
@@ -255,4 +260,20 @@ export function withPlayerSprite(project: Project, spriteId: Id | null): Project
 /** The player's sprite definition, when one is assigned and still exists. */
 export function playerSprite(project: Project): SpriteDefinition | undefined {
     return project.playerSpriteId === null ? undefined : findSprite(project, project.playerSpriteId)
+}
+
+export function findDialog(project: Project, dialogId: Id): Dialog | undefined {
+    return project.dialogs.find(dialog => dialog.id === dialogId)
+}
+
+export function addDialog(project: Project, dialog: Dialog): Project {
+    return { ...project, dialogs: [...project.dialogs, dialog] }
+}
+
+export function withDialog(project: Project, dialog: Dialog): Project {
+    return { ...project, dialogs: project.dialogs.map(existing => existing.id === dialog.id ? dialog : existing) }
+}
+
+export function removeDialog(project: Project, dialogId: Id): Project {
+    return { ...project, dialogs: project.dialogs.filter(dialog => dialog.id !== dialogId) }
 }

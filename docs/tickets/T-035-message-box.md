@@ -1,7 +1,7 @@
 ---
 id: T-035
 title: Show paging messages
-status: ready
+status: done
 priority: P1
 phase: 5
 type: feat
@@ -46,10 +46,17 @@ Out:
 
 ## Acceptance
 
-- [ ] A three-page message advances twice and closes on the third confirm.
-- [ ] Movement input does nothing while it is open.
-- [ ] A sign event from T-034 opens it.
+- [x] A three-page message advances twice and closes on the third confirm.
+- [x] Movement input does nothing while it is open.
+- [x] A sign event from T-034 opens it.
 
 ## Test plan
 
 - Unit test the runner. Manual sign.
+
+## Result
+
+- `engine/message.ts`: `MessageState { pages, index }`, `openMessage`, `advanceMessage` (null closes), `currentPage`, `isLastPage`, `wrapText` (spaces, explicit `\n`, long words split), `MESSAGE_COLUMNS` 36 × `MESSAGE_LINES` 2, and `drawMessageBox(port, state, view, zoom)` that paints the bottom panel through the new `DrawPort.fillText` (canvas adapter: built-in monospace, no network font).
+- `domain/dialog.ts`: `Dialog { id, name, pages }`, `newDialog`, `isDialogInput`; the project gains `dialogs: Dialog[]` with `findDialog/addDialog/withDialog/removeDialog` (routes and UI are T-036).
+- `engine/field.ts`: `FieldState.message`; `FieldWorld.pagesOf(dialogId)`; a sign interaction opens the box (a missing dialog shows a placeholder page naming the id), movement is ignored while it is open, the interact key pages and closes it. Closing is not a new look.
+- Tests: runner paging, wrapping, the draw calls, and the field session (open → held run-down does nothing → page → close → walking resumes; missing dialog). Verified in headless Chrome with a seeded dialog on the sign from T-034.

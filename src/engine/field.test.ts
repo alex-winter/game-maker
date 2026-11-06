@@ -15,6 +15,7 @@ const world: FieldWorld = {
     isSolidAt: () => false,
     connectionsOf: id => (id === 'town' ? { south: { mapId: 'house', offset: -2 } } : {}),
     eventsOf: id => (id === 'town' ? [door, newSign('sign', { x: 6, y: 5 }, 'welcome')] : []),
+    pagesOf: id => (id === 'welcome' ? ['Welcome!', 'Enjoy your stay.'] : undefined),
 }
 
 const right = { direction: 'right' as const, running: false, interact: false }
@@ -97,4 +98,38 @@ test('the interact key reports the sign in front and does not move the player, e
     const nothing = advanceField(newField('town', { x: 5, y: 5 }, 'left'), { ...none, interact: true }, 16, world)
 
     assert.equal(nothing.interaction, undefined)
+})
+
+test('a sign opens its dialog; movement does nothing while it is open; the interact key pages and closes it', () => {
+    const facing = newField('town', { x: 5, y: 5 }, 'right')
+    const opened = advanceField(facing, { ...none, interact: true }, 16, world)
+
+    assert.deepEqual(opened.message, { pages: ['Welcome!', 'Enjoy your stay.'], index: 0 })
+
+    const walking = advanceField(opened, { direction: 'down', running: true, interact: false }, 500, world)
+
+    assert.deepEqual(walking.player.cell, { x: 5, y: 5 })
+    assert.equal(walking.player.step, null)
+    assert.equal(walking.player.facing, 'right')
+    assert.equal(walking.message?.index, 0)
+
+    const paged = advanceField(walking, { ...none, interact: true }, 16, world)
+
+    assert.equal(paged.message?.index, 1)
+
+    const closed = advanceField(paged, { ...none, interact: true }, 16, world)
+
+    assert.equal(closed.message, null)
+    assert.equal(closed.interaction, undefined, 'closing the box is not a new look')
+
+    const stepping = advanceField(closed, right, 16, world)
+
+    assert.notEqual(stepping.player.step, null, 'walking resumes once the box is closed')
+})
+
+test('a sign whose dialog does not exist says so instead of opening nothing', () => {
+    const lost: FieldWorld = { ...world, pagesOf: () => undefined }
+    const opened = advanceField(newField('town', { x: 5, y: 5 }, 'right'), { ...none, interact: true }, 16, lost)
+
+    assert.deepEqual(opened.message?.pages, ['(No dialog "welcome" exists yet.)'])
 })
