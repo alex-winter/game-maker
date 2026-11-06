@@ -64,9 +64,26 @@ export function isNpcBehavior(value: unknown): value is NpcBehavior {
 }
 
 /**
+ * A person who fights (T-049): how far they see along the way they face,
+ * the flag set once they are beaten so they never challenge twice, and the
+ * creature they send out. T-057 widens the creature to a party.
+ */
+export type Trainer = {
+    readonly sightRange: number
+
+    readonly defeatedFlagId: Id
+
+    readonly speciesId: Id | null
+
+    readonly level: number
+}
+
+export const MAX_SIGHT_RANGE = 8
+
+/**
  * A person standing on a cell (T-042): what they look like, which way they
- * face, what they say when talked to (T-043), and what they do when left
- * alone (T-044).
+ * face, what they say when talked to (T-043), what they do when left
+ * alone (T-044), and whether they challenge the player (T-049).
  */
 export type NpcEvent = {
     readonly kind: 'npc'
@@ -86,6 +103,9 @@ export type NpcEvent = {
     dialogId: Id | null
 
     behavior: NpcBehavior
+
+    /** Null for a person who never fights. */
+    trainer: Trainer | null
 }
 
 /** Something placed on a map cell that is not a tile. */
@@ -99,11 +119,11 @@ export function newItemEvent(id: Id, cell: Cell, itemId: Id, flagId: Id, metatil
     return { kind: 'item', id, cell, itemId, flagId, metatileId }
 }
 
-export function newNpcEvent(id: Id, cell: Cell, name: string, spriteId: Id | null, facing: Direction, dialogId: Id | null, behavior: NpcBehavior = DEFAULT_BEHAVIOR): NpcEvent {
-    return { kind: 'npc', id, cell, name, spriteId, facing, dialogId, behavior }
+export function newNpcEvent(id: Id, cell: Cell, name: string, spriteId: Id | null, facing: Direction, dialogId: Id | null, behavior: NpcBehavior = DEFAULT_BEHAVIOR, trainer: Trainer | null = null): NpcEvent {
+    return { kind: 'npc', id, cell, name, spriteId, facing, dialogId, behavior, trainer }
 }
 
-/** A stored event brought up to date: a person saved before T-044 stands still. */
+/** A stored event brought up to date: a person saved before T-044 stands still, and before T-049 never fights. */
 export function withEventDefaults(event: MapEvent): MapEvent {
     if (event.kind !== 'npc') {
         return event
@@ -111,7 +131,24 @@ export function withEventDefaults(event: MapEvent): MapEvent {
 
     const stored: Partial<NpcEvent> = event
 
-    return { ...event, behavior: isNpcBehavior(stored.behavior) ? stored.behavior : DEFAULT_BEHAVIOR }
+    return {
+        ...event,
+        behavior: isNpcBehavior(stored.behavior) ? stored.behavior : DEFAULT_BEHAVIOR,
+        trainer: isTrainer(stored.trainer) ? stored.trainer : null,
+    }
+}
+
+export function isTrainer(value: unknown): value is Trainer {
+    if (typeof value !== 'object' || value === null) {
+        return false
+    }
+
+    const record = value as { sightRange?: unknown; defeatedFlagId?: unknown; speciesId?: unknown; level?: unknown }
+
+    return typeof record.sightRange === 'number' && Number.isInteger(record.sightRange) && record.sightRange >= 1 && record.sightRange <= MAX_SIGHT_RANGE
+        && typeof record.defeatedFlagId === 'string'
+        && (record.speciesId === null || typeof record.speciesId === 'string')
+        && typeof record.level === 'number' && Number.isInteger(record.level) && record.level >= 1 && record.level <= 100
 }
 
 /** The people standing on a map. */
@@ -196,7 +233,7 @@ function isMapEvent(value: unknown): value is MapEvent {
         return false
     }
 
-    const event = value as { kind: unknown; dialogId?: unknown; itemId?: unknown; flagId?: unknown; metatileId?: unknown; name?: unknown; spriteId?: unknown; facing?: unknown; behavior?: unknown }
+    const event = value as { kind: unknown; dialogId?: unknown; itemId?: unknown; flagId?: unknown; metatileId?: unknown; name?: unknown; spriteId?: unknown; facing?: unknown; behavior?: unknown; trainer?: unknown }
 
     switch (event.kind) {
         case 'warp':
@@ -212,6 +249,7 @@ function isMapEvent(value: unknown): value is MapEvent {
                 && isDirection(event.facing)
                 && (event.dialogId === null || typeof event.dialogId === 'string')
                 && (event.behavior === undefined || isNpcBehavior(event.behavior))
+                && (event.trainer === undefined || event.trainer === null || isTrainer(event.trainer))
         default:
             return false
     }

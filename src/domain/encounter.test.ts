@@ -21,7 +21,7 @@ test('a fixed RNG returns the weighted species and a level in its range', () => 
     // 0.1 → 10 < 20: something appears; 0.5 of 100 weight lands in sprout's 0–60; level 2 + floor(0.99 × 3) = 4.
     const sprout = rollEncounter(table, [], sequence([0.1, 0.5, 0.99]))
 
-    assert.deepEqual(sprout, { party: [], speciesId: 'sprout', level: 4 })
+    assert.deepEqual(sprout, { party: [], speciesId: 'sprout', level: 4, trainer: null })
 
     // 0.65 of 100 is past sprout (60) and inside ember (60–90).
     assert.equal(rollEncounter(table, [], sequence([0, 0.65, 0]))?.speciesId, 'ember')

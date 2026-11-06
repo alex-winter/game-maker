@@ -70,7 +70,7 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-046](T-046-start-menu.md) | 6 | P1 | done | play | Open a field start menu |
 | [T-047](T-047-party-model.md) | 8 | P1 | done | domain | Model a party of creatures |
 | [T-048](T-048-encounters.md) | 8 | P1 | done | domain | Start an encounter from grass |
-| [T-049](T-049-trainer-sight.md) | 8 | P2 | ready | engine | Let a trainer notice the player |
+| [T-049](T-049-trainer-sight.md) | 8 | P2 | done | engine | Let a trainer notice the player |
 | [T-050](T-050-field-gates.md) | 8 | P2 | ready | domain | Open a field gate with a flag |
 | [T-051](T-051-vertical-slice.md) | 8 | P1 | backlog | content | Build the Gate A and Gate B town in the editor |
 | [T-052](T-052-move-catalog.md) | 9 | P1 | ready | domain | Define moves and a type chart |
@@ -82,8 +82,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 ## Counts
 
-- ready: 4
+- ready: 3
 - in_progress: 0
 - backlog: 5
-- done: 48
+- done: 49
 - total: 57

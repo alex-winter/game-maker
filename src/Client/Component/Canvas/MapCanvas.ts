@@ -703,12 +703,14 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
             cell,
             sprites: project.sprites.map(each => ({ id: each.id, name: each.name })),
             dialogs: project.dialogs.map(each => ({ id: each.id, name: each.name })),
+            flags: project.flags.map(each => ({ id: each.id, name: each.name })),
+            species: project.species.map(each => ({ id: each.id, name: each.name })),
         }))
     }
 
     private async handleNpcSubmit(submitted: Omit<NpcEvent, 'id'> & { id: Id | null }): Promise<void> {
         const map = mapSession.current
-        const npc = newNpcEvent(submitted.id ?? newId(), submitted.cell, submitted.name, submitted.spriteId, submitted.facing, submitted.dialogId, submitted.behavior)
+        const npc = newNpcEvent(submitted.id ?? newId(), submitted.cell, submitted.name, submitted.spriteId, submitted.facing, submitted.dialogId, submitted.behavior, submitted.trainer)
 
         await mapSession.commitEvents(withEvent(map.events, npc))
     }

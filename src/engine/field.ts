@@ -2,13 +2,15 @@ import { Connections, crossEdge } from '../domain/connection'
 import { Cell } from '../domain/coordinates'
 import { Id } from '../domain/id'
 import { GridSize, isInside } from '../domain/map'
-import { CanEnter, Direction, MovementInput, newPlayer, Player, restingCell, stepPlayer } from '../domain/movement'
+import { advanceStep, beginStep, CanEnter, Direction, MovementInput, newPlayer, Player, restingCell, stepPlayer, WALK_MS_PER_CELL } from '../domain/movement'
 import { finishStep, newNpcMotion, NpcMotion, Random, tickNpcMotion } from '../domain/npc-behavior'
 import { faceToward, Interaction, resolveInteraction } from '../domain/interact'
 import { ItemEvent, MapEvent, NpcEvent, npcsOn, stepFinished, warpTaken } from '../domain/warp'
 import { advanceFade, Fade, startFade } from './fade'
 import { DialogPage, newPage } from '../domain/dialog'
-import { addToVariable, Memory, newMemory } from '../domain/flags'
+import { addToVariable, hasFlag, Memory, newMemory, setFlag } from '../domain/flags'
+import { sees } from '../domain/sight'
+import { faceToward as turnToward } from '../domain/interact'
 import { Bag, isTaken, newBag, pickUp } from '../domain/item'
 import { Party } from '../domain/creature'
 import { BattleRequest, BattleResult, EncounterTable, rollEncounter, wildAppearedText } from '../domain/encounter'
@@ -69,8 +71,18 @@ export type FieldState = {
     /** The creatures the player carries (T-047). Battles change it through `afterBattle`. */
     readonly party: Party
 
-    /** A wild encounter the last step started (T-048), for the host to run through its `BattleRunner`. Cleared by `afterBattle`. */
+    /** A battle the field just started (T-048 grass, T-049 trainers), for the host to run through its `BattleRunner`. Cleared by `afterBattle`. */
     readonly battle: BattleRequest | undefined
+
+    /**
+     * A trainer who spotted the player and is walking up (T-049). The player
+     * stands frozen until the challenge lands. Once it has, `challengedBy`
+     * remembers who, so a trainer not beaten (a loss, a flight) does not
+     * challenge again until the player has walked away.
+     */
+    readonly approach: { readonly eventId: Id } | null
+
+    readonly challengedBy: Id | null
 }
 
 /** Movement plus whether the interact and menu keys were pressed this frame (edges, not levels). */
@@ -114,7 +126,7 @@ export type FieldWorld = {
 }
 
 export function newField(mapId: Id, spawn: Cell, facing: Direction = 'down', memory: Memory = newMemory(), bag: Bag = newBag(), party: Party = []): FieldState {
-    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined, bagScreen: null, talkingTo: null, people: [], party, battle: undefined }
+    return { mapId, player: newPlayer(spawn, facing), fade: null, pending: undefined, interaction: undefined, message: null, lastDirection: null, memory, bag, menu: null, menuChoice: undefined, bagScreen: null, talkingTo: null, people: [], party, battle: undefined, approach: null, challengedBy: null }
 }
 
 /** What a save keeps of the session (T-041): the standing cell, never a half-finished step. */
@@ -150,13 +162,91 @@ export function battleOutcomeText(outcome: BattleResult['outcome']): string {
  * the story — who appeared, then how it ended.
  */
 export function afterBattle(state: FieldState, result: BattleResult, speciesName: string | undefined): FieldState {
+    const trainer = state.battle?.trainer ?? null
+    const won = result.outcome === 'won'
+    const counted = won ? addToVariable(state.memory, 'battles-won', 1) : state.memory
+    const opening = trainer === null ? wildAppearedText(speciesName) : `${trainer.name} wants to battle!`
+
     return {
         ...state,
         battle: undefined,
+        approach: null,
+        challengedBy: trainer?.eventId ?? null,
         party: result.party,
-        memory: result.outcome === 'won' ? addToVariable(state.memory, 'battles-won', 1) : state.memory,
-        message: openMessage([newPage(wildAppearedText(speciesName)), newPage(battleOutcomeText(result.outcome))]),
+        // A beaten trainer's flag is set, so they never challenge again. A loss leaves it clear (T-057 keeps this).
+        memory: won && trainer !== null ? setFlag(counted, trainer.defeatedFlagId) : counted,
+        message: openMessage([newPage(opening), newPage(battleOutcomeText(result.outcome))]),
     }
+}
+
+/** The trainers on the map who have not been beaten yet and could spot the player from where they stand now. */
+function spotter(state: FieldState, events: readonly MapEvent[], size: GridSize, world: FieldWorld): NpcEvent | undefined {
+    const inside = world.canEnter(state.mapId)
+    const items = itemsOnMap(events, state.memory).map(item => item.cell)
+    const target = state.player.cell
+
+    return npcsOn(events).find(npc => {
+        if (npc.trainer === null || npc.id === state.challengedBy || hasFlag(state.memory, npc.trainer.defeatedFlagId)) {
+            return false
+        }
+
+        const mover = npcMover(state, npc)
+
+        if (mover.step !== null) {
+            return false
+        }
+
+        const others = state.people.filter(other => other.eventId !== npc.id).flatMap(other => footprint(other.mover))
+        const blocked = (from: Cell, to: Cell) => !isInside(size, to) || !inside(from, to) || occupies([...items, ...others], to)
+
+        return sees(mover.cell, mover.facing, npc.trainer.sightRange, target, blocked)
+    })
+}
+
+/**
+ * One frame of a trainer walking up: a step toward the player along their
+ * line of sight while more than one cell away; standing beside them, the
+ * challenge becomes the battle request and the player turns to face them.
+ */
+function approachFrame(state: FieldState, events: readonly MapEvent[], deltaMs: number, world: FieldWorld): FieldState {
+    const eventId = state.approach?.eventId
+    const npc = npcsOn(events).find(candidate => candidate.id === eventId)
+    const motion = state.people.find(candidate => candidate.eventId === eventId)
+
+    if (npc === undefined || npc.trainer === null || motion === undefined) {
+        return { ...state, approach: null }
+    }
+
+    const mover = advanceStep(motion.mover, deltaMs)
+    const people = state.people.map(candidate => candidate.eventId === eventId ? { ...candidate, mover } : candidate)
+
+    if (mover.step !== null) {
+        return { ...state, people }
+    }
+
+    const facing = turnToward(mover.cell, state.player.cell)
+
+    if (facing !== undefined) {
+        const speciesId = npc.trainer.speciesId
+
+        if (speciesId === null) {
+            // A trainer with nothing to send out just stops in front of the player.
+            return { ...state, people, approach: null, player: { ...state.player, facing: turnToward(state.player.cell, mover.cell) ?? state.player.facing } }
+        }
+
+        const request: BattleRequest = {
+            party: state.party,
+            speciesId,
+            level: npc.trainer.level,
+            trainer: { eventId: npc.id, name: npc.name, defeatedFlagId: npc.trainer.defeatedFlagId },
+        }
+
+        return { ...state, people, battle: request, player: { ...state.player, facing: turnToward(state.player.cell, mover.cell) ?? state.player.facing } }
+    }
+
+    const stepped = beginStep(mover, mover.facing, WALK_MS_PER_CELL, () => true)
+
+    return { ...state, people: people.map(candidate => candidate.eventId === eventId ? { ...candidate, mover: stepped } : candidate) }
 }
 
 /** Where a person is and how they face this frame, for the host to draw: their motion, turned toward the player while they talk. */
@@ -280,6 +370,10 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
         }
     }
 
+    if (state.approach !== null) {
+        return approachFrame({ ...state, interaction: undefined, menuChoice: undefined, lastDirection: input.direction }, world.eventsOf(state.mapId), deltaMs, world)
+    }
+
     if (input.menu && state.player.step === null) {
         return { ...state, interaction: undefined, menu: openMenu(), menuChoice: undefined, lastDirection: input.direction }
     }
@@ -292,6 +386,15 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
 
     const mapEvents = world.eventsOf(state.mapId)
     const synced: FieldState = { ...state, people: syncPeople(state.people, npcsOn(mapEvents)) }
+
+    // A standing player in a trainer's line of sight is spotted before anything else happens this frame.
+    if (state.player.step === null) {
+        const trainer = spotter(synced, mapEvents, size, world)
+
+        if (trainer !== undefined) {
+            return { ...synced, approach: { eventId: trainer.id }, interaction: undefined, menuChoice: undefined, lastDirection: input.direction }
+        }
+    }
 
     // The interact key looks, it does not move: a standing player stays put this frame.
     if (input.interact && state.player.step === null) {
@@ -345,7 +448,10 @@ export function advanceField(state: FieldState, input: FieldInput, deltaMs: numb
         return { ...state, player: { ...player, step: null }, battle, interaction: undefined, lastDirection: input.direction, menuChoice: undefined, people }
     }
 
-    return { ...state, player, interaction: undefined, lastDirection: input.direction, menuChoice: undefined, people }
+    // Walking away from a trainer who was not beaten lets them challenge again next time they see the player.
+    const challengedBy = stepFinished(state.player, player) ? null : state.challengedBy
+
+    return { ...state, player, interaction: undefined, lastDirection: input.direction, menuChoice: undefined, people, challengedBy }
 }
 
 /** A step that just finished in tall grass rolls on the map's table. A step that did not finish, or finished elsewhere, rolls nothing. */

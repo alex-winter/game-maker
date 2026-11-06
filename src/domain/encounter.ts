@@ -28,9 +28,19 @@ export function emptyEncounterTable(): EncounterTable {
     return { rate: DEFAULT_ENCOUNTER_RATE, entries: [] }
 }
 
+/** Who issued a challenge (T-049): the trainer's event, their name for the box, and the flag a win sets. Null for wild grass. */
+export type TrainerChallenge = {
+    readonly eventId: Id
+
+    readonly name: string
+
+    readonly defeatedFlagId: Id
+}
+
 /**
- * What the field hands a battle: the player's party and the wild creature's
- * species and level. T-048's placeholder and T-056's scene both take it.
+ * What the field hands a battle: the player's party and the opponent's
+ * species and level, plus who the opponent is when a trainer sent it.
+ * T-048's placeholder and T-056's scene both take it.
  */
 export type BattleRequest = {
     readonly party: Party
@@ -38,6 +48,8 @@ export type BattleRequest = {
     readonly speciesId: Id
 
     readonly level: number
+
+    readonly trainer: TrainerChallenge | null
 }
 
 /** What a battle hands back: who won and the party as it stands after. */
@@ -93,7 +105,7 @@ export function rollEncounter(table: EncounterTable, party: Party, random: Rando
     const high = Math.max(entry.minLevel, entry.maxLevel)
     const level = low + Math.floor(random() * (high - low + 1))
 
-    return { party, speciesId: entry.speciesId, level: Math.min(high, level) }
+    return { party, speciesId: entry.speciesId, level: Math.min(high, level), trainer: null }
 }
 
 /** A party member or a wild creature as the battle message names it. */

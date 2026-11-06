@@ -6,7 +6,7 @@ import { maxHpAt, newSpecies, starterParty } from '../domain/creature'
 import { newPage } from '../domain/dialog'
 import { newItemEvent, newNpcEvent, newSign, newWarp } from '../domain/warp'
 import { bagCount } from '../domain/item'
-import { hasFlag } from '../domain/flags'
+import { hasFlag, newMemory, setFlag } from '../domain/flags'
 import { FADE_MS, fadeOpacity } from './fade'
 import { advanceField, afterBattle, afterSave, FieldInput, FieldState, FieldWorld, isTransitioning, liveEvents, newField, npcMover, restoreField, snapshotField } from './field'
 
@@ -494,7 +494,7 @@ test('a step that finishes in tall grass rolls on the map\'s table and hands the
         state = advanceField(state, right, 16, wild)
     }
 
-    assert.deepEqual(state.battle, { party, speciesId: 'sprout', level: 3 })
+    assert.deepEqual(state.battle, { party, speciesId: 'sprout', level: 3, trainer: null })
     assert.deepEqual(state.player, { cell: { x: 6, y: 5 }, facing: 'right', step: null }, 'stopped in the grass though the key is held')
 
     const result = afterBattle(state, { outcome: 'won', party }, 'Sprout')
@@ -515,4 +515,95 @@ test('a step that finishes in tall grass rolls on the map\'s table and hands the
     }
 
     assert.ok(calm.player.cell.x >= 7, 'walked straight through')
+})
+
+// T-049: a trainer at (2, 5) looking right sees three cells: (3, 5), (4, 5), (5, 5).
+const trainer = newNpcEvent('ace', { x: 2, y: 5 }, 'Ace', null, 'right', null, 'still', { sightRange: 3, defeatedFlagId: 'beat-ace', speciesId: 'sprout', level: 5 })
+const watched: FieldWorld = { ...world, eventsOf: () => [trainer] }
+
+test('a trainer who sees the player walks up along empty cells and issues the challenge once they stand beside them', () => {
+    const party = starterParty({ speciesId: 'sprout', level: 7 }, [newSpecies('sprout', 'Sprout', ['grass'])])
+    let state = newField('town', { x: 5, y: 6 }, 'up', undefined, undefined, party)
+
+    assert.equal(state.approach, null, 'off the line at first')
+
+    state = advanceField(state, up, 16, watched)
+    assert.ok(state.player.step !== null, 'one tap starts the step onto the line')
+
+    for (let t = 0; t < WALK_MS_PER_CELL - 16; t += 16) {
+        state = advanceField(state, none, 16, watched)
+        assert.equal(state.approach, null, 'not spotted while still stepping in')
+    }
+
+    state = advanceField(state, none, 16, watched)
+    assert.deepEqual(state.player.cell, { x: 5, y: 5 })
+    assert.equal(state.player.step, null)
+
+    state = advanceField(state, none, 16, watched)
+    assert.deepEqual(state.approach, { eventId: 'ace' }, 'spotted on the first frame standing on the line')
+
+    const frozen = advanceField(state, right, 16, watched)
+
+    assert.equal(frozen.player.step, null, 'the player cannot move while a trainer walks up')
+    assert.equal(frozen.player.facing, 'up', 'nor turn')
+
+    for (let t = 0; t < WALK_MS_PER_CELL * 2 + 64; t += 16) {
+        state = advanceField(state, right, 16, watched)
+    }
+
+    assert.deepEqual(npcMover(state, trainer).cell, { x: 4, y: 5 }, 'stopped beside the player')
+    assert.equal(state.player.facing, 'left', 'the player turns to meet them')
+    assert.deepEqual(state.battle, { party, speciesId: 'sprout', level: 5, trainer: { eventId: 'ace', name: 'Ace', defeatedFlagId: 'beat-ace' } })
+
+    const after = afterBattle(state, { outcome: 'won', party }, 'Sprout')
+
+    assert.equal(after.battle, undefined)
+    assert.equal(after.approach, null)
+    assert.equal(hasFlag(after.memory, 'beat-ace'), true, 'a win sets the defeated flag')
+    assert.equal(after.message?.pages[0]?.text, 'Ace wants to battle!')
+
+    let settled = after
+    for (let t = 0; t < 2000; t += 16) {
+        settled = advanceField(settled, none, 16, watched)
+    }
+    assert.equal(settled.approach, null, 'once beaten, the trainer never challenges again')
+    assert.equal(settled.battle, undefined)
+})
+
+test('a wall between them blocks the sight line', () => {
+    const walled: FieldWorld = { ...watched, canEnter: () => (from, to) => !(to.x === 4 && to.y === 5) && insideMap(town)(from, to) }
+    let state = newField('town', { x: 5, y: 5 }, 'up')
+
+    state = advanceField(state, none, 16, walled)
+    assert.equal(state.approach, null, 'the wall at (4, 5) hides the player')
+
+    state = newField('town', { x: 3, y: 5 }, 'up')
+    state = advanceField(state, none, 16, walled)
+    assert.deepEqual(state.approach, { eventId: 'ace' }, 'in front of the wall they are seen')
+})
+
+test('a trainer already beaten, or still thinking of the fight lost, obeys the flag alone', () => {
+    const beaten = newField('town', { x: 5, y: 5 }, 'up', setFlag(newMemory(), 'beat-ace'))
+
+    assert.equal(advanceField(beaten, none, 16, watched).approach, null, 'the flag suppresses the challenge')
+
+    const lost = afterBattle({ ...newField('town', { x: 5, y: 5 }), battle: { party: [], speciesId: 'sprout', level: 5, trainer: { eventId: 'ace', name: 'Ace', defeatedFlagId: 'beat-ace' } } }, { outcome: 'lost', party: [] }, 'Sprout')
+
+    assert.equal(hasFlag(lost.memory, 'beat-ace'), false, 'a loss leaves the flag clear, so they can be fought again')
+    assert.equal(lost.challengedBy, 'ace')
+
+    let standing = lost
+    standing = advanceField(standing, { ...none, interact: true }, 16, watched)
+    standing = advanceField(standing, { ...none, interact: true }, 16, watched)
+    assert.equal(standing.message, null, 'both pages read')
+    for (let t = 0; t < 1000; t += 16) {
+        standing = advanceField(standing, none, 16, watched)
+    }
+    assert.equal(standing.approach, null, 'but not on the spot: the player must walk away first')
+
+    let away = standing
+    for (let t = 0; t < WALK_MS_PER_CELL + 32; t += 16) {
+        away = advanceField(away, down, 16, watched)
+    }
+    assert.equal(away.challengedBy, null, 'a finished step forgets the last challenger')
 })
