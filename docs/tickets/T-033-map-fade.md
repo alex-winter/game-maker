@@ -1,7 +1,7 @@
 ---
 id: T-033
 title: Fade between maps
-status: backlog
+status: ready
 priority: P2
 phase: 4
 type: feat

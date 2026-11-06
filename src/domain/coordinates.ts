@@ -23,3 +23,13 @@ export type Cell = {
 
     readonly y: number
 }
+
+export function isCell(value: unknown): value is Cell {
+    if (typeof value !== 'object' || value === null) {
+        return false
+    }
+
+    const cell = value as { x?: unknown; y?: unknown }
+
+    return Number.isInteger(cell.x) && Number.isInteger(cell.y)
+}

@@ -18,7 +18,7 @@ import { requestHandlerGetProject } from 'Server/RequestHandlers/get-project'
 import { requestHandlerPostMaps } from 'Server/RequestHandlers/post-maps'
 import { requestHandlerPatchMap } from 'Server/RequestHandlers/patch-map'
 import { requestHandlerPutTileMap } from 'Server/RequestHandlers/put-tile-map'
-import { requestHandlerDeleteMap, requestHandlerPutMapConnections, requestHandlerPutMapSize, requestHandlerPutStartMap } from 'Server/RequestHandlers/map-lifecycle'
+import { requestHandlerDeleteMap, requestHandlerPutMapConnections, requestHandlerPutMapEvents, requestHandlerPutMapSize, requestHandlerPutStartMap } from 'Server/RequestHandlers/map-lifecycle'
 import { ensureProjectFile } from 'Server/services/project-store'
 import { requestHandlerPatchMetatile, requestHandlerPostTilesets, requestHandlerPutMapTileset } from 'Server/RequestHandlers/tilesets'
 import { requestHandlerDeleteSprite, requestHandlerPostSprites, requestHandlerPutPlayerSprite, requestHandlerPutSprite } from 'Server/RequestHandlers/sprites'
@@ -88,6 +88,7 @@ app.patch('/project/maps/:mapId', requestHandlerPatchMap)
 app.delete('/project/maps/:mapId', requestHandlerDeleteMap)
 app.put('/project/maps/:mapId/size', requestHandlerPutMapSize)
 app.put('/project/maps/:mapId/connections', requestHandlerPutMapConnections)
+app.put('/project/maps/:mapId/events', requestHandlerPutMapEvents)
 app.put('/project/start-map', requestHandlerPutStartMap)
 app.put('/project/maps/:mapId/tileset', requestHandlerPutMapTileset)
 app.put('/project/maps/:mapId/tile-map', requestHandlerPutTileMap)

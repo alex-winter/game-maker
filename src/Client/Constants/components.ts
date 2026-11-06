@@ -18,6 +18,7 @@ import { MapSelect } from 'Client/Component/MapSelect/MapSelect'
 import { ConfirmDialog } from 'Client/Component/MapSelect/ConfirmDialog'
 import { MapSizeForm } from 'Client/Component/MapSelect/MapSizeForm'
 import { MapConnectionsForm } from 'Client/Component/MapSelect/MapConnectionsForm'
+import { WarpForm } from 'Client/Component/Events/WarpForm'
 import { TilesetPalette } from 'Client/Component/Tileset/TilesetPalette'
 import { ComponentConstructor } from 'Client/Service/Dom'
 
@@ -42,6 +43,7 @@ export const COMPONENTS = new Map<ComponentConstructor, string>([
   [ConfirmDialog, 'confirm-dialog'],
   [MapSizeForm, 'map-size-form'],
   [MapConnectionsForm, 'map-connections-form'],
+  [WarpForm, 'warp-form'],
   [TilesetPalette, 'tileset-palette'],
 ])
 

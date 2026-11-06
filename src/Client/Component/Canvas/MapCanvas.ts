@@ -7,6 +7,11 @@ import { buildScene } from 'Client/Service/build-scene'
 import { camera } from 'Client/Service/camera'
 import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
 import { drawAttributes } from 'Client/Service/draw-attributes'
+import { drawEvents } from 'Client/Service/draw-events'
+import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
+import { WARP_DELETE, WARP_SUBMIT, WarpForm } from 'Client/Component/Events/WarpForm'
+import { newId } from 'domain/id'
+import { newWarp, Warp, warpAt, withEvent, withoutEvent } from 'domain/warp'
 import { drawGrid } from 'Client/Service/draw-grid'
 import { loadLegacyPlacements } from 'Client/Service/load-legacy-placements'
 import { MAP_SESSION_CHANGED, mapSession } from 'Client/Service/map-session'
@@ -62,6 +67,8 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         [MAP_SESSION_CHANGED]: this.invalidate,
         [BRUSH_CHANGED]: this.redrawGhost,
         'tool-selection': this.handleToolSelection,
+        [WARP_SUBMIT]: this.handleWarpSubmit,
+        [WARP_DELETE]: this.handleWarpDelete,
     }
 
     protected readonly listeners: Listeners = {
@@ -324,6 +331,10 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
             collision: !mapSession.isHidden('collision'),
             elevation: !mapSession.isHidden('elevation'),
         })
+
+        if (!mapSession.isHidden('events')) {
+            drawEvents(ctx, view, mapSession.current.events)
+        }
     }
 
     private getCanvas(): HTMLCanvasElement | null {
@@ -405,6 +416,11 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
                 rect: (m, a, b) => withCollision(m, withCellsRect(m, m.attributes.collision, a, b, value)),
                 fill: (m, start) => withCollision(m, floodFillCells(m, m.attributes.collision, start, value, 0)),
             }
+        }
+
+        if (target.kind === 'events') {
+            // Events are placed one at a time through a form, not painted; see handleMouseDown.
+            return undefined
         }
 
         if (target.kind === 'elevation') {
@@ -583,6 +599,11 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
             return
         }
 
+        if (mapSession.target?.kind === 'events') {
+            this.handleEventClick(this.cellAt(event))
+            return
+        }
+
         const writer = this.writerFor(this.tool)
 
         if (writer === undefined) {
@@ -596,6 +617,49 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         } else {
             this.startStroke(event, writer)
         }
+    }
+
+    /**
+     * On the events target a click places or edits a warp through the form;
+     * the rubber removes the warp under the cursor.
+     */
+    private async handleEventClick(cell: Cell): Promise<void> {
+        const map = mapSession.current
+
+        if (cell.x < 0 || cell.y < 0 || cell.x >= map.tileMap.width || cell.y >= map.tileMap.height) {
+            return
+        }
+
+        const existing = warpAt(map.events, cell)
+
+        if (this.tool === 'rubber') {
+            if (existing !== undefined) {
+                await mapSession.commitEvents(withoutEvent(map.events, existing.id))
+            }
+
+            return
+        }
+
+        const project = await projectRepository.load()
+        const modal = Dom.makeComponent(BasicModal)
+
+        modal.append(Dom.makeComponent(WarpForm, {
+            warp: existing ?? null,
+            cell,
+            maps: project.maps.map(each => ({ id: each.id, name: each.name, size: { width: each.tileMap.width, height: each.tileMap.height } })),
+        }))
+        this.getRootNode().appendChild(modal)
+    }
+
+    private async handleWarpSubmit(submitted: Omit<Warp, 'id'> & { id: Id | null }): Promise<void> {
+        const map = mapSession.current
+        const warp = newWarp(submitted.id ?? newId(), submitted.cell, submitted.toMapId, submitted.toCell, submitted.facing)
+
+        await mapSession.commitEvents(withEvent(map.events, warp))
+    }
+
+    private async handleWarpDelete(warpId: Id): Promise<void> {
+        await mapSession.commitEvents(withoutEvent(mapSession.current.events, warpId))
     }
 
     /** Clicks on the HUD are for its buttons, not the map. */

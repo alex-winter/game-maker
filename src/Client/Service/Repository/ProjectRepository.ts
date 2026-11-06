@@ -2,8 +2,9 @@ import { Repository } from 'Client/Service/Repository/Repository'
 import { Connections } from 'domain/connection'
 import { Id } from 'domain/id'
 import { GridSize, TileMap } from 'domain/map'
-import { addSprite, GameMap, Project, removeMap, removeSprite, withMapConnections, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withStartMap, withTileset } from 'domain/project'
+import { addSprite, GameMap, Project, removeMap, removeSprite, withMapConnections, withMapEvents, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withStartMap, withTileset } from 'domain/project'
 import { SpriteDefinition } from 'domain/sprite'
+import { MapEvent } from 'domain/warp'
 import { Metatile, MetatileAttributes, MetatileId, Tileset, withMetatileAttributes } from 'domain/tileset'
 
 class ProjectRepository extends Repository {
@@ -108,6 +109,14 @@ class ProjectRepository extends Repository {
 
         if (this.project) {
             this.project = withMapConnections(this.project, mapId, connections)
+        }
+    }
+
+    public async saveEvents(mapId: Id, events: MapEvent[]): Promise<void> {
+        await this.put(`${this.API_PATH}/maps/${mapId}/events`, events)
+
+        if (this.project) {
+            this.project = withMapEvents(this.project, mapId, events)
         }
     }
 

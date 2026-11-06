@@ -6,7 +6,7 @@ import { Events } from 'Client/Service/Events'
 import { MAP_SESSION_CHANGED, mapSession, PaintTarget } from 'Client/Service/map-session'
 import { addTileLayer, MAX_ELEVATION, TileLayer } from 'domain/map'
 
-type AttributeKind = 'collision' | 'elevation'
+type AttributeKind = 'collision' | 'elevation' | 'events'
 
 /**
  * The open map's tile layers, front-most first, then the two attribute grids
@@ -40,6 +40,7 @@ export class LayerListing extends Component {
         attributes.append(
             this.buildAttribute('collision', 'Collision', 'fa-road-barrier'),
             this.buildAttribute('elevation', 'Elevation', 'fa-stairs'),
+            this.buildAttribute('events', 'Events', 'fa-door-open'),
         )
 
         container.append(listing, addNewLayerButton, attributes)
@@ -93,7 +94,7 @@ export class LayerListing extends Component {
             : null
         const kind = row?.dataset.kind
 
-        return kind === 'collision' || kind === 'elevation' ? { kind } : undefined
+        return kind === 'collision' || kind === 'elevation' || kind === 'events' ? { kind } : undefined
     }
 
     private handleAttributeClick(event: Event): void {
@@ -188,6 +189,10 @@ export class LayerListing extends Component {
 
             .attribute.elevation {
                 border-left: 4px solid #3498db;
+            }
+
+            .attribute.events {
+                border-left: 4px solid #9b59b6;
             }
 
             .attribute.hidden-layer .name {

@@ -9,6 +9,7 @@ import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
 import { HeldDirections } from 'Client/Service/held-directions'
 import { findMap, GameMap, playerSprite, Project, startMap } from 'domain/project'
 import { crossEdge } from 'domain/connection'
+import { warpTaken } from 'domain/warp'
 import { isInside, isSolid } from 'domain/map'
 import { Scene } from 'engine/scene'
 import { PortSize } from 'engine/draw-port'
@@ -184,7 +185,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     let player = newPlayer(map.spawn)
 
     startLoop(deltaSeconds => {
+        const before = player
+
         player = stepPlayer(player, { direction: held.latest(), running }, deltaSeconds * 1000, open.canEnter)
+
+        // A step that just finished on a warp cell takes the warp. Arriving on one does not: see warpTaken.
+        const warp = warpTaken(before, player, open.map.events)
+        const warpTarget = warp === undefined ? undefined : findMap(project, warp.toMapId)
+
+        if (warp !== undefined && warpTarget !== undefined) {
+            open = openMap(project, warpTarget, sheetById, legacyPlacements)
+            player = newPlayer(warp.toCell, warp.facing)
+        }
 
         // A finished step that ended beyond the edge was allowed by a connection: continue on the other map.
         if (player.step === null && !isInside(open.map.tileMap, player.cell)) {

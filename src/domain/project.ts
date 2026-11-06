@@ -1,9 +1,10 @@
 import type { Layer } from 'Model/Layer'
 import { Connections } from './connection'
-import { Cell } from './coordinates'
+import { Cell, isCell } from './coordinates'
 import { Id, newId } from './id'
 import { emptyTileMap, GridSize, isInside, TileMap, withTileMapDefaults } from './map'
 import { SpriteDefinition } from './sprite'
+import type { MapEvent } from './warp'
 import { Tileset } from './tileset'
 
 /** Cells in a new map. A gen 3 town is about this size. */
@@ -27,6 +28,9 @@ export type GameMap = {
 
     /** Seams to neighbouring maps by edge (T-031). */
     connections: Connections
+
+    /** Warps and, later, other things placed on cells (T-032). */
+    events: MapEvent[]
 
     layers: Layer[]
 }
@@ -56,7 +60,7 @@ export function centreCell(size: GridSize): Cell {
 }
 
 export function newMap(name: string, layers: Layer[] = [], size: GridSize = DEFAULT_MAP_SIZE): GameMap {
-    return { id: newId(), name, tileMap: emptyTileMap(size), spawn: centreCell(size), connections: {}, layers }
+    return { id: newId(), name, tileMap: emptyTileMap(size), spawn: centreCell(size), connections: {}, events: [], layers }
 }
 
 export function newProject(name: string, maps: GameMap[] = []): Project {
@@ -83,6 +87,7 @@ export function withProjectDefaults(stored: Partial<Project> & Pick<Project, 'id
                 tileMap,
                 spawn: isCell(map.spawn) && isInside(tileMap, map.spawn) ? map.spawn : centreCell(tileMap),
                 connections: map.connections ?? {},
+                events: map.events ?? [],
                 layers: map.layers ?? [],
             }
         }),
@@ -184,22 +189,20 @@ export function withMapConnections(project: Project, mapId: Id, connections: Con
     }
 }
 
+/** A new project with one map's event list replaced. */
+export function withMapEvents(project: Project, mapId: Id, events: MapEvent[]): Project {
+    return {
+        ...project,
+        maps: project.maps.map(map => map.id === mapId ? { ...map, events } : map),
+    }
+}
+
 /** A new project with one map's spawn moved, or unchanged when the cell is off the grid. */
 export function withMapSpawn(project: Project, mapId: Id, spawn: Cell): Project {
     return {
         ...project,
         maps: project.maps.map(map => map.id === mapId && isInside(map.tileMap, spawn) ? { ...map, spawn } : map),
     }
-}
-
-export function isCell(value: unknown): value is Cell {
-    if (typeof value !== 'object' || value === null) {
-        return false
-    }
-
-    const cell = value as { x?: unknown; y?: unknown }
-
-    return Number.isInteger(cell.x) && Number.isInteger(cell.y)
 }
 
 /** A new project with one map pointing at a tileset. */

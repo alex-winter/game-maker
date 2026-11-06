@@ -4,6 +4,7 @@ import { canRedo, canUndo, emptyHistory, History, record, redo, undo } from 'dom
 import { Id } from 'domain/id'
 import { findTileLayer, MAX_ELEVATION, TileLayer, TileMap } from 'domain/map'
 import { GameMap } from 'domain/project'
+import { MapEvent } from 'domain/warp'
 
 /** Emitted with no payload whenever the open map, the paint target, or an overlay's visibility changes. */
 export const MAP_SESSION_CHANGED = 'map-session-changed'
@@ -13,9 +14,10 @@ export type PaintTarget =
     | { readonly kind: 'layer'; readonly layerId: Id }
     | { readonly kind: 'collision' }
     | { readonly kind: 'elevation' }
+    | { readonly kind: 'events' }
 
-/** The keys `isHidden`/`toggleHidden` accept: a tile layer id or an attribute overlay. */
-export type OverlayKey = Id | 'collision' | 'elevation'
+/** The keys `isHidden`/`toggleHidden` accept: a tile layer id, an attribute overlay, or the events overlay. */
+export type OverlayKey = Id | 'collision' | 'elevation' | 'events'
 
 /**
  * The map the editor has open, plus the editor-only state around it: what
@@ -41,7 +43,7 @@ class MapSession {
         this.history = emptyHistory()
         this.beforeEdit = undefined
         this.hidden.clear()
-        // Attribute overlays start hidden; picking one as the target shows it.
+        // Attribute overlays start hidden; picking one as the target shows it. Events stay visible: a warp is part of the map's meaning.
         this.hidden.add('collision')
         this.hidden.add('elevation')
 
@@ -194,6 +196,16 @@ class MapSession {
         this.replace({ ...map, tileMap })
 
         return projectRepository.saveTileMap(map.id, tileMap)
+    }
+
+    /** Replaces the map's events and writes them. Events are not part of the tile undo history. */
+    public async commitEvents(events: MapEvent[]): Promise<void> {
+        const map = this.current
+
+        this.map = { ...map, events }
+        Events.emit(MAP_SESSION_CHANGED, undefined)
+
+        await projectRepository.saveEvents(map.id, events)
     }
 
     /** `update` then `save`, for edits that are not part of a drag. */

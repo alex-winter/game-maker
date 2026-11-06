@@ -1,6 +1,8 @@
 import { isConnections } from 'domain/connection'
 import { isValidGridSize, resizeTileMap } from 'domain/map'
-import { findMap, removeMap, withMapConnections, withMapTileMap, withStartMap } from 'domain/project'
+import { findMap, removeMap, withMapConnections, withMapEvents, withMapTileMap, withStartMap } from 'domain/project'
+import { isMapEvents } from 'domain/warp'
+import { isInside } from 'domain/map'
 import { readProject, writeProject } from 'Server/services/project-store'
 import { Request, RequestHandler, Response } from 'Server/types'
 
@@ -92,6 +94,43 @@ export const requestHandlerPutMapConnections: RequestHandler = (request: Request
     }
 
     const updated = withMapConnections(project, mapId, body)
+
+    writeProject(updated)
+
+    response.json(findMap(updated, mapId))
+}
+
+/** Body: the map's whole event list. Warp cells must lie on this map; destination maps must exist. Answers the map. */
+export const requestHandlerPutMapEvents: RequestHandler = (request: Request, response: Response): void => {
+    const { mapId } = request.params
+    const body: unknown = request.body
+
+    if (!isMapEvents(body)) {
+        response.status(400).json({ error: 'Events are a list of { kind: "warp", id, cell, toMapId, toCell, facing }' })
+        return
+    }
+
+    const project = readProject()
+    const map = findMap(project, mapId)
+
+    if (map === undefined) {
+        response.status(404).json({ error: 'Map not found' })
+        return
+    }
+
+    if (body.some(event => !isInside(map.tileMap, event.cell))) {
+        response.status(400).json({ error: 'An event cell is outside the map' })
+        return
+    }
+
+    const missing = body.find(event => findMap(project, event.toMapId) === undefined)
+
+    if (missing !== undefined) {
+        response.status(404).json({ error: 'Warp destination map not found: ' + missing.toMapId })
+        return
+    }
+
+    const updated = withMapEvents(project, mapId, body)
 
     writeProject(updated)
 
