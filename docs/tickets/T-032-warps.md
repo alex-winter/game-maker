@@ -1,7 +1,7 @@
 ---
 id: T-032
 title: Warp through doors and stairs
-status: backlog
+status: ready
 priority: P1
 phase: 4
 type: feat

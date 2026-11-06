@@ -1,7 +1,7 @@
 import { Repository } from 'Client/Service/Repository/Repository'
 import { Id } from 'domain/id'
 import { GridSize, TileMap } from 'domain/map'
-import { addSprite, GameMap, Project, removeMap, removeSprite, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withTileset } from 'domain/project'
+import { addSprite, GameMap, Project, removeMap, removeSprite, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withStartMap, withTileset } from 'domain/project'
 import { SpriteDefinition } from 'domain/sprite'
 import { Metatile, MetatileAttributes, MetatileId, Tileset, withMetatileAttributes } from 'domain/tileset'
 
@@ -99,6 +99,14 @@ class ProjectRepository extends Repository {
 
         if (this.project) {
             this.project = withPlayerSprite(this.project, spriteId)
+        }
+    }
+
+    public async setStartMap(mapId: Id | null): Promise<void> {
+        await this.put(this.API_PATH + '/start-map', { mapId })
+
+        if (this.project) {
+            this.project = withStartMap(this.project, mapId)
         }
     }
 

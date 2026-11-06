@@ -28,7 +28,7 @@ Editor (`public/index.html` → `src/Client/index.ts`):
 
 Play (`public/play.html` → `src/Client/play.ts`):
 
-1. Load the project, pick the active map the same way the editor does, and decode every sheet and that map's legacy placements (`Client/Service/load-legacy-placements.ts`).
+1. Load the project and open the session map: `?map=<id>` when the editor's play button asked to try a map, else the start map (`startMap`: `startMapId` when set, else the first map). No maps at all shows a plain message instead of the canvas. Decode every sheet and that map's legacy placements (`Client/Service/load-legacy-placements.ts`).
 2. `buildScene` and `renderFrame` on one canvas inside `engine/loop.ts`. The canvas is the 240×160 GBA view at the largest whole scale that fits the window (`engine/camera.ts` `integerScale`), centred on a black body that acts as the letterbox; `cameraFor` keeps the player centred and clamps at the map edge, centring a map smaller than the view.
 3. The player starts on the map's `spawn` cell. Held arrow or WASD keys step them cell to cell (`domain/movement.ts`); Shift or X runs. The camera follows. `domain/collision.ts` `canStep` decides what a step may enter (edge, solid, elevation, ledges); a map with no tileset falls back to the edge rule.
 
@@ -68,7 +68,7 @@ The current brush is `Client/Service/brush.ts`: `{ tilesetId, metatileId }` or `
 
 | File | Written by | Shape |
 | --- | --- | --- |
-| `data/project.json` | project, map, tileset, tile-map, and sprite routes | `{ id, name, tilesets: Tileset[], sprites: SpriteDefinition[], playerSpriteId, maps: { id, name, tileMap: TileMap, spawn: Cell, layers: Layer[] }[] }`; `layers` is the read-only legacy placement list |
+| `data/project.json` | project, map, tileset, tile-map, and sprite routes | `{ id, name, tilesets: Tileset[], sprites: SpriteDefinition[], playerSpriteId, startMapId, maps: { id, name, tileMap: TileMap, spawn: Cell, layers: Layer[] }[] }`; `layers` is the read-only legacy placement list |
 | `data/layers.json` | nothing any more | imported once into a map named "Legacy map" when `project.json` is first created, then ignored |
 | `data/placement-images.json` | `GET /placement-images` only | `{ uuid, src }[]` where `src` is a data URL; nothing appends to it since T-020 |
 | `data/user-data.json` | user-data route | camera, tool name, window rects |
@@ -76,7 +76,7 @@ The current brush is `Client/Service/brush.ts`: `{ tilesetId, metatileId }` or `
 | `uploads/<uuid><ext>` | `multer` | the sheet bytes |
 | `uploads/index.json` | upload route | `{ id, originalName, file }[]` |
 
-`Project` and `GameMap` live in `domain/project.ts` with pure helpers (`addMap`, `renameMap`, `withMapLayers`, `withMapSpawn`, `findMap`). A `GameMap` carries a `spawn` cell (T-026) that defaults to the grid centre and snaps back there when a resize leaves it outside. `Server/services/project-store.ts` reads and writes the file; handlers call a domain helper and write the result. `withProjectDefaults` fills fields an older file lacks, and boot writes the result back once.
+`Project` and `GameMap` live in `domain/project.ts` with pure helpers (`addMap`, `renameMap`, `withMapLayers`, `withMapSpawn`, `withStartMap`, `startMap`, `findMap`). `startMapId` (T-030) is where play begins; `MapSelect`'s flag button sets or clears it, and deleting that map clears it. A `GameMap` carries a `spawn` cell (T-026) that defaults to the grid centre and snaps back there when a resize leaves it outside. `Server/services/project-store.ts` reads and writes the file; handlers call a domain helper and write the result. `withProjectDefaults` fills fields an older file lacks, and boot writes the result back once.
 
 A map's grid is a `TileMap` (`domain/map.ts`): `width` and `height` in cells, a `tilesetId`, `layers: TileLayer[]` back to front (each a dense row-major `MetatileId[]` with `kind: 'ground' | 'overhead'`), and `attributes` (`collision[]`, `elevation[]`, `ledge[]` on the same index; `ledge` is stored since T-022 and enforced by `domain/collision.ts` since T-028). A `Tileset` (`domain/tileset.ts`) maps ids to a `sheetId` plus a pixel rectangle and the defaults `solid`, `elevation`, `ledge`. Id 0 is the empty cell and is never solid. `isBlocked(map, tileset, to, from?)` is the movement rule: outside, painted collision, or any solid metatile blocks; with `from`, a change between two non-zero elevations blocks. Tilesets are sliced from a sheet (`sliceSheet`, T-019) and edited through the palette. The editor's tools write metatile ids into the active `TileLayer` (T-020); a map without a tileset adopts the brush's tileset on the first stroke, and a brush from a different tileset is refused. `isTileMap` is the server's structural check on a saved grid; `withTileMapDefaults` adds arrays an older file lacks; `resizeGrid`/`resizeTileMap` re-lay every layer and attribute grid for a new size, anchored top-left. Attribute painting (T-022) goes through `withCollision`/`withElevation` with the generic `withCell`, `withCellsRect`, and `floodFillCells`; `attributesAt` reads one cell. Painting an attribute never touches a picture layer.
 
@@ -123,6 +123,7 @@ Sprites (T-027): a `SpriteDefinition` (`domain/sprite.ts`) is a sheet id, a fram
 | POST | `/project/maps` | `{ name }` → the new map |
 | PATCH | `/project/maps/:mapId` | `{ name }` → the renamed map |
 | DELETE | `/project/maps/:mapId` | removes the map; the last one may go |
+| PUT | `/project/start-map` | `{ mapId }` (or null) → `{ startMapId }` |
 | PUT | `/project/maps/:mapId/size` | `{ width, height }` in cells (1–256) → the resized map; overlapping cells keep their ids |
 | POST | `/project/tilesets` | `{ name, metatiles }` → the new tileset (ids and rectangles only, no pixels) |
 | PATCH | `/project/tilesets/:tilesetId/metatiles/:metatileId` | `{ solid?, elevation?, ledge? }` → the updated tileset |

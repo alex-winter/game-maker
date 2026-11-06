@@ -1,7 +1,7 @@
 ---
 id: T-031
 title: Connect maps along an edge
-status: backlog
+status: ready
 priority: P1
 phase: 4
 type: feat

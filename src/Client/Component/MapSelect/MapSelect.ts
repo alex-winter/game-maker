@@ -19,6 +19,7 @@ const DELETE_TOPIC = 'map-select:delete'
 export class MapSelect extends Component<{ activeMapId: Id | null }> {
     private maps: GameMap[] = []
     private activeMapId: Id | null = null
+    private startMapId: Id | null = null
 
     protected listeners: Listeners = {
         'select:change': this.handleChange,
@@ -26,6 +27,7 @@ export class MapSelect extends Component<{ activeMapId: Id | null }> {
         '.rename-map:click': this.handleRenameMap,
         '.resize-map:click': this.handleResizeMap,
         '.delete-map:click': this.handleDeleteMap,
+        '.start-map:click': this.handleStartMap,
     }
 
     protected externalListeners: ExternalListeners = {
@@ -86,6 +88,10 @@ export class MapSelect extends Component<{ activeMapId: Id | null }> {
                 color: #c0392b;
             }
 
+            .actions .start-map.active {
+                color: #2ecc71;
+            }
+
             .actions i {
                 pointer-events: none;
             }
@@ -94,7 +100,11 @@ export class MapSelect extends Component<{ activeMapId: Id | null }> {
 
     protected async setup(): Promise<void> {
         this.activeMapId = this.parsedDataset.activeMapId
-        this.maps = (await projectRepository.load()).maps
+
+        const project = await projectRepository.load()
+
+        this.maps = project.maps
+        this.startMapId = project.startMapId
     }
 
     protected build(): HTMLElement {
@@ -107,7 +117,7 @@ export class MapSelect extends Component<{ activeMapId: Id | null }> {
             const option = document.createElement('option')
 
             option.value = map.id
-            option.textContent = map.name
+            option.textContent = map.name + (map.id === this.startMapId ? ' (start)' : '')
             option.selected = map.id === this.activeMapId
 
             select.append(option)
@@ -127,17 +137,22 @@ export class MapSelect extends Component<{ activeMapId: Id | null }> {
         if (active !== undefined) {
             const bottom = Dom.div('row')
             const actions = Dom.div('actions')
+            const start = Dom.button('', 'start-map')
             const rename = Dom.button('', 'rename-map')
             const resize = Dom.button('', 'resize-map')
             const remove = Dom.button('', 'delete-map')
+            const isStart = active.id === this.startMapId
 
+            start.title = isStart ? 'Play starts on this map' : 'Set as start map'
+            start.classList.toggle('active', isStart)
+            start.append(Dom.i('fa-solid', 'fa-flag'))
             rename.title = 'Rename map'
             resize.title = 'Resize map'
             remove.title = 'Delete map'
             rename.append(Dom.i('fa-solid', 'fa-pen'))
             resize.append(Dom.i('fa-solid', 'fa-up-right-and-down-left-from-center'))
             remove.append(Dom.i('fa-solid', 'fa-trash'))
-            actions.append(rename, resize, remove)
+            actions.append(start, rename, resize, remove)
 
             bottom.append(
                 Dom.span(`${active.tileMap.width} × ${active.tileMap.height} cells`, 'details'),
@@ -171,6 +186,21 @@ export class MapSelect extends Component<{ activeMapId: Id | null }> {
         const map = await projectRepository.createMap(name.trim())
 
         window.location.assign(urlForMap(window.location.pathname, map.id))
+    }
+
+    /** Marks the active map as where play begins; clicking the flag again clears it. */
+    private async handleStartMap(): Promise<void> {
+        const active = this.activeMap()
+
+        if (active === undefined) {
+            return
+        }
+
+        const next = active.id === this.startMapId ? null : active.id
+
+        await projectRepository.setStartMap(next)
+        this.startMapId = next
+        this.patch()
     }
 
     private async handleRenameMap(): Promise<void> {

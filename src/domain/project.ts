@@ -41,6 +41,9 @@ export type Project = {
     sprites: SpriteDefinition[]
 
     playerSpriteId: Id | null
+
+    /** Where play begins (T-030). Null until the author picks; `startMap` falls back to the first map. */
+    startMapId: Id | null
 }
 
 /** The middle of the grid: where a map starts the player until someone moves the spawn. */
@@ -53,7 +56,7 @@ export function newMap(name: string, layers: Layer[] = [], size: GridSize = DEFA
 }
 
 export function newProject(name: string, maps: GameMap[] = []): Project {
-    return { id: newId(), name, tilesets: [], maps, sprites: [], playerSpriteId: null }
+    return { id: newId(), name, tilesets: [], maps, sprites: [], playerSpriteId: null, startMapId: null }
 }
 
 /**
@@ -67,6 +70,7 @@ export function withProjectDefaults(stored: Partial<Project> & Pick<Project, 'id
         tilesets: stored.tilesets ?? [],
         sprites: stored.sprites ?? [],
         playerSpriteId: stored.playerSpriteId ?? null,
+        startMapId: stored.startMapId ?? null,
         maps: stored.maps.map(map => {
             const tileMap = withTileMapDefaults(map.tileMap ?? emptyTileMap(DEFAULT_MAP_SIZE))
 
@@ -132,9 +136,29 @@ export function withTileset(project: Project, tileset: Tileset): Project {
     }
 }
 
-/** A new project without the map. Removing the last map leaves an empty project. */
+/** A new project without the map. Removing the last map leaves an empty project; removing the start map clears it. */
 export function removeMap(project: Project, mapId: Id): Project {
-    return { ...project, maps: project.maps.filter(map => map.id !== mapId) }
+    return {
+        ...project,
+        maps: project.maps.filter(map => map.id !== mapId),
+        startMapId: project.startMapId === mapId ? null : project.startMapId,
+    }
+}
+
+/** A new project starting play on `mapId`, or unchanged when the id is unknown. */
+export function withStartMap(project: Project, mapId: Id | null): Project {
+    if (mapId !== null && findMap(project, mapId) === undefined) {
+        return project
+    }
+
+    return { ...project, startMapId: mapId }
+}
+
+/** The map play opens: the chosen start map when it still exists, else the first map, else undefined. */
+export function startMap(project: Project): GameMap | undefined {
+    const chosen = project.startMapId === null ? undefined : findMap(project, project.startMapId)
+
+    return chosen ?? project.maps[0]
 }
 
 /** A new project with one map's grid replaced. A spawn the new grid no longer contains moves to the centre. */

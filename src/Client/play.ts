@@ -3,11 +3,11 @@ import { Dom } from 'Client/Service/Dom'
 import { loadLegacyPlacements } from 'Client/Service/load-legacy-placements'
 import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
 import { sheetRepository } from 'Client/Service/Repository/SheetRepository'
-import { activeMapId } from 'Client/Service/active-map'
+import { MAP_QUERY_PARAM } from 'Client/Service/active-map'
 import { buildScene } from 'Client/Service/build-scene'
 import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
 import { HeldDirections } from 'Client/Service/held-directions'
-import { findMap, playerSprite } from 'domain/project'
+import { findMap, playerSprite, Project, startMap } from 'domain/project'
 import { Id } from 'domain/id'
 import { stepRule } from 'domain/collision'
 import { GRID_SIZE } from 'domain/grid'
@@ -69,6 +69,26 @@ async function loadSheets(): Promise<Map<Id, CanvasImageSource>> {
     return new Map(sheets.map((sheet, index) => [sheet.id, images[index]]))
 }
 
+/**
+ * The map the session opens: `?map=<id>` when the editor asked to try a
+ * particular map, else the project's start map (or its first map).
+ */
+function sessionMap(search: string, project: Project) {
+    const requested = new URLSearchParams(search).get(MAP_QUERY_PARAM)
+    const tried = requested === null ? undefined : findMap(project, requested)
+
+    return tried ?? startMap(project)
+}
+
+/** A plain message in place of the canvas, for a project that cannot start. */
+function showMessage(canvas: HTMLCanvasElement, text: string): void {
+    const message = document.createElement('p')
+
+    message.className = 'message'
+    message.textContent = text
+    canvas.replaceWith(message)
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     const canvas = document.querySelector('canvas')
     const ctx = canvas?.getContext('2d')
@@ -84,10 +104,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     })
 
     const project = await projectRepository.load()
-    const mapId = activeMapId(window.location.search, project)
-    const map = mapId === undefined ? undefined : findMap(project, mapId)
+    const map = sessionMap(window.location.search, project)
 
     if (map === undefined) {
+        showMessage(canvas, 'This project has no maps to play. Create one in the editor and mark it as the start map.')
         return
     }
 

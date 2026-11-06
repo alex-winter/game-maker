@@ -1,5 +1,5 @@
 import { isValidGridSize, resizeTileMap } from 'domain/map'
-import { findMap, removeMap, withMapTileMap } from 'domain/project'
+import { findMap, removeMap, withMapTileMap, withStartMap } from 'domain/project'
 import { readProject, writeProject } from 'Server/services/project-store'
 import { Request, RequestHandler, Response } from 'Server/types'
 
@@ -41,4 +41,27 @@ export const requestHandlerPutMapSize: RequestHandler = (request: Request, respo
     writeProject(resized)
 
     response.json(findMap(resized, mapId))
+}
+
+/** Body: `{ mapId }` (or null). Answers `{ startMapId }`. */
+export const requestHandlerPutStartMap: RequestHandler = (request: Request, response: Response): void => {
+    const mapId: unknown = request.body?.mapId
+
+    if (mapId !== null && typeof mapId !== 'string') {
+        response.status(400).json({ error: 'mapId must be a string or null' })
+        return
+    }
+
+    const project = readProject()
+
+    if (mapId !== null && findMap(project, mapId) === undefined) {
+        response.status(404).json({ error: 'Map not found' })
+        return
+    }
+
+    const updated = withStartMap(project, mapId)
+
+    writeProject(updated)
+
+    response.json({ startMapId: updated.startMapId })
 }

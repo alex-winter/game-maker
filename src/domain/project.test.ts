@@ -12,6 +12,9 @@ import {
     withMapLayers,
     withProjectDefaults,
     withMapTileMap,
+    removeMap,
+    startMap,
+    withStartMap,
     DEFAULT_MAP_SIZE,
 } from './project'
 
@@ -114,4 +117,20 @@ test('a spawn left outside a resized grid moves back to the centre', () => {
     const smaller = { ...map.tileMap, width: 4, height: 4 }
 
     assert.deepEqual(findMap(withMapTileMap(project, map.id, smaller), map.id)?.spawn, { x: 2, y: 2 })
+})
+
+test('play starts on the chosen map, falls back to the first, and forgets a deleted start map', () => {
+    const a = newMap('A')
+    const b = newMap('B')
+    const project = addMap(addMap(defaultProject(), a), b)
+
+    assert.equal(startMap(project)?.name, 'Map 1')
+    assert.equal(startMap(withStartMap(project, b.id))?.id, b.id)
+    assert.equal(withStartMap(project, 'nope').startMapId, null)
+
+    const without = removeMap(withStartMap(project, b.id), b.id)
+
+    assert.equal(without.startMapId, null)
+    assert.equal(startMap(without)?.name, 'Map 1')
+    assert.equal(startMap({ ...project, maps: [] }), undefined)
 })

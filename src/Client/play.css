@@ -21,3 +21,11 @@ canvas {
     display: block;
     image-rendering: pixelated;
 }
+
+.message {
+    color: #ccc;
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    text-align: center;
+    padding: 24px;
+}
