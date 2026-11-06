@@ -1,6 +1,7 @@
 import { Repository } from 'Client/Service/Repository/Repository'
 import { Id } from 'domain/id'
 import { GameMap, Project } from 'domain/project'
+import { Tileset } from 'domain/tileset'
 
 class ProjectRepository extends Repository {
     private readonly API_PATH = '/project'
@@ -13,6 +14,15 @@ class ProjectRepository extends Repository {
         }
 
         return this.project
+    }
+
+    /** From the loaded project; undefined before `load` resolves or for a map without a tileset. */
+    public cachedTileset(tilesetId: Id | null): Tileset | undefined {
+        if (tilesetId === null) {
+            return undefined
+        }
+
+        return this.project?.tilesets.find(tileset => tileset.id === tilesetId)
     }
 
     public async createMap(name: string): Promise<GameMap> {

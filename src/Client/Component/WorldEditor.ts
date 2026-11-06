@@ -1,4 +1,4 @@
-import { CanvasLayer } from 'Client/Component/Canvas/CanvasLayer'
+import { MapCanvas } from 'Client/Component/Canvas/MapCanvas'
 import { CanvasTools } from 'Client/Component/Canvas/CanvasTools'
 import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 import { LayerListing } from 'Client/Component/LayerListing/LayerListing'
@@ -21,6 +21,7 @@ import { layerRepository } from 'Client/Service/Repository/LayerRepository'
 import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
 import { activeMapId, urlForMap } from 'Client/Service/active-map'
 import { Id } from 'domain/id'
+import { findMap, GameMap } from 'domain/project'
 import { loadedPlacementRepository } from 'Client/Service/Repository/LoadedPlacement'
 import { placementImageRepository } from 'Client/Service/Repository/PlacementImageRepository'
 import { sheetRepository } from 'Client/Service/Repository/SheetRepository'
@@ -38,6 +39,7 @@ export class WorldEditor extends Component {
     private layers: Layer[] = []
     private userData!: UserData
     private mapId!: Id
+    private map!: GameMap
 
     protected externalListeners: ExternalListeners = {
         'open-sheet': this.handleOpenSheet,
@@ -49,7 +51,6 @@ export class WorldEditor extends Component {
         'click-open-new-model': this.handleOpenNewModel,
         'click-open-history': this.handleOpenHistory,
         'new-layer-submit': this.handleNewLayerSubmit,
-        'new-layer-mapped': this.handleNewLayerMapped,
         'layer-placement-made': this.handleLayerPlacementMade,
         'layer-active': this.handleLayerActive,
         'layer-visible-toggle': this.handleLayerVisibleToggle,
@@ -82,12 +83,14 @@ export class WorldEditor extends Component {
     protected async setup(): Promise<void> {
         const project = await projectRepository.load()
         const mapId = activeMapId(window.location.search, project)
+        const map = mapId === undefined ? undefined : findMap(project, mapId)
 
-        if (mapId === undefined) {
+        if (mapId === undefined || map === undefined) {
             throw new Error('The project has no maps')
         }
 
         this.mapId = mapId
+        this.map = map
         layerRepository.useMap(mapId)
         this.pointPlayLinkAtMap(mapId)
 
@@ -129,14 +132,10 @@ export class WorldEditor extends Component {
             layerListing,
         )
 
-        const layerElements = this.layers.map(
-            layer => Dom.makeComponent(CanvasLayer, { layer })
-        )
-
         const tools = Dom.makeComponent(CanvasTools, { currentTool: this.userData.currentTool })
 
         canvasContainer.append(
-            ...layerElements
+            Dom.makeComponent(MapCanvas, { map: this.map })
         )
 
         container.append(
@@ -237,18 +236,8 @@ export class WorldEditor extends Component {
             input
         )
 
-        // create assigns the order the canvas needs for its z-index
+        // create assigns the order the layer is drawn in
         await layerRepository.create(layer)
-
-        Events.emit('new-layer-mapped', [layer])
-    }
-
-    private handleNewLayerMapped(layers: Layer[]): void {
-        this.findOne('.canvas-container')?.append(
-            ...layers
-                .sort((a, b) => b.order - a.order)
-                .map(layer => Dom.makeComponent(CanvasLayer, { layer }))
-        )
     }
 
     private async handleOpenAddPlayer(): Promise<void> {
@@ -262,29 +251,28 @@ export class WorldEditor extends Component {
         ) as Layer
 
         await layerRepository.create(layer)
+        layerRepository.setActive(layer.uuid)
 
-        Events.emit('new-layer-mapped', [layer])
+        const size = 32
+        const canvas = document.createElement('canvas')
+        canvas.width = size
+        canvas.height = size
+        const ctx = canvas.getContext('2d')
 
-        // small delay to ensure the CanvasLayer is mounted
-        setTimeout(async () => {
-            const size = 32
-            const canvas = document.createElement('canvas')
-            canvas.width = size
-            canvas.height = size
-            const ctx = canvas.getContext('2d')!
+        if (!ctx) {
+            return
+        }
 
-            ctx.clearRect(0, 0, size, size)
-            ctx.beginPath()
-            ctx.fillStyle = 'blue'
-            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2)
-            ctx.fill()
+        ctx.clearRect(0, 0, size, size)
+        ctx.beginPath()
+        ctx.fillStyle = 'blue'
+        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2)
+        ctx.fill()
 
-            const dataUrl = canvas.toDataURL('image/png')
-            const img = await Dom.image(dataUrl)
+        const img = await Dom.image(canvas.toDataURL('image/png'))
 
-            Events.emit('sheet-selection-made', img)
-            Events.emit('tool-selection', 'pencil')
-        }, 50)
+        Events.emit('sheet-selection-made', img)
+        Events.emit('tool-selection', 'pencil')
     }
 
     private handleLayerPlacementMade(layer: Layer): void {

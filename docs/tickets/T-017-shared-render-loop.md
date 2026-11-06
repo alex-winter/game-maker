@@ -1,7 +1,7 @@
 ---
 id: T-017
 title: Draw a map through one engine loop
-status: ready
+status: done
 priority: P1
 phase: 1
 type: feat
@@ -15,6 +15,10 @@ blocks: [T-020, T-021, T-023, T-029, T-030]
 ## Outcome
 
 Editor and play both render by calling the same function. That function paints layers back-to-front using metatile ids when a map has them, and can still paint the legacy placement map until T-020 removes it.
+
+## Result
+
+`engine/draw-port.ts`, `engine/scene.ts`, `engine/render.ts` (`renderFrame`, tested with a recording port for order, culling, camera offset, and metatile cutting), and `engine/loop.ts` (`startLoop` over an injectable scheduler, tested). `Client/Service/canvas-draw-port.ts` adapts the canvas; `Client/Service/build-scene.ts` turns repositories into a `Scene`. `MapCanvas` replaces the `CanvasLayer` stack: one canvas, one loop, pointer tools on the active layer via `Client/Service/placement-painter.ts`. `play.ts` uses the same scene builder, loop, and `renderFrame`. Checked by eye: two stamps painted in the editor appear at the same cells on `/play`; hide, show, and rubber were verified by reading canvas pixels. `CanvasLayer` is deleted; `Canvas2D` stays only for the unregistered `SpriteModelMaker` sketch.
 
 ## Why
 
@@ -48,9 +52,9 @@ Out:
 
 ## Acceptance
 
-- [ ] A test with two layers records the back layer's draw before the front layer's.
-- [ ] Play and the editor of the same map show the same overlap, checked by eye with two tiles.
-- [ ] There is one animation frame loop in the editor, not one per layer.
+- [x] A test with two layers records the back layer's draw before the front layer's.
+- [x] Play and the editor of the same map show the same overlap, checked by eye with two tiles.
+- [x] There is one animation frame loop in the editor, not one per layer.
 
 ## Test plan
 

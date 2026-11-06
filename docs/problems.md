@@ -48,7 +48,7 @@ Each item is something the code does today. The fix is the linked ticket. If a t
 
 19. **A placement is not a tile.** Coordinates are pixels, pictures are data URLs, and fill destroys tile identity. Collision cannot be queried without decoding images. A walking actor cannot ask "what is in the cell in front of me" cheaply. Ticket T-014.
 
-20. **Two programs draw the world.** Editor loops live in `Canvas2D` per layer. Play loops in `play.ts`. They will diverge further every time a rule is added. Ticket T-017.
+20. **Fixed (T-017).** **Two programs draw the world.** Editor loops live in `Canvas2D` per layer. Play loops in `play.ts`. They will diverge further every time a rule is added. Ticket T-017.
 
 21. **Domain types are mixed into UI modules, and UI types leak the other way.** `Dataset` is `{ [key: string]: any }`. Field names mix `created_at` with `lastViewPosition`. `componentConfigration` is misspelled and stored that way on disk. Ticket T-012 sets the boundary; do not rename persisted fields until that ticket's migration runs.
 

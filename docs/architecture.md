@@ -1,11 +1,12 @@
 # Architecture today
 
-The program is a local editor plus a play page. Both are webpack bundles. An Express process serves them and stores JSON on disk. There is one local project in `data/project.json` holding many maps; the editor and play page open one map at a time, chosen by `?map=<id>`. There is no engine module yet.
+The program is a local editor plus a play page. Both are webpack bundles. An Express process serves them and stores JSON on disk. There is one local project in `data/project.json` holding many maps; the editor and play page open one map at a time, chosen by `?map=<id>`. `src/engine` draws a map; both pages call it.
 
 ```
 src/
   Client/     browser UI and the play page
   domain/     pure types and rules: coordinates, grid, rect, ids, project, tileset, map (metatile grids, collision, elevation). No DOM, no Express.
+  engine/     renderFrame over a DrawPort, Scene, and the frame loop. No DOM; the browser adapts a canvas context.
   Model/      shared types for the placement model (some are unused sketches)
   Server/     Express routes and JSON files
 public/       index.html, play.html, built bundles in dist/
@@ -23,15 +24,13 @@ Editor (`public/index.html` → `src/Client/index.ts`):
 2. On `DOMContentLoaded`, append an `<ide-wrapper>`.
 3. `Ide` paints a menu bar (the items do nothing) and a `WorldEditor`.
 4. `WorldEditor.setup` loads the project, picks the active map (`Client/Service/active-map.ts`: `?map=` if it exists, else the first map), points `layerRepository.useMap` at it, then loads user data, that map's layers, sheets, and placement images, and decodes every placement into `loadedPlacementRepository`.
-5. `WorldEditor.build` mounts the side menu (with `MapSelect`, a select plus a "+ Map" button that reloads the page on the chosen map), the tool bar, one `CanvasLayer` per layer, and always opens a dialog window.
+5. `WorldEditor.build` mounts the side menu (with `MapSelect`, a select plus a "+ Map" button that reloads the page on the chosen map), the tool bar, one `MapCanvas`, and always opens a dialog window.
 
 Play (`public/play.html` → `src/Client/play.ts`):
 
-1. Load the project, pick the active map the same way the editor does, and load that map's layers and every placement image.
-2. Draw them in one canvas from a camera offset.
+1. Load the project, pick the active map the same way the editor does, and decode that map's placement images and every sheet.
+2. `buildScene` and `renderFrame` on one canvas from a camera offset, inside `engine/loop.ts`.
 3. Held arrow keys pan that offset every frame at 120 px/s. There is no player and no collision.
-
-The two draw paths do not share a function (T-017), but both order layers with `Model/draw-order.ts`.
 
 ## UI model
 
@@ -52,23 +51,22 @@ Cross-component talk is a global string bus, `Client/Service/Events.ts`. Names a
 | `click-open-new-model` | `SideMenu` | `WorldEditor` | none (handler empty) |
 | `click-open-history` | `SideMenu` | `WorldEditor` | none |
 | `new-layer-submit` | `NewLayerForm` | `WorldEditor` | `{ name, type }` |
-| `new-layer-mapped` | `WorldEditor` | `WorldEditor` | `Layer[]` |
-| `layer-placement-made` | `CanvasLayer` | `WorldEditor` | `Layer` |
+| `layer-placement-made` | `MapCanvas` | `WorldEditor` | `Layer` |
 | `layer-active` | `LayerItem` | `WorldEditor` | `Layer` |
 | `layer-visible-toggle` | `LayerItem` | `WorldEditor` | `Layer` |
 | `layer-delete` | `LayerItem` | `WorldEditor` | uuid |
-| `layer-deleted` | `WorldEditor` | `CanvasLayer`, `LayerItem` | uuid |
-| `updated-view-coordinates` | `CanvasLayer` | `WorldEditor` | `Coordinates` |
+| `layer-deleted` | `WorldEditor` | `MapCanvas`, `LayerItem` | uuid |
+| `updated-view-coordinates` | `MapCanvas` | `WorldEditor` | `Coordinates` |
 | `window-update` | `WindowBox` | `WorldEditor` | `WindowConfiguration` |
 | `request-placement-deletion` | `PlacementHistory` | `WorldEditor` | uuid |
-| `placement-removed` | `WorldEditor` | none | uuid |
+| `placement-removed` | `WorldEditor` | `MapCanvas` | uuid |
 | `layer-order-up` / `layer-order-down` | `LayerItem` | `WorldEditor` | uuid |
-| `layers-created` | `LayerRepository` | `LayerListing` | `Layer[]` |
-| `layer-changed` | `LayerRepository` | `CanvasLayer`, `LayerItem` | `{ uuid, changed }` |
-| `sheet-selection-made` | `SheetViewer` | every `CanvasLayer` | `HTMLImageElement` |
-| `tool-selection` | `CanvasTools` | every `CanvasLayer` | tool name |
-| `request-focus-on-placement` | `PlacementHistory` | every `CanvasLayer` | uuid |
-| `placement-added` | `CanvasLayer` | `PlacementHistory` | none |
+| `layers-created` | `LayerRepository` | `LayerListing`, `MapCanvas` | `Layer[]` |
+| `layer-changed` | `LayerRepository` | `MapCanvas`, `LayerItem` | `{ uuid, changed }` |
+| `sheet-selection-made` | `SheetViewer` | `MapCanvas` | `HTMLImageElement` |
+| `tool-selection` | `CanvasTools` | `MapCanvas` | tool name |
+| `request-focus-on-placement` | `PlacementHistory` | `MapCanvas` | uuid |
+| `placement-added` | `MapCanvas` | `PlacementHistory` | none |
 | `close-modal` | `NewLayerForm` | `BasicModal` | the form element |
 
 `WorldEditor` subscribes to most of these and is the de facto application object. New behavior should not land there. Give it a home in the domain or in the component that owns the interaction.
@@ -112,15 +110,17 @@ These field names are on disk and in the types that read them. New fields are ca
 | `data/layers.json` | `type: 'player_controlled'` | an object event, not a layer | T-026 |
 | `data/user-data.json` | `componentConfigration` | `componentConfiguration` | T-036 (the window config is only read for the dialog stub) |
 
-## Draw path in the editor
+## Draw path
 
-Each layer is its own custom element, absolutely stacked, with its own `<canvas>` and its own `setTimeout` + `requestAnimationFrame` loop (`Canvas2D`). Z-order is `500 - layer.order`, so a **lower** `order` paints **in front**.
+`engine/render.ts` `renderFrame(port, scene, camera)` is the only code that draws a map. A `Scene` (`engine/scene.ts`) is the tile map, its tileset, decoded sheets by id, and the visible legacy placement layers already sorted back to front. A `DrawPort` (`engine/draw-port.ts`) is clear plus draw-image-region; `Client/Service/canvas-draw-port.ts` adapts a `CanvasRenderingContext2D` with smoothing off. Tile layers draw back to front, then placement layers back to front (a **lower** `order` paints **in front**, via `Model/draw-order.ts`). Cells and placements outside the view are culled.
 
-The active layer has `pointer-events`. Pencil, fill, and rubber run there. Middle mouse pans that layer and emits `moving-in-canvas` so the others apply the same delta. Each layer stores its own camera. A layer created after load does not receive `userData`, so its camera starts at `0,0` while the others resume `lastViewPosition`.
+Editor: `MapCanvas` is one element with one `<canvas>` and one `engine/loop.ts` loop. It builds the scene with `Client/Service/build-scene.ts` and marks it stale on `layers-created`, `layer-changed`, `layer-deleted`, `placement-removed`, and after each stroke step. The pointer always lands on it; pencil, fill, and rubber (`Client/Service/placement-painter.ts`) act on the layer whose `is_active` is set, the middle button pans the shared `camera`, and a collision layer always paints the translucent red marker.
 
-Painting uses `event.clientX` / `clientY` as if the canvas origin were the viewport origin. The side menu means it is not. See T-002.
+Play: `play.ts` builds a scene once and runs the same loop and `renderFrame`.
 
-`loadedPlacementRepository` is an in-memory list of decoded images. `WorldEditor.setup` fills it, then every `CanvasLayer.setup` calls `loadPlacement` for the same records again.
+`Canvas2D` remains only because the unregistered `SpriteModelMaker` sketch references it; nothing on a page uses it.
+
+`loadedPlacementRepository` is an in-memory list of decoded images filled once by `WorldEditor.setup`.
 
 ## HTTP
 

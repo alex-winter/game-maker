@@ -5,14 +5,16 @@ import { LoadedPlacement } from 'Client/Model/LoadedPlacement'
 import { Coordinates } from 'domain/coordinates'
 import { layerRepository } from 'Client/Service/Repository/LayerRepository'
 import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
+import { sheetRepository } from 'Client/Service/Repository/SheetRepository'
 import { activeMapId } from 'Client/Service/active-map'
+import { buildScene } from 'Client/Service/build-scene'
+import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
 import { Layer } from 'Model/Layer'
-import { drawOrder } from 'Model/draw-order'
 import { directionFromKeys, HeldKeys } from 'Client/Service/direction-from-keys'
-
-interface GamePlacement extends LoadedPlacement {
-    type: string
-}
+import { findMap } from 'domain/project'
+import { Id } from 'domain/id'
+import { startLoop } from 'engine/loop'
+import { renderFrame } from 'engine/render'
 
 const viewCoordinates: Coordinates = {
     x: 0,
@@ -42,11 +44,9 @@ function releaseAllKeys(): void {
     keys.right = false
 }
 
-function fitCanvasToWindow(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): void {
+function fitCanvasToWindow(canvas: HTMLCanvasElement): void {
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
-    // resizing a canvas resets its context state
-    ctx.imageSmoothingEnabled = false
 }
 
 function moveCamera(deltaSeconds: number): void {
@@ -56,27 +56,8 @@ function moveCamera(deltaSeconds: number): void {
     viewCoordinates.y += direction.y * pixelsPerSecond * deltaSeconds
 }
 
-function drawPlacements(
-    ctx: CanvasRenderingContext2D,
-    loadedPlacements: GamePlacement[],
-    width: number,
-    height: number,
-): void {
-    ctx.clearRect(0, 0, width, height)
-
-    for (const loadedPlacement of loadedPlacements) {
-        ctx.drawImage(
-            loadedPlacement.image,
-            Math.floor(loadedPlacement.x - viewCoordinates.x),
-            Math.floor(loadedPlacement.y - viewCoordinates.y),
-            loadedPlacement.image.width,
-            loadedPlacement.image.height,
-        )
-    }
-}
-
-async function loadPlacements(layers: Layer[]): Promise<GamePlacement[]> {
-    const loadedPlacements: GamePlacement[] = []
+async function loadPlacements(layers: Layer[]): Promise<LoadedPlacement[]> {
+    const loadedPlacements: LoadedPlacement[] = []
 
     for (const layer of layers) {
         for (const placement of layer.placements) {
@@ -99,7 +80,6 @@ async function loadPlacements(layers: Layer[]): Promise<GamePlacement[]> {
                 y: placement.coordinate.y,
                 width: image.width,
                 height: image.height,
-                type: layer.type,
             })
         }
     }
@@ -107,29 +87,11 @@ async function loadPlacements(layers: Layer[]): Promise<GamePlacement[]> {
     return loadedPlacements
 }
 
-/** Back first, so a later draw covers an earlier one: ascending drawOrder. */
-function sortBackToFront(layers: Layer[]): Layer[] {
-    return [...layers].sort((a, b) => drawOrder(a) - drawOrder(b))
-}
+async function loadSheets(): Promise<Map<Id, CanvasImageSource>> {
+    const sheets = await sheetRepository.getAll()
+    const images = await Promise.all(sheets.map(sheet => Dom.image(sheet.imageSrc)))
 
-function startLoop(
-    canvas: HTMLCanvasElement,
-    ctx: CanvasRenderingContext2D,
-    loadedPlacements: GamePlacement[],
-): void {
-    let lastTime = performance.now()
-
-    const frame = (now: number): void => {
-        const deltaSeconds = Math.min((now - lastTime) / 1000, 0.1)
-        lastTime = now
-
-        moveCamera(deltaSeconds)
-        drawPlacements(ctx, loadedPlacements, canvas.width, canvas.height)
-
-        window.requestAnimationFrame(frame)
-    }
-
-    window.requestAnimationFrame(frame)
+    return new Map(sheets.map((sheet, index) => [sheet.id, images[index]]))
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -140,21 +102,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         return
     }
 
-    fitCanvasToWindow(canvas, ctx)
-    window.addEventListener('resize', () => fitCanvasToWindow(canvas, ctx))
+    fitCanvasToWindow(canvas)
+    window.addEventListener('resize', () => fitCanvasToWindow(canvas))
 
-    const mapId = activeMapId(window.location.search, await projectRepository.load())
+    const project = await projectRepository.load()
+    const mapId = activeMapId(window.location.search, project)
+    const map = mapId === undefined ? undefined : findMap(project, mapId)
 
-    if (mapId === undefined) {
+    if (map === undefined) {
         return
     }
 
-    layerRepository.useMap(mapId)
+    layerRepository.useMap(map.id)
 
-    const layers = sortBackToFront(await layerRepository.getAll())
-    const loadedPlacements = await loadPlacements(layers)
+    const layers = await layerRepository.getAll()
+    const scene = buildScene({
+        tileMap: map.tileMap,
+        tileset: projectRepository.cachedTileset(map.tileMap.tilesetId),
+        sheetById: await loadSheets(),
+        layers,
+        loadedPlacements: await loadPlacements(layers),
+    })
+    const port = canvasDrawPort(ctx)
 
-    startLoop(canvas, ctx, loadedPlacements)
+    startLoop(deltaSeconds => {
+        moveCamera(deltaSeconds)
+        renderFrame(port, scene, viewCoordinates)
+    }, callback => window.requestAnimationFrame(callback))
 })
 
 window.addEventListener('keydown', (event: KeyboardEvent) => {

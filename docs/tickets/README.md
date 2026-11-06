@@ -38,7 +38,7 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-014](T-014-metatile-model.md) | 1 | P1 | done | domain | Add a metatile map and tileset model |
 | [T-015](T-015-assets-are-files.md) | 1 | P1 | done | server | Serve sheet images as files |
 | [T-016](T-016-atomic-json-writes.md) | 1 | P1 | done | server | Write JSON by rename |
-| [T-017](T-017-shared-render-loop.md) | 1 | P1 | ready | engine | Draw a map through one engine loop |
+| [T-017](T-017-shared-render-loop.md) | 1 | P1 | done | engine | Draw a map through one engine loop |
 | [T-018](T-018-in-house-elements.md) | 1 | P2 | ready | editor | Replace the third-party element base |
 | [T-019](T-019-tileset-palette.md) | 2 | P1 | backlog | editor | Import a sheet as a tileset palette |
 | [T-020](T-020-paint-metatiles.md) | 2 | P1 | backlog | editor | Paint metatiles and delete placement painting |
@@ -82,8 +82,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 ## Counts
 
-- ready: 2
+- ready: 1
 - in_progress: 0
 - backlog: 40
-- done: 16
+- done: 17
 - total: 57
