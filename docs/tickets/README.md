@@ -29,7 +29,7 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-005](T-005-layer-updates-are-single.md) | 0 | P0 | done | editor | Update only the layer that changed |
 | [T-006](T-006-play-mode-camera-loop.md) | 0 | P0 | done | play | Make play mode a frame loop with the editor's draw order |
 | [T-007](T-007-sheet-import-round-trip.md) | 0 | P0 | backlog | editor | Make sprite sheet import open the file that was uploaded |
-| [T-008](T-008-tools-hit-the-cell.md) | 0 | P0 | backlog | editor | Make pencil, fill, and eraser hit the cell under the cursor |
+| [T-008](T-008-tools-hit-the-cell.md) | 0 | P0 | ready | editor | Make pencil, fill, and eraser hit the cell under the cursor |
 | [T-009](T-009-safe-upload-names.md) | 0 | P0 | ready | server | Store uploads under a generated name |
 | [T-010](T-010-fix-frame-delay.md) | 0 | P1 | ready | editor | Fix the canvas frame delay |
 | [T-011](T-011-typecheck-and-run-scripts.md) | 0 | P1 | ready | repo | Add typecheck and a documented way to run |
@@ -82,8 +82,8 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 
 ## Counts
 
-- ready: 3
+- ready: 4
 - in_progress: 0
-- backlog: 48
+- backlog: 47
 - done: 6
 - total: 57

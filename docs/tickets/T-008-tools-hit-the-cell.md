@@ -1,7 +1,7 @@
 ---
 id: T-008
 title: Make pencil, fill, and eraser hit the cell under the cursor
-status: backlog
+status: ready
 priority: P0
 phase: 0
 type: bug
