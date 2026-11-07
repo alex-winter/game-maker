@@ -1,7 +1,7 @@
 ---
 id: T-051
 title: Build the Gate A and Gate B town in the editor
-status: ready
+status: done
 priority: P1
 phase: 8
 type: feat
@@ -45,9 +45,16 @@ Out:
 
 ## Acceptance
 
-- [ ] A new player can follow `docs/sample-town.md` and: walk to the route, enter the house, leave, read the sign, take the item once, talk to the NPC, reload a save, step in grass, trigger the trainer once, and pass the gate after the flag.
-- [ ] No copyrighted sprites are in the example.
+- [x] A new player can follow `docs/sample-town.md` and: walk to the route, enter the house, leave, read the sign, take the item once, talk to the NPC, reload a save, step in grass, trigger the trainer once, and pass the gate after the flag.
+- [x] No copyrighted sprites are in the example.
 
 ## Test plan
 
 - Play the walkthrough. Tick every step in the sample doc as you go, and leave the doc as prose, not as a checklist of your process.
+
+## Result
+
+- `examples/town/build.js`: a dependency-free Node script that draws its own PNG sheets (tiles, three characters) with a small PNG writer, uploads them, and builds Fernpost Town, Fern Path, and Marta's House through the editor's HTTP API — tileset, maps, seams, warps, sign, items, Marta with a choice dialog whose page sets the hatchet flag, a fence line with a gated tree, a heal-point bed, Trainer Ivo with a party of two, tall grass with an encounter table, three species, five moves, a type chart, the starter, the start map.
+- `docs/sample-town.md`: how to build and play it, where everything is, notes for authors.
+- Found while building: the start cell has no editor control — filed as T-058; the town is laid out around the default centre. A gate cell needs a passable tile under it, so the tileset carries a non-solid tree for gates (documented).
+- Every walkthrough step was driven in Chrome end to end: sign, house in and out, bed, potion once, Marta → flag, gate passes, save → reload → Continue resumes, east seam to the route, Ivo walks up and is beaten through both creatures with no second challenge, a wild Flit in the grass.

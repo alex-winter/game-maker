@@ -72,18 +72,19 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-048](T-048-encounters.md) | 8 | P1 | done | domain | Start an encounter from grass |
 | [T-049](T-049-trainer-sight.md) | 8 | P2 | done | engine | Let a trainer notice the player |
 | [T-050](T-050-field-gates.md) | 8 | P2 | done | domain | Open a field gate with a flag |
-| [T-051](T-051-vertical-slice.md) | 8 | P1 | ready | content | Build the Gate A and Gate B town in the editor |
+| [T-051](T-051-vertical-slice.md) | 8 | P1 | done | content | Build the Gate A and Gate B town in the editor |
 | [T-052](T-052-move-catalog.md) | 9 | P1 | done | domain | Define moves and a type chart |
 | [T-053](T-053-battle-scene.md) | 9 | P1 | done | engine | Resolve a single-creature battle |
 | [T-054](T-054-experience.md) | 9 | P2 | done | domain | Award experience and levels |
 | [T-055](T-055-party-screen.md) | 9 | P2 | done | play | Show the party screen |
 | [T-056](T-056-wild-battle.md) | 9 | P1 | done | engine | Run wild encounters through the battle scene |
 | [T-057](T-057-trainer-battle.md) | 9 | P1 | done | engine | Run trainer battles through the battle scene |
+| [T-058](T-058-spawn-cell-editor.md) | 8 | P2 | ready | editor | Set a map's start cell in the editor |
 
 ## Counts
 
 - ready: 1
 - in_progress: 0
 - backlog: 0
-- done: 56
-- total: 57
+- done: 57
+- total: 58

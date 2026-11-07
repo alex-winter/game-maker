@@ -12,6 +12,7 @@ src/
 public/       index.html, play.html, built bundles in dist/
 data/         created at runtime: project.json (maps, tile grids, legacy layers), placement images (read-only), user data, sprite models
 uploads/      sprite sheet files, stored as <uuid><ext>, plus index.json with the original names
+examples/     town/build.js — the sample game (T-051), built into a running editor through its HTTP API; docs/sample-town.md says how to play it
 ```
 
 `npm run build` compiles both bundles, `npm start` runs Express, `npm run typecheck` runs `tsc --noEmit`, and `npm test` runs `node --test` over `src/**/*.test.ts`. See the root README.
@@ -83,7 +84,7 @@ The current brush is `Client/Service/brush.ts`: `{ tilesetId, metatileId }` or `
 
 | File | Written by | Shape |
 | --- | --- | --- |
-| `data/save.json` | `/save` | `{ version: 1, slots: [{ mapId, cell, facing, memory, bag, savedAt }] }` |
+| `data/save.json` | `/save` | `{ version: 1, slots: [{ mapId, cell, facing, memory, bag, party, healPoint, savedAt }] }` |
 | `data/project.json` | project, map, tileset, tile-map, and sprite routes | `{ id, name, tilesets: Tileset[], sprites: SpriteDefinition[], playerSpriteId, dialogs: Dialog[], flags: Flag[], items: Item[], startMapId, maps: { id, name, tileMap: TileMap, spawn: Cell, connections: { north?, south?, east?, west? }, events: MapEvent[], layers: Layer[] }[] }`; `layers` is the read-only legacy placement list |
 | `data/layers.json` | nothing any more | imported once into a map named "Legacy map" when `project.json` is first created, then ignored |
 | `data/placement-images.json` | `GET /placement-images` only | `{ uuid, src }[]` where `src` is a data URL; nothing appends to it since T-020 |
