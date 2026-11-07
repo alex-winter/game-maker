@@ -22,6 +22,26 @@ export type EncounterTable = {
     readonly entries: readonly EncounterEntry[]
 }
 
+/** One creature on the other side: a fresh one of this species at this level. */
+export type Opponent = {
+    readonly speciesId: Id
+
+    readonly level: number
+}
+
+export const MAX_OPPONENTS = 6
+
+export function isOpponent(value: unknown): value is Opponent {
+    if (typeof value !== 'object' || value === null) {
+        return false
+    }
+
+    const record = value as { speciesId?: unknown; level?: unknown }
+
+    return typeof record.speciesId === 'string'
+        && typeof record.level === 'number' && Number.isInteger(record.level) && record.level >= 1 && record.level <= 100
+}
+
 export const DEFAULT_ENCOUNTER_RATE = 10
 
 export function emptyEncounterTable(): EncounterTable {
@@ -45,9 +65,8 @@ export type TrainerChallenge = {
 export type BattleRequest = {
     readonly party: Party
 
-    readonly speciesId: Id
-
-    readonly level: number
+    /** Fought in order (T-057); the grass sends one, a trainer their whole party. Never empty. */
+    readonly opponents: readonly Opponent[]
 
     readonly trainer: TrainerChallenge | null
 }
@@ -102,7 +121,7 @@ export function rollEncounter(table: EncounterTable, party: Party, random: Rando
     const high = Math.max(entry.minLevel, entry.maxLevel)
     const level = low + Math.floor(random() * (high - low + 1))
 
-    return { party, speciesId: entry.speciesId, level: Math.min(high, level), trainer: null }
+    return { party, opponents: [{ speciesId: entry.speciesId, level: Math.min(high, level) }], trainer: null }
 }
 
 /** A party member or a wild creature as the battle message names it. */

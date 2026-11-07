@@ -19,6 +19,7 @@ const speciesOf = (id: string) => [sprout, pebble, slug, hare].find(species => s
 const data: BattleData = {
     moves: [tackle, ember, blast, wild, growl],
     typeChart: { fire: { grass: 2, rock: 0.5 }, normal: { ghost: 0 } },
+    species: [sprout, pebble, slug, hare],
 }
 
 const fixed = (...values: number[]) => {
@@ -28,7 +29,7 @@ const fixed = (...values: number[]) => {
 }
 
 function request(speciesId = 'pebble', level = 10, party = [newCreature(sprout, 10)]): BattleRequest {
-    return { party, speciesId, level, trainer: null }
+    return { party, opponents: [{ speciesId, level }], trainer: null }
 }
 
 test('the damage formula, worked by hand: level 10, power 40, attack 15 against defense 15', () => {
@@ -194,4 +195,35 @@ test('a win that crosses a level refills the fighter and recomputes its stats (T
     assert.equal(after.player.creature.hp, 27, 'refilled from 18 to the new maximum')
     assert.equal(after.player.stats.attack, 11, 'floor(50 × 6 / 50) + 5: stats follow the level')
     assert.ok(after.log.includes('SPROUT grew to Lv6!'))
+})
+
+test("a trainer's second creature comes out when the first faints; the battle is won only once the whole party is down (T-057)", () => {
+    const ace = { eventId: 'ace', name: 'Ace', defeatedFlagId: 'beat-ace' }
+    const state = newBattle({ party: [newCreature(sprout, 10)], opponents: [{ speciesId: 'pebble', level: 10 }, { speciesId: 'slug', level: 10 }], trainer: ace }, speciesOf)
+
+    assert.ok(state !== undefined)
+    assert.equal(state.canRun, false)
+    assert.equal(state.foeIndex, 0)
+
+    const first = battleStep(state, { kind: 'move', moveId: 'blast' }, data, fixed(0, 0, 0))
+
+    assert.equal(first.outcome, null, 'not a win: another creature remains')
+    assert.equal(first.foeIndex, 1)
+    assert.equal(first.foe.species.id, 'slug')
+    assert.equal(first.foe.creature.level, 10)
+    assert.equal(first.foe.creature.hp, first.foe.maxHp, 'fresh')
+    assert.deepEqual(first.log, ['SPROUT used BLAST!', 'Foe PEBBLE fainted!', 'SPROUT gained 120 EXP. Points!', 'ACE sent out SLUG!'])
+    assert.equal(battleResult(first).outcome, 'fled', 'an unfinished battle has no win to report')
+
+    const second = battleStep(first, { kind: 'move', moveId: 'blast' }, data, fixed(0, 0, 0))
+
+    assert.equal(second.outcome, 'won')
+    assert.equal(second.foeIndex, 1)
+    assert.equal(second.player.creature.experience, 1000 + 120 + 120, 'both faints paid')
+
+    // A second creature whose species is gone cannot be sent out: the win stands at the first faint.
+    const gone = newBattle({ party: [newCreature(sprout, 10)], opponents: [{ speciesId: 'pebble', level: 10 }, { speciesId: 'ghostly', level: 12 }], trainer: ace }, speciesOf)
+
+    assert.ok(gone !== undefined)
+    assert.equal(battleStep(gone, { kind: 'move', moveId: 'blast' }, data, fixed(0, 0, 0)).outcome, 'won')
 })

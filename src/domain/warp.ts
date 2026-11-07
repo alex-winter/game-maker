@@ -1,5 +1,6 @@
 import { Cell, isCell } from './coordinates'
 import { Id } from './id'
+import { isOpponent, MAX_OPPONENTS, Opponent } from './encounter'
 import { Direction, isDirection, Player } from './movement'
 import { MetatileId } from './tileset'
 
@@ -66,16 +67,16 @@ export function isNpcBehavior(value: unknown): value is NpcBehavior {
 /**
  * A person who fights (T-049): how far they see along the way they face,
  * the flag set once they are beaten so they never challenge twice, and the
- * creature they send out. T-057 widens the creature to a party.
+ * creatures they send out, fought in order (T-057; up to `MAX_OPPONENTS`).
+ * With nobody to send out they stop in front of the player and nothing
+ * happens.
  */
 export type Trainer = {
     readonly sightRange: number
 
     readonly defeatedFlagId: Id
 
-    readonly speciesId: Id | null
-
-    readonly level: number
+    readonly party: readonly Opponent[]
 }
 
 export const MAX_SIGHT_RANGE = 8
@@ -151,7 +152,7 @@ export function withEventDefaults(event: MapEvent): MapEvent {
     return {
         ...event,
         behavior: isNpcBehavior(stored.behavior) ? stored.behavior : DEFAULT_BEHAVIOR,
-        trainer: isTrainer(stored.trainer) ? stored.trainer : null,
+        trainer: isTrainer(stored.trainer) ? stored.trainer : legacyTrainer(stored.trainer),
     }
 }
 
@@ -160,12 +161,24 @@ export function isTrainer(value: unknown): value is Trainer {
         return false
     }
 
-    const record = value as { sightRange?: unknown; defeatedFlagId?: unknown; speciesId?: unknown; level?: unknown }
+    const record = value as { sightRange?: unknown; defeatedFlagId?: unknown; party?: unknown }
 
     return typeof record.sightRange === 'number' && Number.isInteger(record.sightRange) && record.sightRange >= 1 && record.sightRange <= MAX_SIGHT_RANGE
         && typeof record.defeatedFlagId === 'string'
-        && (record.speciesId === null || typeof record.speciesId === 'string')
-        && typeof record.level === 'number' && Number.isInteger(record.level) && record.level >= 1 && record.level <= 100
+        && Array.isArray(record.party) && record.party.length <= MAX_OPPONENTS && record.party.every(isOpponent)
+}
+
+/** A trainer saved by T-049 with one `speciesId` and `level` becomes a party of one (or none), or null when it was never a trainer. */
+function legacyTrainer(value: unknown): Trainer | null {
+    if (typeof value !== 'object' || value === null) {
+        return null
+    }
+
+    const record = value as { sightRange?: unknown; defeatedFlagId?: unknown; speciesId?: unknown; level?: unknown }
+    const one = { speciesId: record.speciesId, level: record.level }
+    const candidate: unknown = { sightRange: record.sightRange, defeatedFlagId: record.defeatedFlagId, party: isOpponent(one) ? [one] : [] }
+
+    return isTrainer(candidate) ? candidate : null
 }
 
 /** The people standing on a map. */

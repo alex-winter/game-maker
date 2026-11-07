@@ -1,5 +1,5 @@
 import { effectiveness, TypeChart } from './battle-data'
-import { BattleRequest, BattleResult } from './encounter'
+import { BattleRequest, BattleResult, Opponent } from './encounter'
 import { Creature, damaged, isFainted, maxHpAt, Move, newCreature, Species, statAt } from './creature'
 import { Id } from './id'
 import { Random } from './random'
@@ -60,6 +60,14 @@ export type BattleState = {
 
     readonly party: BattleRequest['party']
 
+    /** The other side in order (T-057); `foeIndex` is the one out now. */
+    readonly opponents: readonly Opponent[]
+
+    readonly foeIndex: number
+
+    /** The trainer who sent them, named in the send-out line; null for a wild creature. */
+    readonly trainerName: string | null
+
     /** Whether running is allowed: from a wild creature yes, from a trainer no (T-057). */
     readonly canRun: boolean
 
@@ -71,11 +79,13 @@ export type BattleState = {
     readonly turn: number
 }
 
-/** The catalog and chart a battle resolves moves through. */
+/** The catalog, chart, and species a battle resolves moves and send-outs through. */
 export type BattleData = {
     readonly moves: readonly Move[]
 
     readonly typeChart: TypeChart
+
+    readonly species: readonly Species[]
 }
 
 export const STAB = 1.5
@@ -103,26 +113,36 @@ export function combatant(creature: Creature, species: Species): Combatant {
     }
 }
 
+/** The fresh creature an opponent line stands for, or undefined when its species is gone. */
+function opponentCombatant(opponent: Opponent | undefined, speciesOf: (speciesId: Id) => Species | undefined): Combatant | undefined {
+    const species = opponent === undefined ? undefined : speciesOf(opponent.speciesId)
+
+    return species === undefined || opponent === undefined ? undefined : combatant(newCreature(species, opponent.level), species)
+}
+
 /**
  * The battle a request opens: the first able creature of the party against
- * a fresh one of the requested species, or undefined when either species is
- * unknown or nobody in the party can stand.
+ * a fresh one of the first opponent's species, or undefined when either
+ * species is unknown or nobody in the party can stand.
  */
 export function newBattle(request: BattleRequest, speciesOf: (speciesId: Id) => Species | undefined): BattleState | undefined {
     const partyIndex = request.party.findIndex(creature => !isFainted(creature))
     const fighter = request.party[partyIndex]
-    const foeSpecies = speciesOf(request.speciesId)
+    const foe = opponentCombatant(request.opponents[0], speciesOf)
     const fighterSpecies = fighter === undefined ? undefined : speciesOf(fighter.speciesId)
 
-    if (fighter === undefined || fighterSpecies === undefined || foeSpecies === undefined) {
+    if (fighter === undefined || fighterSpecies === undefined || foe === undefined) {
         return undefined
     }
 
     return {
         player: combatant(fighter, fighterSpecies),
-        foe: combatant(newCreature(foeSpecies, request.level), foeSpecies),
+        foe,
         partyIndex,
         party: request.party,
+        opponents: request.opponents,
+        foeIndex: 0,
+        trainerName: request.trainer?.name ?? null,
         canRun: request.trainer === null,
         log: [],
         outcome: null,
@@ -262,18 +282,34 @@ export function battleStep(state: BattleState, choice: BattleChoice, data: Battl
     return settle(next, data)
 }
 
-/** A faint ends it. A win pays experience to the fighter (T-054): levels, HP refills, and learnset moves while slots are free, all told in the log. */
+/**
+ * A foe's faint pays experience to the fighter (T-054: levels, HP refills,
+ * and learnset moves while slots are free, all told in the log) and, when
+ * the other side has another creature whose species is known, sends it out
+ * (T-057) — the battle goes on; otherwise it is won. The player's faint
+ * loses it.
+ */
 function settle(state: BattleState, data: BattleData): BattleState {
     if (isFainted(state.foe.creature)) {
         const amount = experienceYield(state.foe.creature.level)
         const growth = gainExperience(state.player.creature, state.player.species, amount)
         const moveName = (moveId: Id) => data.moves.find(move => move.id === moveId)?.name ?? moveId
-
-        return {
+        const paid: BattleState = {
             ...state,
-            outcome: 'won',
             player: combatant(growth.creature, state.player.species),
             log: [...state.log, ...growthLines(state.player.species.name, amount, growth, moveName)],
+        }
+        const next = opponentCombatant(state.opponents[state.foeIndex + 1], speciesId => data.species.find(species => species.id === speciesId))
+
+        if (next === undefined) {
+            return { ...paid, outcome: 'won' }
+        }
+
+        return {
+            ...paid,
+            foe: next,
+            foeIndex: state.foeIndex + 1,
+            log: [...paid.log, `${(state.trainerName ?? 'The foe').toUpperCase()} sent out ${next.species.name.toUpperCase()}!`],
         }
     }
 

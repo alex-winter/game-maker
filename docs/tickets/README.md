@@ -78,12 +78,12 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-054](T-054-experience.md) | 9 | P2 | done | domain | Award experience and levels |
 | [T-055](T-055-party-screen.md) | 9 | P2 | done | play | Show the party screen |
 | [T-056](T-056-wild-battle.md) | 9 | P1 | done | engine | Run wild encounters through the battle scene |
-| [T-057](T-057-trainer-battle.md) | 9 | P1 | ready | engine | Run trainer battles through the battle scene |
+| [T-057](T-057-trainer-battle.md) | 9 | P1 | done | engine | Run trainer battles through the battle scene |
 
 ## Counts
 
-- ready: 2
+- ready: 1
 - in_progress: 0
 - backlog: 0
-- done: 55
+- done: 56
 - total: 57

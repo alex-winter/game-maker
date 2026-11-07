@@ -266,17 +266,14 @@ function approachFrame(state: FieldState, events: readonly MapEvent[], deltaMs: 
     const facing = turnToward(mover.cell, state.player.cell)
 
     if (facing !== undefined) {
-        const speciesId = npc.trainer.speciesId
-
-        if (speciesId === null) {
+        if (npc.trainer.party.length === 0) {
             // A trainer with nothing to send out just stops in front of the player.
             return { ...state, people, approach: null, player: { ...state.player, facing: turnToward(state.player.cell, mover.cell) ?? state.player.facing } }
         }
 
         const request: BattleRequest = {
             party: state.party,
-            speciesId,
-            level: npc.trainer.level,
+            opponents: npc.trainer.party,
             trainer: { eventId: npc.id, name: npc.name, defeatedFlagId: npc.trainer.defeatedFlagId },
         }
 

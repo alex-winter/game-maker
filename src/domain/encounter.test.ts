@@ -21,17 +21,17 @@ test('a fixed RNG returns the weighted species and a level in its range', () => 
     // 0.1 → 10 < 20: something appears; 0.5 of 100 weight lands in sprout's 0–60; level 2 + floor(0.99 × 3) = 4.
     const sprout = rollEncounter(table, [], sequence([0.1, 0.5, 0.99]))
 
-    assert.deepEqual(sprout, { party: [], speciesId: 'sprout', level: 4, trainer: null })
+    assert.deepEqual(sprout, { party: [], opponents: [{ speciesId: 'sprout', level: 4 }], trainer: null })
 
     // 0.65 of 100 is past sprout (60) and inside ember (60–90).
-    assert.equal(rollEncounter(table, [], sequence([0, 0.65, 0]))?.speciesId, 'ember')
-    assert.equal(rollEncounter(table, [], sequence([0, 0.95, 0]))?.speciesId, 'rare')
-    assert.equal(rollEncounter(table, [], sequence([0, 0.999999, 0.5]))?.level, 11)
+    assert.equal(rollEncounter(table, [], sequence([0, 0.65, 0]))?.opponents[0]?.speciesId, 'ember')
+    assert.equal(rollEncounter(table, [], sequence([0, 0.95, 0]))?.opponents[0]?.speciesId, 'rare')
+    assert.equal(rollEncounter(table, [], sequence([0, 0.999999, 0.5]))?.opponents[0]?.level, 11)
 })
 
 test('the rate gates the roll: 0.2 of 100 is 20, not under 20, so the grass stays quiet', () => {
     assert.equal(rollEncounter(table, [], sequence([0.2, 0, 0])), null)
-    assert.equal(rollEncounter(table, [], sequence([0.199, 0, 0]))?.speciesId, 'sprout')
+    assert.equal(rollEncounter(table, [], sequence([0.199, 0, 0]))?.opponents[0]?.speciesId, 'sprout')
     assert.equal(rollEncounter({ ...table, rate: 0 }, [], sequence([0, 0, 0])), null)
     assert.equal(rollEncounter(emptyEncounterTable(), [], sequence([0, 0, 0])), null, 'no lines, nothing appears')
 })

@@ -6,6 +6,7 @@ import { Id } from 'domain/id'
 import { Direction, isDirection } from 'domain/movement'
 import { isNpcBehavior, MAX_SIGHT_RANGE, NPC_BEHAVIORS, NpcEvent, Trainer } from 'domain/warp'
 import { MAX_LEVEL, MIN_LEVEL } from 'domain/creature'
+import { MAX_OPPONENTS, Opponent } from 'domain/encounter'
 import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
 
 type Named = { readonly id: Id; readonly name: string }
@@ -23,7 +24,7 @@ export type NpcFormDataset = {
     /** Flags a trainer can set once beaten (T-049). */
     flags: Named[]
 
-    /** Species a trainer can send out (T-049). */
+    /** Species a trainer can send out (T-049; T-057 made it a party of up to six). */
     species: Named[]
 }
 
@@ -42,8 +43,8 @@ const BEHAVIOR_LABELS: { readonly [B in NpcEvent['behavior']]: string } = {
 /**
  * One person, inside `BasicModal`: name, sprite (or a stand-in), facing,
  * what they do when left alone, the dialog they speak, and (T-049) whether
- * they are a trainer: how far they see, the flag a win sets, and what they
- * send out. Emits `npc-submit` (id-less for a new one) or `npc-delete`
+ * they are a trainer: how far they see, the flag a win sets, and the party
+ * they send out in order (T-057). Emits `npc-submit` (id-less for a new one) or `npc-delete`
  * with the event id.
  */
 export class NpcForm extends Component<NpcFormDataset> {
@@ -53,9 +54,12 @@ export class NpcForm extends Component<NpcFormDataset> {
         '.delete-button:click': this.handleDelete,
         '.trainer-toggle:change': this.handleTrainerToggle,
         '.new-flag:click': this.handleNewFlag,
+        '.add-opponent:click': this.handleAddOpponent,
     }
 
     private flags: Named[] = []
+
+    private species: Named[] = []
 
     protected css(): string {
         return /*css*/`
@@ -159,6 +163,36 @@ export class NpcForm extends Component<NpcFormDataset> {
                 flex: 1;
             }
 
+            .opponents {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .opponent {
+                display: flex;
+                gap: 6px;
+                align-items: center;
+            }
+
+            .opponent select {
+                flex: 1;
+            }
+
+            .opponent .opponent-level {
+                width: 64px;
+            }
+
+            .remove-opponent,
+            .add-opponent {
+                padding: 6px 10px;
+                border: 1px solid #ccc;
+                background: #fff;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 13px;
+            }
+
             .new-flag {
                 padding: 6px 10px;
                 border: 1px solid #ccc;
@@ -187,6 +221,7 @@ export class NpcForm extends Component<NpcFormDataset> {
         const name = document.createElement('input')
 
         this.flags = flags
+        this.species = species
 
         form.className = 'form-container'
         title.textContent = `${npc === null ? 'New person' : npc.name} at ${cell.x}, ${cell.y}`
@@ -215,18 +250,16 @@ export class NpcForm extends Component<NpcFormDataset> {
         return form
     }
 
-    /** The trainer fields: a checkbox, and beneath it sight range, defeated flag (with "+ New"), creature and level. Hidden until ticked. */
+    /** The trainer fields: a checkbox, and beneath it sight range, defeated flag (with "+ New"), and the party sent out in order. Hidden until ticked. */
     private trainerSection(trainer: Trainer | null, species: readonly Named[]): HTMLElement {
         const wrapper = Dom.div('trainer-wrapper')
         const toggleRow = document.createElement('label')
         const toggle = document.createElement('input')
         const fields = Dom.div('trainer')
         const range = document.createElement('input')
-        const level = document.createElement('input')
         const flagRow = Dom.div('flag-row')
         const flagSelect = this.select('flag-select', this.flags, trainer?.defeatedFlagId ?? '')
-        const speciesSelect = this.select('species-select', [{ id: '', name: 'nothing to send out' }, ...species], trainer?.speciesId ?? '')
-        const pair = Dom.div('row')
+        const opponents = Dom.div('opponents')
 
         toggleRow.className = 'toggle-row'
         toggle.type = 'checkbox'
@@ -240,11 +273,11 @@ export class NpcForm extends Component<NpcFormDataset> {
         range.max = String(MAX_SIGHT_RANGE)
         range.value = String(trainer?.sightRange ?? 3)
 
-        level.type = 'number'
-        level.className = 'trainer-level'
-        level.min = String(MIN_LEVEL)
-        level.max = String(MAX_LEVEL)
-        level.value = String(trainer?.level ?? 5)
+        for (const opponent of trainer?.party ?? []) {
+            opponents.append(this.opponentRow(opponent, species))
+        }
+
+        opponents.append(Dom.button('+ Creature', 'add-opponent'))
 
         if (this.flags.length === 0) {
             flagSelect.append(new Option('no flags yet', ''))
@@ -252,12 +285,51 @@ export class NpcForm extends Component<NpcFormDataset> {
         }
 
         flagRow.append(flagSelect, Dom.button('+ New', 'new-flag'))
-        pair.append(this.group('Sees (cells)', range), this.group('Level', level))
-        fields.append(pair, this.group('Beaten flag', flagRow), this.group('Sends out', speciesSelect))
+        fields.append(this.group('Sees (cells)', range), this.group('Beaten flag', flagRow), this.group(`Sends out, in order (up to ${MAX_OPPONENTS})`, opponents))
         fields.hidden = trainer === null
         wrapper.append(toggleRow, fields)
 
         return wrapper
+    }
+
+    /** One creature of the trainer's party: which species, at what level, and a button to drop it. */
+    private opponentRow(opponent: Opponent | null, species: readonly Named[]): HTMLElement {
+        const row = Dom.div('opponent')
+        const speciesSelect = this.select('species-select', species, opponent?.speciesId ?? species[0]?.id ?? '')
+        const level = document.createElement('input')
+
+        level.type = 'number'
+        level.className = 'opponent-level'
+        level.min = String(MIN_LEVEL)
+        level.max = String(MAX_LEVEL)
+        level.value = String(opponent?.level ?? 5)
+
+        if (species.length === 0) {
+            speciesSelect.append(new Option('no species yet', ''))
+            speciesSelect.disabled = true
+        }
+
+        const remove = Dom.button('×', 'remove-opponent')
+
+        // Rows are added after build, so each carries its own listener.
+        remove.addEventListener('click', event => {
+            event.preventDefault()
+            row.remove()
+        })
+        row.append(speciesSelect, level, remove)
+
+        return row
+    }
+
+    private handleAddOpponent(event: Event): void {
+        event.preventDefault()
+
+        const list = this.findOne<HTMLElement>('.opponents')
+        const button = this.findOne<HTMLElement>('.add-opponent')
+
+        if (list && button && list.querySelectorAll('.opponent').length < MAX_OPPONENTS) {
+            list.insertBefore(this.opponentRow(null, this.species), button)
+        }
     }
 
     private handleTrainerToggle(): void {
@@ -303,23 +375,33 @@ export class NpcForm extends Component<NpcFormDataset> {
         }
 
         const sightRange = Number(this.findOne<HTMLInputElement>('.sight-range')?.value)
-        const level = Number(this.findOne<HTMLInputElement>('.trainer-level')?.value)
         const defeatedFlagId = this.findOne<HTMLSelectElement>('.flag-select')?.value ?? ''
-        const speciesId = this.findOne<HTMLSelectElement>('.species-select')?.value ?? ''
+        const party: Opponent[] = []
 
         if (!Number.isInteger(sightRange) || sightRange < 1 || sightRange > MAX_SIGHT_RANGE) {
             return `Sight range is 1 to ${MAX_SIGHT_RANGE} cells.`
-        }
-
-        if (!Number.isInteger(level) || level < MIN_LEVEL || level > MAX_LEVEL) {
-            return `Level is ${MIN_LEVEL} to ${MAX_LEVEL}.`
         }
 
         if (defeatedFlagId === '') {
             return 'Pick the flag set once they are beaten.'
         }
 
-        return { sightRange, defeatedFlagId, speciesId: speciesId === '' ? null : speciesId, level }
+        for (const row of this.findAll('.opponent')) {
+            const speciesId = row.querySelector<HTMLSelectElement>('.species-select')?.value ?? ''
+            const level = Number(row.querySelector<HTMLInputElement>('.opponent-level')?.value)
+
+            if (speciesId === '') {
+                return 'Every creature sent out needs a species.'
+            }
+
+            if (!Number.isInteger(level) || level < MIN_LEVEL || level > MAX_LEVEL) {
+                return `Level is ${MIN_LEVEL} to ${MAX_LEVEL}.`
+            }
+
+            party.push({ speciesId, level })
+        }
+
+        return { sightRange, defeatedFlagId, party }
     }
 
     private group(label: string, control: HTMLElement): HTMLElement {

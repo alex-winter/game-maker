@@ -10,13 +10,13 @@ const tackle = newMove('tackle', 'Tackle', 40, 100, 'normal')
 const blast = newMove('blast', 'Blast', 400, 100, 'normal')
 const sprout = newSpecies('sprout', 'Sprout', ['grass'], flat, [{ level: 1, moveId: 'tackle' }, { level: 1, moveId: 'blast' }])
 const pebble = newSpecies('pebble', 'Pebble', ['rock'], flat, [{ level: 1, moveId: 'tackle' }])
-const data: BattleData = { moves: [tackle, blast], typeChart: {} }
+const data: BattleData = { moves: [tackle, blast], typeChart: {}, species: [sprout, pebble] }
 const speciesOf = (id: string) => [sprout, pebble].find(species => species.id === id)
 const none: BattleInput = { up: false, down: false, interact: false, cancel: false }
 const press = (key: keyof BattleInput): BattleInput => ({ ...none, [key]: true })
 
 function opened() {
-    const battle = newBattle({ party: [newCreature(sprout, 10)], speciesId: 'pebble', level: 10, trainer: null }, speciesOf)
+    const battle = newBattle({ party: [newCreature(sprout, 10)], opponents: [{ speciesId: 'pebble', level: 10 }], trainer: null }, speciesOf)
 
     assert.ok(battle !== undefined)
 

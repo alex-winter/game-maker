@@ -310,7 +310,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // The session clock animated tiles follow: it runs on through fades and menus so water never stutters.
     let clockMs = 0
 
-    const battleData: BattleData = { moves: project.moves, typeChart: project.typeChart }
+    const battleData: BattleData = { moves: project.moves, typeChart: project.typeChart, species: project.species }
     const speciesOf = (speciesId: Id) => findSpecies(project, speciesId)
     const partyLookup: PartyLookup = { speciesOf, moveName: moveId => findMove(project, moveId)?.name }
 
