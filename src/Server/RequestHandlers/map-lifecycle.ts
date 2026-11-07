@@ -1,9 +1,10 @@
 import { isConnections } from 'domain/connection'
 import { isValidGridSize, resizeTileMap } from 'domain/map'
-import { findMap, findSpecies, removeMap, withMapConnections, withMapEncounters, withMapEvents, withMapTileMap, withStartMap } from 'domain/project'
+import { findMap, findSpecies, removeMap, withMapConnections, withMapEncounters, withMapEvents, withMapSpawn, withMapTileMap, withStartMap } from 'domain/project'
 import { isEncounterTable } from 'domain/encounter'
 import { isMapEvents } from 'domain/warp'
 import { isInside } from 'domain/map'
+import { isCell } from 'domain/coordinates'
 import { readProject, writeProject } from 'Server/services/project-store'
 import { Request, RequestHandler, Response } from 'Server/types'
 
@@ -45,6 +46,36 @@ export const requestHandlerPutMapSize: RequestHandler = (request: Request, respo
     writeProject(resized)
 
     response.json(findMap(resized, mapId))
+}
+
+/** Body: `{ cell }` inside the grid (T-058). Answers the map. */
+export const requestHandlerPutMapSpawn: RequestHandler = (request: Request, response: Response): void => {
+    const { mapId } = request.params
+    const cell: unknown = request.body?.cell
+
+    if (!isCell(cell)) {
+        response.status(400).json({ error: 'cell must be { x, y }' })
+        return
+    }
+
+    const project = readProject()
+    const map = findMap(project, mapId)
+
+    if (map === undefined) {
+        response.status(404).json({ error: 'Map not found' })
+        return
+    }
+
+    if (!isInside(map.tileMap, cell)) {
+        response.status(400).json({ error: 'The start cell must be on the map' })
+        return
+    }
+
+    const moved = withMapSpawn(project, mapId, cell)
+
+    writeProject(moved)
+
+    response.json(findMap(moved, mapId))
 }
 
 /** Body: `{ mapId }` (or null). Answers `{ startMapId }`. */

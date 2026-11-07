@@ -2,6 +2,7 @@ import { Events } from 'Client/Service/Events'
 import { projectRepository } from 'Client/Service/Repository/ProjectRepository'
 import { canRedo, canUndo, emptyHistory, History, record, redo, undo } from 'domain/history'
 import { Id } from 'domain/id'
+import { Cell } from 'domain/coordinates'
 import { findTileLayer, MAX_ELEVATION, TileLayer, TileMap } from 'domain/map'
 import { GameMap } from 'domain/project'
 import { MapEvent } from 'domain/warp'
@@ -203,6 +204,16 @@ class MapSession {
     }
 
     /** Replaces the map's events and writes them. Events are not part of the tile undo history. */
+    /** Moves where play starts on this map (T-058). Outside the tile history, like events. */
+    public async commitSpawn(cell: Cell): Promise<void> {
+        const map = this.current
+
+        this.map = { ...map, spawn: cell }
+        Events.emit(MAP_SESSION_CHANGED, undefined)
+
+        await projectRepository.saveSpawn(map.id, cell)
+    }
+
     public async commitEvents(events: MapEvent[]): Promise<void> {
         const map = this.current
 

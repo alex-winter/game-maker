@@ -7,7 +7,7 @@ import { buildScene } from 'Client/Service/build-scene'
 import { camera } from 'Client/Service/camera'
 import { canvasDrawPort } from 'Client/Service/canvas-draw-port'
 import { drawAttributes } from 'Client/Service/draw-attributes'
-import { drawEvents } from 'Client/Service/draw-events'
+import { drawEvents, drawSpawn } from 'Client/Service/draw-events'
 import { BasicModal } from 'Client/Component/Generic/Modal/BasicModal'
 import { WARP_DELETE, WARP_SUBMIT, WarpForm } from 'Client/Component/Events/WarpForm'
 import { SIGN_DELETE, SIGN_SUBMIT, SignForm } from 'Client/Component/Events/SignForm'
@@ -355,6 +355,7 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
 
         if (!mapSession.isHidden('events')) {
             drawEvents(ctx, view, mapSession.current.events)
+            drawSpawn(ctx, view, mapSession.current.spawn)
         }
     }
 
@@ -832,6 +833,8 @@ export class MapCanvas extends Component<{ map: GameMap; showGrid: boolean }> {
         } else if (pick.kind === 'heal') {
             // A heal point has nothing to configure: it is placed at once.
             await mapSession.commitEvents(withEvent(mapSession.current.events, newHealEvent(newId(), pick.cell)))
+        } else if (pick.kind === 'spawn') {
+            await mapSession.commitSpawn(pick.cell)
         } else {
             await this.openNpcForm(pick.cell, null)
         }

@@ -64,6 +64,6 @@ If you lose a battle, the box says so, the screen fades, and you wake up at Mart
 
 A gate cell must be passable on its own: the gate does the blocking, and the tile under it only needs to look like a tree. The Fernpost tileset has a second tree (metatile 21) that is not solid for exactly this; the stump (14) is what the gate swaps in once it opens. A sign is not solid by itself either — the sign tile here is.
 
-The start cell of a map (`spawn`) has no control in the editor yet; a new map starts in its centre, which is where the town's crossroads was put. That is ticket T-058. Everything else here can be made through the editor's forms.
+The start cell of a map is set from the event picker's **Start here** (T-058); the build script leaves the town's at its default, the centre, which is where the crossroads was put. Everything here can be made through the editor's forms.
 
 Species and move numbers are the tool's own plain rules (`architecture.md`, Creatures and Battles). Sprig starts with Tackle and Leaf Cut so the Pebble, which resists normal moves, can be beaten.

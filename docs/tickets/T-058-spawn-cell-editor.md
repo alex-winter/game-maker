@@ -1,7 +1,7 @@
 ---
 id: T-058
 title: Set a map's start cell in the editor
-status: ready
+status: done
 priority: P2
 phase: 8
 type: feat
@@ -40,9 +40,15 @@ Out:
 
 ## Acceptance
 
-- [ ] Pick a cell in the editor, open play on that map, and start there.
-- [ ] A cell off the grid is refused with a 400.
+- [x] Pick a cell in the editor, open play on that map, and start there.
+- [x] A cell off the grid is refused with a 400.
 
 ## Test plan
 
 - Domain `withMapSpawn` is covered; add a handler-level check if the handlers gain tests. Manual in the editor.
+
+## Result
+
+- `PUT /project/maps/:mapId/spawn` `{ cell }` (400 for a bad shape or a cell off the grid), `projectRepository.saveSpawn`, `mapSession.commitSpawn`.
+- `EventKindPicker` gains “Start here”; `drawSpawn` marks the cell with a dark P ring whenever the Events overlay is shown.
+- Checked in Chrome: 400 for (40, 2) and for a string; Events row → click (11, 12) → Start here moved Fernpost Town's spawn from (10, 10) to (11, 12) and the marker followed.

@@ -2,6 +2,7 @@ import { Events } from 'Client/Service/Events'
 import { Repository } from 'Client/Service/Repository/Repository'
 import { Connections } from 'domain/connection'
 import { Id } from 'domain/id'
+import { Cell } from 'domain/coordinates'
 import { GridSize, TileMap } from 'domain/map'
 import { Dialog } from 'domain/dialog'
 import { Flag } from 'domain/flags'
@@ -9,7 +10,7 @@ import { Item } from 'domain/item'
 import { Move, Species, Starter } from 'domain/creature'
 import { TypeChart } from 'domain/battle-data'
 import { EncounterTable } from 'domain/encounter'
-import { withMapEncounters, addMove, addSpecies, removeMove, removeSpecies, withMove, withSpecies, withStarter, withTypeChart, addDialog, addFlag, addItem, addSprite, GameMap, removeDialog, removeFlag, removeItem, withDialog, withFlag, withItem, Project, removeMap, removeSprite, withMapConnections, withMapEvents, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withStartMap, withTileset } from 'domain/project'
+import { withMapEncounters, addMove, addSpecies, removeMove, removeSpecies, withMove, withSpecies, withStarter, withTypeChart, addDialog, addFlag, addItem, addSprite, GameMap, removeDialog, removeFlag, removeItem, withDialog, withFlag, withItem, Project, removeMap, removeSprite, withMapConnections, withMapEvents, withMapSpawn, withMapTileMap, withMapTileset, withPlayerSprite, withSprite, withStartMap, withTileset } from 'domain/project'
 import { SpriteDefinition } from 'domain/sprite'
 import { MapEvent } from 'domain/warp'
 import { Metatile, MetatileAttributes, MetatileId, Tileset, withMetatileAttributes } from 'domain/tileset'
@@ -300,6 +301,15 @@ class ProjectRepository extends Repository {
 
         if (this.project) {
             this.project = withMapEncounters(this.project, mapId, encounters)
+        }
+    }
+
+    /** Where play starts on the map (T-058). */
+    public async saveSpawn(mapId: Id, cell: Cell): Promise<void> {
+        await this.put(`${this.API_PATH}/maps/${mapId}/spawn`, { cell })
+
+        if (this.project) {
+            this.project = withMapSpawn(this.project, mapId, cell)
         }
     }
 

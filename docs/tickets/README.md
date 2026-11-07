@@ -79,12 +79,12 @@ Phase 0 tickets with no dependencies start `ready`. T-007 and T-008 are phase 0 
 | [T-055](T-055-party-screen.md) | 9 | P2 | done | play | Show the party screen |
 | [T-056](T-056-wild-battle.md) | 9 | P1 | done | engine | Run wild encounters through the battle scene |
 | [T-057](T-057-trainer-battle.md) | 9 | P1 | done | engine | Run trainer battles through the battle scene |
-| [T-058](T-058-spawn-cell-editor.md) | 8 | P2 | ready | editor | Set a map's start cell in the editor |
+| [T-058](T-058-spawn-cell-editor.md) | 8 | P2 | done | editor | Set a map's start cell in the editor |
 
 ## Counts
 
-- ready: 1
+- ready: 0
 - in_progress: 0
 - backlog: 0
-- done: 57
+- done: 58
 - total: 58
